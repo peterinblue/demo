@@ -3,155 +3,458 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>航能智巡 · 雷达监测与网络管理</title>
+<title>航能E联 · 用电负荷 — 数智能源管理平台</title>
 <style>
   :root{
-    --bg:#0a1226; --bg2:#0e1b3a; --panel:rgba(255,255,255,.04);
-    --line:rgba(120,170,255,.18); --txt:#e8eefc; --sub:#9fb2d8;
-    --accent:#39d0ff; --accent2:#7c5cff; --ok:#33e0a1; --warn:#ffb454;
+    --bg1:#04102e; --bg2:#071a45; --panel:rgba(16,42,102,.35); --panel2:rgba(10,26,66,.55);
+    --line:rgba(64,140,255,.28); --line2:rgba(64,140,255,.14);
+    --txt:#dce8ff; --sub:#8fa8d8; --accent:#35d0ff; --accent2:#3f8cff;
+    --orange:#ffb454; --ok:#33e0a1; --danger:#ff5f7e;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
   body{
-    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    background:radial-gradient(1200px 700px at 70% -10%,#15306a 0%,transparent 60%),
-               radial-gradient(900px 600px at 0% 100%,#1a1147 0%,transparent 55%),
-               linear-gradient(160deg,var(--bg),var(--bg2));
-    color:var(--txt);min-height:100%;line-height:1.6;
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--txt);
+    background:radial-gradient(1100px 600px at 80% -10%,#0d2a6e 0%,transparent 55%),
+               radial-gradient(900px 700px at -10% 110%,#101a5e 0%,transparent 50%),
+               linear-gradient(160deg,var(--bg1),var(--bg2));
+    min-height:100vh;overflow-x:hidden;
   }
-  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 56px}
-  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
-  .brand{display:flex;align-items:center;gap:12px}
-  .logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-        display:grid;place-items:center;font-weight:800;color:#04122b;font-size:20px;box-shadow:0 6px 18px rgba(57,208,255,.35)}
-  .brand h1{font-size:20px;letter-spacing:.5px}
-  .brand p{font-size:12px;color:var(--sub)}
-  .clock{font-variant-numeric:tabular-nums;background:var(--panel);border:1px solid var(--line);
-         padding:8px 14px;border-radius:10px;font-size:13px;color:var(--sub)}
-  .clock b{color:var(--accent);font-weight:700}
-  .hero{position:relative;border:1px solid var(--line);border-radius:18px;padding:40px 32px;overflow:hidden;
-        background:linear-gradient(135deg,rgba(57,208,255,.10),rgba(124,92,255,.08))}
-  .hero .tag{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--line);
-            padding:4px 10px;border-radius:999px;margin-bottom:14px}
-  .hero h2{font-size:clamp(26px,5vw,42px);line-height:1.15;margin-bottom:12px}
-  .hero h2 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero p{max-width:640px;color:var(--sub);font-size:15px}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
-  .stat .n{font-size:26px;font-weight:800;color:var(--accent)}
-  .stat .l{font-size:12px;color:var(--sub);margin-top:4px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;transition:.25s}
-  .card:hover{transform:translateY(-4px);border-color:rgba(57,208,255,.5);box-shadow:0 12px 30px rgba(0,0,0,.35)}
-  .card .ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:22px;
-             background:linear-gradient(135deg,rgba(57,208,255,.2),rgba(124,92,255,.2));margin-bottom:14px}
-  .card h3{font-size:17px;margin-bottom:8px}
-  .card p{font-size:13px;color:var(--sub)}
-  .card ul{margin:10px 0 0 16px;font-size:13px;color:var(--sub)}
-  .card li{margin:4px 0}
-  .sec-title{margin:38px 0 16px;font-size:18px;display:flex;align-items:center;gap:10px}
-  .sec-title::before{content:"";width:4px;height:18px;border-radius:2px;background:linear-gradient(var(--accent),var(--accent2))}
-  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13px}
-  .step .k{color:var(--accent2);font-weight:700;margin-bottom:6px}
-  footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;font-size:12px;color:var(--sub);
-         display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-  @media (max-width:860px){
-    .stats{grid-template-columns:repeat(2,1fr)}
-    .grid{grid-template-columns:1fr}
-    .flow{grid-template-columns:1fr 1fr}
-  }
-  @media (max-width:480px){
-    .wrap{padding:18px 14px 40px}
-    .hero{padding:28px 20px}
-    .flow{grid-template-columns:1fr}
+  /* ===== 顶栏 ===== */
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:0 16px;height:52px;background:rgba(4,14,44,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+  .burger{display:none;background:none;border:1px solid var(--line);border-radius:8px;color:var(--txt);
+    width:34px;height:34px;font-size:16px;cursor:pointer}
+  .logo{display:flex;align-items:center;gap:10px;white-space:nowrap}
+  .logo .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#2f6bff);
+    display:grid;place-items:center;color:#03102e;font-weight:800;font-size:15px}
+  .logo b{font-size:15px}
+  .logo span{font-size:12px;color:var(--sub);display:block}
+  .tabs{display:flex;gap:6px;margin-left:8px}
+  .tab{padding:6px 16px;border-radius:8px;font-size:13px;color:var(--sub);cursor:pointer;border:1px solid transparent;white-space:nowrap}
+  .tab.active{color:#04102e;background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700}
+  .tab .new{font-size:10px;background:var(--danger);color:#fff;border-radius:6px;padding:1px 4px;margin-left:4px;vertical-align:2px}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub)}
+  .top-right select{background:#0a1c4e;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2f6bff,var(--accent));
+    display:grid;place-items:center;color:#04102e;font-weight:700;font-size:12px}
+  /* ===== 布局 ===== */
+  .layout{display:flex;min-height:calc(100vh - 52px)}
+  .sidebar{width:212px;flex-shrink:0;border-right:1px solid var(--line2);padding:14px 10px;background:rgba(5,16,48,.5)}
+  .side-group{font-size:12px;color:var(--sub);padding:8px 10px;letter-spacing:1px}
+  .side-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;font-size:13px;color:var(--sub);cursor:pointer;position:relative}
+  .side-item .arrow{margin-left:auto;font-size:10px;transition:.2s}
+  .side-item:hover{color:var(--txt);background:rgba(53,208,255,.08)}
+  .side-item.active{color:#fff;background:linear-gradient(90deg,rgba(53,208,255,.22),rgba(63,140,255,.10));
+    border:1px solid rgba(53,208,255,.4);box-shadow:inset 0 0 18px rgba(53,208,255,.08)}
+  .side-item.active::before{content:"";position:absolute;left:-10px;top:20%;height:60%;width:3px;border-radius:2px;background:var(--accent)}
+  .side-sub{margin:4px 0 6px 22px;border-left:1px dashed var(--line);padding-left:6px}
+  .side-sub .side-item{font-size:12px;padding:7px 10px}
+  .badge-new{font-size:10px;background:var(--danger);color:#fff;border-radius:6px;padding:1px 5px;margin-left:6px}
+  .main{flex:1;padding:16px 18px 40px;min-width:0}
+  /* ===== 面板 ===== */
+  .panel-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .panel-head h1{font-size:17px}
+  .panel-head .crumb{font-size:12px;color:var(--sub)}
+  .formula{font-size:12px;color:var(--accent);background:rgba(53,208,255,.08);border:1px dashed rgba(53,208,255,.35);
+    border-radius:8px;padding:6px 12px;display:inline-block;margin:6px 0 12px}
+  .filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel2);
+    border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .filter label{font-size:12px;color:var(--sub)}
+  .filter select,.filter input{background:#0a1c4e;color:var(--txt);border:1px solid var(--line);
+    border-radius:8px;padding:7px 9px;font-size:12px;outline:none}
+  .filter input[type=date]{color-scheme:dark}
+  .filter input.cap{width:76px}
+  .btn{padding:8px 18px;border-radius:9px;border:1px solid var(--line);background:rgba(53,208,255,.12);
+    color:var(--txt);font-size:13px;cursor:pointer;white-space:nowrap;transition:.2s}
+  .btn:hover{background:rgba(53,208,255,.25)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04102e;font-weight:700;border:none}
+  .btn.primary:hover{filter:brightness(1.12)}
+  .quick{display:flex;gap:6px}
+  .quick button{font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid var(--line);
+    background:transparent;color:var(--sub);cursor:pointer}
+  .quick button.on,.quick button:hover{color:var(--accent);border-color:var(--accent)}
+  .hint{font-size:11px;color:var(--sub);width:100%}
+  /* ===== 图块 ===== */
+  .checks{display:flex;flex-wrap:wrap;gap:12px;margin:14px 2px 4px;font-size:12px;color:var(--sub)}
+  .checks label{display:flex;align-items:center;gap:5px;cursor:pointer}
+  .checks input{accent-color:var(--accent)}
+  .chart-card{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
+  .chart-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .chart-head h2{font-size:15px}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--sub);margin-left:auto}
+  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+  .chart-body{display:flex;gap:16px;align-items:stretch}
+  .chart-wrap{flex:1;min-width:0;position:relative}
+  canvas{width:100%;display:block}
+  .tooltip{position:absolute;pointer-events:none;background:rgba(6,18,52,.95);border:1px solid var(--accent);
+    border-radius:8px;padding:7px 10px;font-size:12px;color:var(--txt);display:none;z-index:5;white-space:nowrap;line-height:1.7}
+  .stats{width:218px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;justify-content:center}
+  .stat{background:rgba(53,208,255,.05);border:1px solid var(--line2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--sub)}
+  .stat b{color:var(--txt);font-size:14px;font-family:Consolas,monospace}
+  .stat .t{color:var(--accent)}
+  footer{margin-top:26px;border-top:1px solid var(--line2);padding-top:14px;font-size:11px;color:var(--sub);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:rgba(6,18,52,.96);border:1px solid var(--ok);color:var(--ok);border-radius:10px;
+    padding:10px 20px;font-size:13px;z-index:99;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{border-color:var(--danger);color:var(--danger)}
+  @media (max-width:900px){
+    .burger{display:block}
+    .sidebar{position:fixed;left:0;top:52px;bottom:0;z-index:49;transform:translateX(-105%);transition:.25s;background:#050f30}
+    .sidebar.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.5)}
+    .chart-body{flex-direction:column}
+    .stats{width:100%;flex-direction:row;flex-wrap:wrap}
+    .stat{flex:1;min-width:140px}
+    .tabs .tab:not(.active){display:none}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="logo">智</div>
-      <div>
-        <h1>航能智巡</h1>
-        <p>雷达监测与网络管理 · 科研课题演示</p>
-      </div>
-    </div>
-    <div class="clock">北京时间 <b id="clk">--:--:--</b></div>
-  </header>
 
-  <section class="hero">
-    <span class="tag">DEMO · 01</span>
-    <h2>空天地一体化 <span>雷达监测与网络管理</span> 平台</h2>
-    <p>面向园区与野外部署场景，融合雷达目标感知、自组织网络通信与卫星回传能力，构建「看得见、联得上、控得稳」的智能化管控底座。</p>
-  </section>
-
-  <section class="stats">
-    <div class="stat"><div class="n">3</div><div class="l">核心能力模块</div></div>
-    <div class="stat"><div class="n">≥99.9%</div><div class="l">链路可用率</div></div>
-    <div class="stat"><div class="n">&lt;200ms</div><div class="l">端到端时延</div></div>
-    <div class="stat"><div class="n">7×24</div><div class="l">无人值守运行</div></div>
-  </section>
-
-  <div class="sec-title">核心能力</div>
-  <section class="grid">
-    <div class="card">
-      <div class="ico">📡</div>
-      <h3>雷达监测</h3>
-      <p>多体制雷达协同探测，对低慢小目标与周界入侵实时感知与告警。</p>
-      <ul>
-        <li>多目标跟踪与航迹融合</li>
-        <li>周界入侵智能识别</li>
-        <li>探测热力图与态势回放</li>
-      </ul>
-    </div>
-    <div class="card">
-      <div class="ico">🔗</div>
-      <h3>自组网 / 网络管理</h3>
-      <p>无线自组织网络动态组网，链路质量可视、故障自愈合、带宽按需调度。</p>
-      <ul>
-        <li>拓扑自动发现与自愈</li>
-        <li>链路质量与负载监控</li>
-        <li>设备远程配置与运维</li>
-      </ul>
-    </div>
-    <div class="card">
-      <div class="ico">🛰️</div>
-      <h3>卫星通信</h3>
-      <p>公网盲区下的卫星回传通道，保障远端节点数据稳定上云。</p>
-      <ul>
-        <li>多模卫星链路接入</li>
-        <li>断网续传与优先调度</li>
-        <li>端到端加密传输</li>
-      </ul>
-    </div>
-  </section>
-
-  <div class="sec-title">数据流转</div>
-  <section class="flow">
-    <div class="step"><div class="k">01 感知</div>雷达/传感器采集目标与环境数据</div>
-    <div class="step"><div class="k">02 组网</div>自组织网络就近汇聚与边缘预处理</div>
-    <div class="step"><div class="k">03 回传</div>卫星/专线将关键数据上送云平台</div>
-    <div class="step"><div class="k">04 管控</div>统一态势展示、告警与远程控制</div>
-  </section>
-
-  <footer>
-    <span>航能智巡 · 雷达监测与网络管理 — 演示页面（DEMO/01）</span>
-    <span id="date">----/--/--</span>
-  </footer>
+<!-- 顶栏 -->
+<div class="topbar">
+  <button class="burger" id="burger">☰</button>
+  <div class="logo">
+    <div class="mark">航</div>
+    <div><b>航能E联</b><span>数智能源管理平台</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">首页</div>
+    <div class="tab">工况数据</div>
+    <div class="tab active">用电负荷<span class="new">新</span></div>
+  </div>
+  <div class="top-right">
+    <select><option>郑许园区</option><option>闵行航天城</option><option>阜阳配电室</option></select>
+    <span>🔔</span><div class="avatar">A</div><span>ladmin</span>
+  </div>
 </div>
 
+<div class="layout">
+  <!-- 侧栏 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-group">智 能 能 源</div>
+    <div class="side-item">历史数据<span class="arrow">▾</span></div>
+    <div class="side-sub">
+      <div class="side-item">工况数据</div>
+      <div class="side-item active">用电负荷<span class="badge-new">新</span></div>
+    </div>
+    <div class="side-item">告警管理<span class="arrow">▸</span></div>
+    <div class="side-item">报警管理<span class="arrow">▸</span></div>
+    <div class="side-item" style="padding-left:26px">告警记录</div>
+    <div class="side-item">通讯管理<span class="arrow">▸</span></div>
+    <div class="side-item">公辅管理<span class="arrow">▸</span></div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+    <div class="panel-head">
+      <h1>10kV进线一段、二段 — 用电负荷</h1>
+      <span class="crumb">历史数据 / 用电负荷</span>
+    </div>
+    <div class="formula">用电负荷率 = 视在功率 ÷ 额定容量 × 100%</div>
+
+    <!-- 筛选区 -->
+    <div class="filter">
+      <label>线路</label>
+      <select id="line">
+        <option value="1">10kV进线一段</option>
+        <option value="2">10kV进线二段</option>
+        <option value="all">全部（一段/二段对比）</option>
+      </select>
+      <label>额定容量(kVA)</label>
+      <input class="cap" id="cap1" type="number" value="1600" min="1" title="进线一段" />
+      <input class="cap" id="cap2" type="number" value="1600" min="1" title="进线二段" style="display:none" />
+      <label>开始日期</label><input type="date" id="d1" />
+      <label>结束日期</label><input type="date" id="d2" />
+      <div class="quick">
+        <button data-k="today" class="on">今天</button>
+        <button data-k="7">近7天</button>
+        <button data-k="30">近30天</button>
+      </div>
+      <button class="btn primary" id="btnQuery">🔍 查询</button>
+      <button class="btn" id="btnExport">⬇ 导出Excel</button>
+      <div class="hint">默认查询当天数据；日期跨度最长一个月（31天）；采样间隔 10 分钟/点。</div>
+    </div>
+
+    <div class="checks">
+      <label><input type="checkbox" id="ckS" checked> 视在功率曲线</label>
+      <label><input type="checkbox" id="ckR" checked> 用电负荷率曲线</label>
+      <label><input type="checkbox" id="ckGrid" checked> 显示100%参考线</label>
+    </div>
+
+    <!-- 图表：视在功率 -->
+    <div class="chart-card" id="cardS">
+      <div class="chart-head">
+        <h2>视在功率</h2>
+        <div class="legend" id="legendS"></div>
+      </div>
+      <div class="chart-body">
+        <div class="chart-wrap"><canvas id="cvS" height="260"></canvas><div class="tooltip" id="tipS"></div></div>
+        <div class="stats" id="statsS"></div>
+      </div>
+    </div>
+
+    <!-- 图表：用电负荷率 -->
+    <div class="chart-card" id="cardR">
+      <div class="chart-head">
+        <h2>用电负荷率</h2>
+        <div class="legend" id="legendR"></div>
+      </div>
+      <div class="chart-body">
+        <div class="chart-wrap"><canvas id="cvR" height="260"></canvas><div class="tooltip" id="tipR"></div></div>
+        <div class="stats" id="statsR"></div>
+      </div>
+    </div>
+
+    <footer>
+      <span>航能E联 · 数智能源管理平台 — 用电负荷分析（DEMO/01）</span>
+      <span id="now"></span>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-  function pad(n){return String(n).padStart(2,'0')}
-  function tick(){
-    var now=new Date();
-    // 北京时间 = UTC+8
-    var bj=new Date(now.getTime()+(now.getTimezoneOffset()*60000)+(8*3600000));
-    document.getElementById('clk').textContent=pad(bj.getHours())+':'+pad(bj.getMinutes())+':'+pad(bj.getSeconds());
-    document.getElementById('date').textContent=bj.getFullYear()+'/'+pad(bj.getMonth()+1)+'/'+pad(bj.getDate());
+/* ================= 工具 ================= */
+function pad(n){return String(n).padStart(2,"0")}
+function dstr(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function bjToday(){var n=new Date();return new Date(n.getTime()+(n.getTimezoneOffset()*60000)+8*3600000)}
+function parseD(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function addDay(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function seedFrom(str){var h=1779033703;for(var i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}return h>>>0}
+function toast(msg,err){var t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");clearTimeout(t._h);t._h=setTimeout(function(){t.className="toast"},2600)}
+
+/* ================= 数据模拟（确定性：同日期同数据） ================= */
+var SHAPE=[.22,.20,.19,.18,.18,.20,.28,.38,.46,.50,.48,.46,.45,.43,.41,.43,.48,.55,.64,.60,.50,.42,.34,.27]; // 24h 形状
+var PEAK={1:950,2:780}; // 一段/二段 峰值 kVA
+var POINTS=144, STEP_MIN=10, START_OFFSET=1, START_SEC=15; // 00:01:15 起，10分钟/点
+function dayPoints(dateStr,sec){
+  var cap=+((sec===1?capEl1:capEl2).value)||1600;
+  var rnd=mulberry32(seedFrom(dateStr+"#"+sec));
+  var base=PEAK[sec], arr=[];
+  for(var i=0;i<POINTS;i++){
+    var min=START_OFFSET+STEP_MIN*i, h=Math.floor(min/60), m=min%60;
+    var s=START_SEC+Math.floor(i/2);
+    var f=SHAPE[h]*(0.92+0.16*rnd())+0.02*rnd();
+    var S=Math.max(0,Math.round(base*f));
+    arr.push({t:dateStr+" "+pad(h)+":"+pad(m)+":"+pad(s), S:S, rate:S/cap});
   }
-  tick();setInterval(tick,1000);
+  return arr;
+}
+function genRange(){
+  var d1=parseD(elD1.value), d2=parseD(elD2.value), days=[];
+  for(var d=new Date(d1);d<=d2;d=addDay(d,1)) days.push(dstr(d));
+  var out={days:days,data:{}};
+  [1,2].forEach(function(sec){
+    out.data[sec]={};days.forEach(function(ds){out.data[sec][ds]=dayPoints(ds,sec)});
+  });
+  return out;
+}
+
+/* ================= 状态 ================= */
+var elD1=document.getElementById("d1"), elD2=document.getElementById("d2");
+var capEl1=document.getElementById("cap1"), capEl2=document.getElementById("cap2");
+var lineEl=document.getElementById("line");
+var COLORS={1:"#35d0ff",2:"#ffb454"};
+var NAMES={1:"10kV进线一段",2:"10kV进线二段"};
+var cur=null;
+var today=bjToday();
+elD1.value=dstr(today); elD2.value=dstr(today);
+capEl2.style.display=lineEl.value==="all"?"":"none";
+lineEl.addEventListener("change",function(){capEl2.style.display=lineEl.value==="all"?"":"none"});
+document.getElementById("burger").onclick=function(){document.getElementById("sidebar").classList.toggle("open")};
+
+document.querySelectorAll(".quick button").forEach(function(b){
+  b.onclick=function(){
+    document.querySelectorAll(".quick button").forEach(function(x){x.classList.remove("on")});
+    b.classList.add("on");
+    var t=bjToday();
+    if(b.dataset.k==="today"){elD1.value=dstr(t);elD2.value=dstr(t)}
+    if(b.dataset.k==="7"){elD1.value=dstr(addDay(t,-6));elD2.value=dstr(t)}
+    if(b.dataset.k==="30"){elD1.value=dstr(addDay(t,-29));elD2.value=dstr(t)}
+    doQuery();
+  };
+});
+document.getElementById("btnQuery").onclick=doQuery;
+document.getElementById("btnExport").onclick=doExport;
+["ckS","ckR"].forEach(function(id){
+  document.getElementById(id).onchange=function(){
+    document.getElementById("cardS").style.display=document.getElementById("ckS").checked?"":"none";
+    document.getElementById("cardR").style.display=document.getElementById("ckR").checked?"":"none";
+  };
+});
+
+function validate(){
+  if(!elD1.value||!elD2.value){toast("请选择开始/结束日期",1);return false}
+  var d1=parseD(elD1.value), d2=parseD(elD2.value);
+  if(d1>d2){toast("开始日期不能晚于结束日期",1);return false}
+  if((d2-d1)/86400000>30){toast("日期跨度最长一个月（31天），已自动调整",1);elD2.value=dstr(addDay(d1,30))}
+  return true;
+}
+function doQuery(){
+  if(!validate())return;
+  cur=genRange();
+  renderAll();
+}
+
+/* ================= 图表渲染（原生 canvas，无外部依赖） ================= */
+function niceMax(v){
+  if(v<=0)return 1;
+  var p=Math.pow(10,Math.floor(Math.log(v)/Math.LN10)),f=v/p;
+  var n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;
+  return n*p;
+}
+function drawChart(cv,tip,series,meta){
+  var dpr=window.devicePixelRatio||1;
+  var W=cv.clientWidth||600, H=+cv.getAttribute("height");
+  cv.width=W*dpr;cv.height=H*dpr;
+  var ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  var L=52,R=12,T=14,B=30,pw=W-L-R,ph=H-T-B;
+  var maxY=niceMax(meta.maxY), minY=0;
+  var gridC="rgba(90,150,255,.14)", txtC="#7f97c9";
+  ctx.strokeStyle=gridC;ctx.fillStyle=txtC;ctx.font="10px Consolas,monospace";ctx.textAlign="right";
+  var steps=5;
+  for(var i=0;i<=steps;i++){
+    var y=T+ph-ph*i/steps, v=(maxY-minY)*i/steps;
+    ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-R,y);ctx.stroke();
+    ctx.fillText(meta.fmt(v),L-6,y+3);
+  }
+  var total=series[0].pts.length;
+  ctx.textAlign="center";
+  var tickN=Math.min(8,Math.max(2,Math.floor(W/110)));
+  for(var i=0;i<=tickN;i++){
+    var idx=Math.min(total-1,Math.round(total*i/tickN));
+    var x=L+pw*(total===1?0.5:idx/(total-1));
+    ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+ph);ctx.stroke();
+    ctx.fillText(meta.xLabel(series[0].pts[idx],idx,total),x,H-10);
+  }
+  if(meta.ref!=null&&meta.ref<=maxY){
+    var yr=T+ph-ph*meta.ref/(maxY-minY);
+    ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle="rgba(255,95,126,.55)";
+    ctx.beginPath();ctx.moveTo(L,yr);ctx.lineTo(W-R,yr);ctx.stroke();ctx.restore();
+    ctx.fillStyle="rgba(255,95,126,.8)";ctx.textAlign="left";
+    ctx.fillText(meta.refLabel,L+4,yr-4);
+  }
+  series.forEach(function(s){
+    ctx.save();
+    ctx.globalAlpha=.16;ctx.fillStyle=s.color;
+    ctx.beginPath();
+    s.pts.forEach(function(p,i){
+      var x=L+pw*(total===1?0.5:i/(total-1)), y=T+ph-ph*p.y/(maxY-minY);
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    });
+    ctx.lineTo(L+pw,T+ph);ctx.lineTo(L,T+ph);ctx.closePath();ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=s.color;ctx.lineWidth=1.8;ctx.lineJoin="round";
+    ctx.shadowColor=s.color;ctx.shadowBlur=6;
+    ctx.beginPath();
+    s.pts.forEach(function(p,i){
+      var x=L+pw*(total===1?0.5:i/(total-1)), y=T+ph-ph*p.y/(maxY-minY);
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    });
+    ctx.stroke();ctx.restore();
+  });
+  cv.onmousemove=cv.ontouchmove=function(ev){
+    var rect=cv.getBoundingClientRect();
+    var cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-rect.left;
+    var idx=Math.round((cx-L)/pw*(total-1));
+    if(idx<0||idx>total-1){tip.style.display="none";return}
+    var html="<div style='color:#8fa8d8'>"+series[0].pts[idx].t+"</div>";
+    series.forEach(function(s){
+      var p=s.pts[idx];
+      html+="<div><i style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+s.color+";margin-right:5px'></i>"
+          +s.name+"：<b style='color:"+s.color+"'>"+meta.tip(p)+"</b></div>";
+    });
+    tip.innerHTML=html;tip.style.display="block";
+    tip.style.left=Math.min(W-180,Math.max(4,cx+14))+"px";tip.style.top=(T+8)+"px";
+  };
+  cv.onmouseleave=cv.ontouchend=function(){tip.style.display="none"};
+}
+function renderChartBlock(cvId,tipId,legendId,statsId,kind){
+  var secs=lineEl.value==="all"?[1,2]:[+lineEl.value];
+  var series=secs.map(function(sec){
+    var pts=[];
+    cur.days.forEach(function(ds){cur.data[sec][ds].forEach(function(p){pts.push({t:p.t,y:kind==="S"?p.S:p.rate*100})})});
+    return {name:NAMES[sec],color:COLORS[sec],pts:pts};
+  });
+  document.getElementById(legendId).innerHTML=series.map(function(s){
+    return "<span><i style='background:"+s.color+"'></i>"+s.name+"</span>"}).join("");
+  var all=[];series.forEach(function(s){all=all.concat(s.pts)});
+  var max=all[0],min=all[0],sum=0;
+  all.forEach(function(p){if(p.y>max.y)max=p;if(p.y<min.y)min=p;sum+=p.y});
+  var unit=kind==="S"?" kVA":" %", dec=kind==="S"?0:2;
+  document.getElementById(statsId).innerHTML=""
+   +"<div class='stat'>最大值：<b>"+max.y.toFixed(dec)+unit+"</b><br>最大值时间：<span class='t'>"+max.t+"</span></div>"
+   +"<div class='stat'>最小值：<b>"+min.y.toFixed(dec)+unit+"</b><br>最小值时间：<span class='t'>"+min.t+"</span></div>"
+   +"<div class='stat'>平均值：<b>"+(sum/all.length).toFixed(dec)+unit+"</b></div>";
+  var peak=0;series.forEach(function(s){s.pts.forEach(function(p){if(p.y>peak)peak=p.y})});
+  var meta=kind==="S"
+    ?{maxY:peak||100,fmt:function(v){return v.toFixed(0)},ref:null,
+      xLabel:function(p,idx,total){return total>290?p.t.slice(5,10):p.t.slice(11,16)},
+      tip:function(p){return p.y.toFixed(0)+" kVA"}}
+    :{maxY:Math.max(100,peak),fmt:function(v){return v.toFixed(0)+"%"},
+      ref:document.getElementById("ckGrid").checked?100:null,refLabel:"100%额定容量",
+      xLabel:function(p,idx,total){return total>290?p.t.slice(5,10):p.t.slice(11,16)},
+      tip:function(p){return p.y.toFixed(2)+" %"}};
+  drawChart(document.getElementById(cvId),document.getElementById(tipId),series,meta);
+}
+function renderAll(){
+  if(document.getElementById("ckS").checked)renderChartBlock("cvS","tipS","legendS","statsS","S");
+  if(document.getElementById("ckR").checked)renderChartBlock("cvR","tipR","legendR","statsR","R");
+}
+
+/* ================= 导出 Excel（XML Spreadsheet 2003，参照参考报表样式） ================= */
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function doExport(){
+  if(!cur){if(!validate())return;cur=genRange()}
+  var secs=lineEl.value==="all"?[1,2]:[+lineEl.value];
+  var sheetsXml="";
+  cur.days.forEach(function(ds){
+    var d=parseD(ds);
+    var sheetName=(d.getMonth()+1)+"月"+d.getDate()+"日0点至24点";
+    var rows="";
+    rows+="<Row><Cell><Data ss:Type=\"String\">时间</Data></Cell>";
+    cur.data[secs[0]][ds].forEach(function(p){rows+="<Cell><Data ss:Type=\"String\">"+esc(p.t)+"</Data></Cell>"});
+    rows+="</Row>";
+    secs.forEach(function(sec){
+      var cap=+((sec===1?capEl1:capEl2).value)||1600;
+      var secName=sec===1?"一段":"二段";
+      rows+="<Row><Cell><Data ss:Type=\"String\">测点名称：视在功率("+NAMES[sec]+")</Data></Cell>";
+      cur.data[sec][ds].forEach(function(p){rows+="<Cell><Data ss:Type=\"Number\">"+p.S+"</Data></Cell>"});
+      rows+="</Row>";
+      rows+="<Row><Cell><Data ss:Type=\"String\">变压器容量</Data></Cell>";
+      cur.data[sec][ds].forEach(function(){rows+="<Cell><Data ss:Type=\"Number\">"+cap+"</Data></Cell>"});
+      rows+="</Row>";
+      rows+="<Row><Cell><Data ss:Type=\"String\">"+secName+"负荷率变化趋势</Data></Cell>";
+      cur.data[sec][ds].forEach(function(p){rows+="<Cell ss:StyleID=\"pct\"><Data ss:Type=\"Number\">"+(p.S/cap).toFixed(6)+"</Data></Cell>"});
+      rows+="</Row>";
+    });
+    sheetsXml+="<Worksheet ss:Name=\""+esc(sheetName)+"\"><Table>"
+      +"<Column ss:Width=\"220\"/><Column ss:Width=\"150\"/>"
+      +rows
+      +"</Table></Worksheet>";
+  });
+  var xml="<?xml version=\"1.0\"?><?mso-application progid=\"Excel.Sheet\"?>"
+    +"<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">"
+    +"<Styles><Style ss:ID=\"pct\"><NumberFormat ss:Format=\"0.00%\"/></Style>"
+    +"<Style ss:ID=\"head\"><Font ss:FontName=\"宋体\" ss:Bold=\"1\"/></Style></Styles>"
+    +sheetsXml+"</Workbook>";
+  var blob=new Blob(["\ufeff"+xml],{type:"application/vnd.ms-excel"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  var tag=(cur.days.length>1)?cur.days[0]+"至"+cur.days[cur.days.length-1]:cur.days[0];
+  a.download="10kV进线用电负荷报表_"+tag+".xls";
+  a.click();URL.revokeObjectURL(a.href);
+  toast("已导出："+a.download);
+}
+
+/* ================= 启动 ================= */
+document.getElementById("now").textContent="北京时间 "+dstr(bjToday());
+window.addEventListener("resize",function(){if(cur)renderAll()});
+document.getElementById("ckGrid").onchange=function(){if(cur)renderAll()};
+doQuery();
 </script>
 </body>
 </html>
