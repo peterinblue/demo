@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>航能智巡 · 雷达监测与网络管理</title>
+<style>
+  :root{
+    --bg:#0a1226; --bg2:#0e1b3a; --panel:rgba(255,255,255,.04);
+    --line:rgba(120,170,255,.18); --txt:#e8eefc; --sub:#9fb2d8;
+    --accent:#39d0ff; --accent2:#7c5cff; --ok:#33e0a1; --warn:#ffb454;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(1200px 700px at 70% -10%,#15306a 0%,transparent 60%),
+               radial-gradient(900px 600px at 0% 100%,#1a1147 0%,transparent 55%),
+               linear-gradient(160deg,var(--bg),var(--bg2));
+    color:var(--txt);min-height:100%;line-height:1.6;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 56px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        display:grid;place-items:center;font-weight:800;color:#04122b;font-size:20px;box-shadow:0 6px 18px rgba(57,208,255,.35)}
+  .brand h1{font-size:20px;letter-spacing:.5px}
+  .brand p{font-size:12px;color:var(--sub)}
+  .clock{font-variant-numeric:tabular-nums;background:var(--panel);border:1px solid var(--line);
+         padding:8px 14px;border-radius:10px;font-size:13px;color:var(--sub)}
+  .clock b{color:var(--accent);font-weight:700}
+  .hero{position:relative;border:1px solid var(--line);border-radius:18px;padding:40px 32px;overflow:hidden;
+        background:linear-gradient(135deg,rgba(57,208,255,.10),rgba(124,92,255,.08))}
+  .hero .tag{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--line);
+            padding:4px 10px;border-radius:999px;margin-bottom:14px}
+  .hero h2{font-size:clamp(26px,5vw,42px);line-height:1.15;margin-bottom:12px}
+  .hero h2 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{max-width:640px;color:var(--sub);font-size:15px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stat .n{font-size:26px;font-weight:800;color:var(--accent)}
+  .stat .l{font-size:12px;color:var(--sub);margin-top:4px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;transition:.25s}
+  .card:hover{transform:translateY(-4px);border-color:rgba(57,208,255,.5);box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .card .ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:22px;
+             background:linear-gradient(135deg,rgba(57,208,255,.2),rgba(124,92,255,.2));margin-bottom:14px}
+  .card h3{font-size:17px;margin-bottom:8px}
+  .card p{font-size:13px;color:var(--sub)}
+  .card ul{margin:10px 0 0 16px;font-size:13px;color:var(--sub)}
+  .card li{margin:4px 0}
+  .sec-title{margin:38px 0 16px;font-size:18px;display:flex;align-items:center;gap:10px}
+  .sec-title::before{content:"";width:4px;height:18px;border-radius:2px;background:linear-gradient(var(--accent),var(--accent2))}
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13px}
+  .step .k{color:var(--accent2);font-weight:700;margin-bottom:6px}
+  footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;font-size:12px;color:var(--sub);
+         display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  @media (max-width:860px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:480px){
+    .wrap{padding:18px 14px 40px}
+    .hero{padding:28px 20px}
+    .flow{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">智</div>
+      <div>
+        <h1>航能智巡</h1>
+        <p>雷达监测与网络管理 · 科研课题演示</p>
+      </div>
+    </div>
+    <div class="clock">北京时间 <b id="clk">--:--:--</b></div>
+  </header>
+
+  <section class="hero">
+    <span class="tag">DEMO · 01</span>
+    <h2>空天地一体化 <span>雷达监测与网络管理</span> 平台</h2>
+    <p>面向园区与野外部署场景，融合雷达目标感知、自组织网络通信与卫星回传能力，构建「看得见、联得上、控得稳」的智能化管控底座。</p>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><div class="n">3</div><div class="l">核心能力模块</div></div>
+    <div class="stat"><div class="n">≥99.9%</div><div class="l">链路可用率</div></div>
+    <div class="stat"><div class="n">&lt;200ms</div><div class="l">端到端时延</div></div>
+    <div class="stat"><div class="n">7×24</div><div class="l">无人值守运行</div></div>
+  </section>
+
+  <div class="sec-title">核心能力</div>
+  <section class="grid">
+    <div class="card">
+      <div class="ico">📡</div>
+      <h3>雷达监测</h3>
+      <p>多体制雷达协同探测，对低慢小目标与周界入侵实时感知与告警。</p>
+      <ul>
+        <li>多目标跟踪与航迹融合</li>
+        <li>周界入侵智能识别</li>
+        <li>探测热力图与态势回放</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ico">🔗</div>
+      <h3>自组网 / 网络管理</h3>
+      <p>无线自组织网络动态组网，链路质量可视、故障自愈合、带宽按需调度。</p>
+      <ul>
+        <li>拓扑自动发现与自愈</li>
+        <li>链路质量与负载监控</li>
+        <li>设备远程配置与运维</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ico">🛰️</div>
+      <h3>卫星通信</h3>
+      <p>公网盲区下的卫星回传通道，保障远端节点数据稳定上云。</p>
+      <ul>
+        <li>多模卫星链路接入</li>
+        <li>断网续传与优先调度</li>
+        <li>端到端加密传输</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="sec-title">数据流转</div>
+  <section class="flow">
+    <div class="step"><div class="k">01 感知</div>雷达/传感器采集目标与环境数据</div>
+    <div class="step"><div class="k">02 组网</div>自组织网络就近汇聚与边缘预处理</div>
+    <div class="step"><div class="k">03 回传</div>卫星/专线将关键数据上送云平台</div>
+    <div class="step"><div class="k">04 管控</div>统一态势展示、告警与远程控制</div>
+  </section>
+
+  <footer>
+    <span>航能智巡 · 雷达监测与网络管理 — 演示页面（DEMO/01）</span>
+    <span id="date">----/--/--</span>
+  </footer>
+</div>
+
+<script>
+  function pad(n){return String(n).padStart(2,'0')}
+  function tick(){
+    var now=new Date();
+    // 北京时间 = UTC+8
+    var bj=new Date(now.getTime()+(now.getTimezoneOffset()*60000)+(8*3600000));
+    document.getElementById('clk').textContent=pad(bj.getHours())+':'+pad(bj.getMinutes())+':'+pad(bj.getSeconds());
+    document.getElementById('date').textContent=bj.getFullYear()+'/'+pad(bj.getMonth()+1)+'/'+pad(bj.getDate());
+  }
+  tick();setInterval(tick,1000);
+</script>
+</body>
+</html>
