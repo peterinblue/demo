@@ -278,7 +278,7 @@
 <!-- camera modal -->
 <div class="modal" id="camModal">
   <div class="box">
-    <video id="camVideo" autoplay playsinline></video>
+    <video id="camVideo" autoplay playsinline muted></video>
     <div class="mact">
       <button class="btn primary" id="camShot">📸 拍照</button>
       <button class="btn ghost" id="camClose">取消</button>
@@ -291,6 +291,11 @@
 const FACE_URL = "./models/face_landmarker.task";   // 镜像到本仓库，国内可达
 const SEG_URL  = "./models/selfie_segmenter.tflite"; // 镜像到本仓库，国内可达
 const WASM     = "./wasm";                            // 运行时也镜像到本仓库，彻底去 CDN 依赖
+
+// 移动端统一走 CPU 推理：MediaPipe 的 GPU delegate 在大量手机/平板上会「创建成功但不抛错、
+// 却返回空遮罩」（Mali/Exynos 及 iOS Safari 已知问题），表现为抠图后相框纯白。
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(navigator.userAgent)
+  || (window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
 
 const DPI = 300;
 const mm2px = (mm) => Math.max(1, Math.round(mm / 25.4 * DPI));
@@ -317,7 +322,9 @@ const PAPERS = {
 
 /* ============ 状态 ============ */
 const S = {
-  vision:null, faceLandmarker:null, faceReady:false, segmenter:null, aiReady:false, _loading:true,
+  vision:null, fileset:null, delegate:(IS_MOBILE?"CPU":"GPU"),
+  faceLandmarker:null, faceReady:false, segmenter:null, aiReady:false, _loading:true,
+  _everGoodMask:false, _emptyCount:0, _retriedCPU:false, _lastCoverage:0,
   sourceCanvas:null, maskCanvas:null, cutoutCanvas:null, faceBox:null,
   bg:"#ffffff", transparent:false,
   sizeKey:"1inch", cw:25, ch:35,
@@ -343,11 +350,12 @@ async function loadModels(){
     setStatus("正在加载 AI 模型（人脸关键点 + 智能抠图）…");
     S.vision = await import("./wasm/vision_bundle.mjs");
     const fileset = await S.vision.FilesetResolver.forVisionTasks(WASM);
+    S.fileset = fileset;
 
     // 人脸关键点：用于角度纠正与智能裁切（失败不影响底色替换）
     try{
       S.faceLandmarker = await S.vision.FaceLandmarker.createFromOptions(fileset, {
-        baseOptions:{ modelAssetPath:FACE_URL, delegate:"GPU" }, runningMode:"IMAGE", numFaces:1
+        baseOptions:{ modelAssetPath:FACE_URL, delegate:S.delegate }, runningMode:"IMAGE", numFaces:1
       });
       S.faceReady = true;
     }catch(e){
@@ -362,7 +370,7 @@ async function loadModels(){
     // 人体抠图：底色替换的核心能力（必须成功）
     try{
       S.segmenter = await S.vision.ImageSegmenter.createFromOptions(fileset, {
-        baseOptions:{ modelAssetPath:SEG_URL, delegate:"GPU" }, runningMode:"IMAGE",
+        baseOptions:{ modelAssetPath:SEG_URL, delegate:S.delegate }, runningMode:"IMAGE",
         outputCategoryMask:false, outputConfidenceMasks:true
       });
     }catch(e){
@@ -370,6 +378,7 @@ async function loadModels(){
         baseOptions:{ modelAssetPath:SEG_URL, delegate:"CPU" }, runningMode:"IMAGE",
         outputCategoryMask:false, outputConfidenceMasks:true
       });
+      S.delegate="CPU";
     }
     S.aiReady = true;
     updateAiBadge();
@@ -464,15 +473,38 @@ async function processImage(img){
           : (typeof maskMP.getAsUint8Array==="function" ? maskMP.getAsUint8Array() : null);
         const mc=document.createElement("canvas"); mc.width=mw; mc.height=mh;
         const mx=mc.getContext("2d"); const id=mx.createImageData(mw,mh);
+        let personPx=0;
         for(let i=0;i<mw*mh;i++){
           let a;
           if(conf && raw){ a = Math.max(0, Math.min(1, raw[i])); }
           else { a = (raw && raw[i] > 0) ? 1 : 0; }
+          if(a>0.5) personPx++;
           id.data[i*4]=255; id.data[i*4+1]=255; id.data[i*4+2]=255;
           id.data[i*4+3]= Math.round(a*255);
         }
         mx.putImageData(id,0,0);
-        S.maskCanvas=mc;
+        const coverage = (mw*mh>0) ? personPx/(mw*mh) : 0;
+        S._lastCoverage = coverage;
+        if(coverage >= 0.005){
+          // 有效遮罩（人像像素占比正常）
+          S.maskCanvas=mc; S._everGoodMask=true; S._emptyCount=0;
+        }else{
+          // 遮罩为空：Mobile GPU delegate 会静默返回空遮罩（已知问题）
+          S.maskCanvas=null; S._emptyCount=(S._emptyCount||0)+1;
+          // 若一直没拿到过有效遮罩且当前是 GPU，则自动重建为 CPU 再重跑一次
+          if(S.delegate==="GPU" && !S._everGoodMask && !S._retriedCPU){
+            S._retriedCPU=true;
+            try{
+              setStatus("正在切换到 CPU 推理重试…");
+              S.segmenter = await S.vision.ImageSegmenter.createFromOptions(S.fileset, {
+                baseOptions:{ modelAssetPath:SEG_URL, delegate:"CPU" }, runningMode:"IMAGE",
+                outputCategoryMask:false, outputConfidenceMasks:true
+              });
+              S.delegate="CPU";
+              return processImage(img);   // 用 CPU 重新处理本张照片
+            }catch(e){ console.warn("CPU 重建失败", e); }
+          }
+        }
       }
     }catch(e){ console.warn("segment failed", e); }
   }
@@ -484,8 +516,8 @@ async function processImage(img){
     setStatus("未加载到 AI 模型，已启用手动裁剪模式（不替换背景）", false);
     setTimeout(hideStatus, 3500);
   }else if(!S.maskCanvas){
-    setStatus("抠图模型已加载但本次未生成人像遮罩，请换一张人像清晰的照片", false);
-    setTimeout(hideStatus, 3500);
+    setStatus("未识别到人像，已保留原图未去背景 · 请换一张光线充足、人像清晰的照片", false);
+    setTimeout(hideStatus, 4000);
   }else if(!S.faceBox){
     setStatus("✅ 已去除背景（纯白底）· 未检测到人脸，已使用居中裁切，可手动微调", false);
     setTimeout(hideStatus, 3000);
@@ -762,7 +794,16 @@ let stream=null;
 function openCamera(){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ setStatus("当前环境不支持摄像头", false); setTimeout(hideStatus,2000); return; }
   navigator.mediaDevices.getUserMedia({video:{facingMode:"user", width:{ideal:1280}, height:{ideal:960}}, audio:false})
-    .then(s=>{ stream=s; $("camVideo").srcObject=s; $("camModal").classList.add("show"); })
+    .then(s=>{
+      stream=s;
+      const v=$("camVideo");
+      v.muted=true;                 // iOS 自动播放必须为 muted
+      v.srcObject=s;
+      $("camModal").classList.add("show");
+      // 显式 play()，绕过部分移动端 autoplay 被拦截导致无画面/截到空白帧
+      const p=v.play();
+      if(p && p.catch) p.catch(()=>{ /* 用户手势已在，忽略 */ });
+    })
     .catch(()=>setStatus("无法访问摄像头，请检查权限", false));
 }
 $("camClose").onclick=closeCamera;
@@ -770,14 +811,42 @@ function closeCamera(){
   $("camModal").classList.remove("show");
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
 }
-$("camShot").onclick=()=>{
-  const v=$("camVideo");
-  const c=document.createElement("canvas"); c.width=v.videoWidth||1280; c.height=v.videoHeight||960;
-  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+// 等待视频真正有可绘制的当前帧（移动端关键：避免截到空白帧 → 纯白相框）
+function captureFrame(){
+  return new Promise((resolve)=>{
+    const v=$("camVideo");
+    let attempts=0;
+    const grab=()=>{
+      attempts++;
+      const w=v.videoWidth||1280, h=v.videoHeight||960;
+      const c=document.createElement("canvas"); c.width=w; c.height=h;
+      const cx=c.getContext("2d");
+      cx.drawImage(v,0,0,w,h);
+      // 空白帧检测：采样中心区域，对比度极低视为无效帧（未真正出画）
+      if(v.videoWidth>0 && v.videoHeight>0){
+        try{
+          const sw=Math.min(64,w), sh=Math.min(64,h);
+          const d=cx.getImageData(Math.floor((w-sw)/2), Math.floor((h-sh)/2), sw, sh).data;
+          let min=255, max=0;
+          for(let i=0;i<d.length;i+=4){ const l=(d[i]+d[i+1]+d[i+2])/3; if(l<min)min=l; if(l>max)max=l; }
+          if(max-min>10){ resolve(c); return; }   // 有内容，采用
+        }catch(e){ resolve(c); return; }
+      }
+      if(attempts>=15){ resolve(c); return; }     // 放弃，返回最后一次
+      if(typeof v.requestVideoFrameCallback==="function"){ v.requestVideoFrameCallback(grab); }
+      else setTimeout(grab, 80);
+    };
+    grab();
+  });
+}
+$("camShot").onclick=async ()=>{
+  setStatus("正在抓拍…");
+  const c=await captureFrame();
   closeCamera();
   previewBox.classList.add("show"); drop.style.display="none";
   const img=new Image();
   img.onload=()=>processImage(img);
+  img.onerror=()=>{ hideStatus(); setStatus("拍照读取失败，请重试", false); };
   img.src=c.toDataURL("image/jpeg",0.95);
 };
 
