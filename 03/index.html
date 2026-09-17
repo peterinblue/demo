@@ -1549,6 +1549,47 @@
         color: C('#fff4d8'), emissive: S('#ffd9a0'), emissiveIntensity: 1.6,
         roughness: 0.35, metalness: 0.10, envMapIntensity: 0.60
       });
+      // 汽车底部包围 / 塑料饰件
+      MAT.carTrim = new THREE.MeshStandardMaterial({
+        color: C('#2a2f36'), roughness: 0.74, metalness: 0.10, envMapIntensity: 0.55
+      });
+      // 前大灯（微自发光）
+      MAT.headLight = new THREE.MeshStandardMaterial({
+        color: C('#e6edf4'), emissive: S('#cfe2f4'), emissiveIntensity: 0.40,
+        roughness: 0.12, metalness: 0.30, envMapIntensity: 1.40
+      });
+      // 尾灯
+      MAT.tailLight = new THREE.MeshStandardMaterial({
+        color: C('#8e2b28'), emissive: S('#5e1512'), emissiveIntensity: 0.30,
+        roughness: 0.24, metalness: 0.25, envMapIntensity: 1.15
+      });
+      // 充电桩外壳（白色烤漆，带清漆层）
+      MAT.charger = new THREE.MeshPhysicalMaterial({
+        color: C('#eef1f4'), roughness: 0.30, metalness: 0.16,
+        clearcoat: 0.85, clearcoatRoughness: 0.10, envMapIntensity: 1.15
+      });
+      // 充电桩顶盖 / 枪头（深色件）
+      MAT.chargerTop = new THREE.MeshStandardMaterial({
+        color: C('#252a31'), roughness: 0.44, metalness: 0.45, envMapIntensity: 0.95
+      });
+      // 充电桩屏幕（暗底绿光）
+      MAT.chargerScreen = new THREE.MeshStandardMaterial({
+        color: C('#0e1620'), emissive: S('#1f6349'), emissiveIntensity: 0.65,
+        roughness: 0.16, metalness: 0.30, envMapIntensity: 1.10
+      });
+      // 充电状态灯（绿 = 正在充电）
+      MAT.chargeLed = new THREE.MeshStandardMaterial({
+        color: C('#39d98a'), emissive: S('#2fd07f'), emissiveIntensity: 2.2,
+        roughness: 0.30, metalness: 0.05, envMapIntensity: 0.60
+      });
+      // 充电线缆（黑色橡胶）
+      MAT.cable = new THREE.MeshStandardMaterial({
+        color: C('#181b1f'), roughness: 0.90, metalness: 0.03, envMapIntensity: 0.30
+      });
+      // 充电车位地坪涂装（深绿）
+      MAT.chargeZone = new THREE.MeshStandardMaterial({
+        color: C('#2f7a5a'), roughness: 0.84, metalness: 0.02, envMapIntensity: 0.55
+      });
     }
 
     /* ============ 4. 园区建筑群 ============ */
@@ -1651,7 +1692,7 @@
       addOfficeBuilding(-38, 18, 22, 16, 9);   // 左侧研发办公楼
       addWorkshop(40, -16, 28, 20, 9);         // 右侧生产车间
       addStorageTanks(-44, -24);               // 西北储罐区
-      addChimney(20, -28, 20);                 // 东北烟囱
+      addChargingStation(18, -34);             // 东北电动车充电站（原烟囱位置一带）
       addGateHouse(0, 52);                     // 南门岗
       addParkingLot(28, 38);                   // 东南停车场
       addGreenArea(-30, 42);                   // 西南绿化带
@@ -1950,44 +1991,6 @@
       buildingGroup.add(g);
     }
 
-    // 排气烟囱
-    function addChimney(x, z, h) {
-      const g = new THREE.Group();
-      g.position.set(x, 0, z);
-
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.4, 1.2, 32), MAT.concrete);
-      base.position.y = 0.6;
-      base.castShadow = true; base.receiveShadow = true;
-      g.add(base);
-
-      const stack = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.95, h, 32), MAT.concrete);
-      stack.position.y = h / 2 + 1.0;
-      stack.castShadow = true; stack.receiveShadow = true;
-      g.add(stack);
-
-      // 红白警示环
-      for (let i = 0; i < 3; i++) {
-        const yy = 1.0 + h * 0.62 + i * h * 0.115;
-        const rr = 1.95 - (yy / (h + 1)) * 0.68;
-        const ring = new THREE.Mesh(new THREE.CylinderGeometry(rr + 0.03, rr + 0.03, h * 0.085, 32), MAT.warnRed);
-        ring.position.y = yy;
-        g.add(ring);
-      }
-
-      // 顶部平台 + 爬梯
-      const plat = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.09, 8, 32), MAT.alu);
-      plat.position.y = h + 0.9;
-      plat.rotation.x = Math.PI / 2;
-      g.add(plat);
-      for (let i = 0; i < 12; i++) {
-        const step = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.09, 0.30), MAT.alu);
-        step.position.set(0, 1.6 + i * 1.6, 1.85 - i * 0.05);
-        g.add(step);
-      }
-
-      buildingGroup.add(g);
-    }
-
     // 门岗 / 大门
     function addGateHouse(x, z) {
       const g = new THREE.Group();
@@ -2040,6 +2043,214 @@
       buildingGroup.add(g);
     }
 
+    /* ---- 车辆模型（停车场 / 充电站共用） ---- */
+
+    // 车轮：轮胎 + 铝轮毂
+    function makeWheel() {
+      const w = new THREE.Group();
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.26, 20), MAT.tire);
+      tire.rotation.z = Math.PI / 2;
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.28, 16), MAT.alu);
+      hub.rotation.z = Math.PI / 2;
+      tire.castShadow = true;
+      w.add(tire, hub);
+      return w;
+    }
+
+    // 轿车：底部包围 + 车身 + 引擎盖 + 玻璃舱 + 车顶 + 灯组 + 四轮
+    function makeCar(bodyMat) {
+      const car = new THREE.Group();
+
+      const skirt = new THREE.Mesh(new THREE.BoxGeometry(2.10, 0.30, 4.30), MAT.carTrim);
+      skirt.position.y = 0.44;
+      skirt.castShadow = true;
+      car.add(skirt);
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.88, 4.40), bodyMat);
+      body.position.y = 0.86;
+      body.castShadow = true; body.receiveShadow = true;
+      car.add(body);
+
+      const hood = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.34, 1.18), bodyMat);
+      hood.position.set(0, 1.26, -1.55);
+      hood.castShadow = true;
+      car.add(hood);
+
+      // 座舱：上窄下宽的棱台（4 段 CylinderGeometry 转 45°），比方盒子更接近真实车身
+      const cabinGeo = new THREE.CylinderGeometry(1.14, 1.33, 0.70, 4);
+      cabinGeo.rotateY(Math.PI / 4);
+      const cabin = new THREE.Mesh(cabinGeo, MAT.carGlass);
+      cabin.scale.set(1, 1, 1.18);
+      cabin.position.set(0, 1.50, 0.14);
+      cabin.castShadow = true;
+      car.add(cabin);
+
+      const roofTop = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.10, 1.52), bodyMat);
+      roofTop.position.set(0, 1.86, 0.14);
+      roofTop.castShadow = true;
+      car.add(roofTop);
+
+      // 前大灯 / 尾灯（略外凸，避免与车身共面）
+      for (const s of [1, -1]) {
+        const hl = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.16, 0.10), MAT.headLight);
+        hl.position.set(s * 0.60, 0.94, -2.24);
+        car.add(hl);
+        const tl = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.16, 0.10), MAT.tailLight);
+        tl.position.set(s * 0.62, 0.94, 2.24);
+        car.add(tl);
+      }
+
+      // 充电口盖（车尾左侧车身，供充电站接枪）
+      const port = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.30, 0.06), MAT.carTrim);
+      port.position.set(-1.04, 0.98, 1.55);
+      car.add(port);
+
+      for (const wx of [-1, 1]) {
+        for (const wz of [-1, 1]) {
+          const wheel = makeWheel();
+          wheel.position.set(wx * 0.98, 0.36, wz * 1.45);
+          car.add(wheel);
+        }
+      }
+
+      return car;
+    }
+
+    /* ---- 电动汽车充电站 ---- */
+
+    // 立柱式充电桩：混凝土基座 + 立柱 + 桩头 + 屏幕 + 状态灯 + 挂枪
+    function addCharger(parent, x, z) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.18, 0.86), MAT.concrete);
+      base.position.y = 0.09;
+      base.castShadow = true; base.receiveShadow = true;
+      g.add(base);
+
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.72, 0.26), MAT.charger);
+      pole.position.y = 0.54;
+      pole.castShadow = true; pole.receiveShadow = true;
+      g.add(pole);
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.60, 0.80, 0.40), MAT.charger);
+      body.position.y = 1.20;
+      body.castShadow = true; body.receiveShadow = true;
+      g.add(body);
+
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.08, 0.46), MAT.chargerTop);
+      cap.position.y = 1.64;
+      cap.castShadow = true;
+      g.add(cap);
+
+      // 屏幕（内嵌 0.03，不与壳面共面）
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.28, 0.05), MAT.chargerScreen);
+      screen.position.set(0, 1.30, 0.212);
+      g.add(screen);
+
+      // 状态灯带（绿 = 正在充电）
+      const led = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.07, 0.05), MAT.chargeLed);
+      led.position.set(0, 1.50, 0.212);
+      g.add(led);
+
+      // 侧面挂枪座 + 充电枪
+      const holster = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.10, 0.18), MAT.chargerTop);
+      holster.position.set(0.29, 1.20, 0.06);
+      g.add(holster);
+
+      const gun = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.22, 0.12), MAT.chargerTop);
+      gun.position.set(0.34, 1.04, 0.08);
+      gun.rotation.z = 0.16;
+      gun.castShadow = true;
+      g.add(gun);
+
+      parent.add(g);
+      return g;
+    }
+
+    // 充电枪 → 车辆充电口的连接线缆：先自然下垂，沿地面拖行一段，再抬升接枪
+    function addChargeCable(parent, from, to) {
+      const pts = [
+        from,
+        new THREE.Vector3(from.x + 0.08, from.y - 0.46, from.z + 0.42),
+        new THREE.Vector3(from.x + 0.30, 0.29, from.z + 1.38),
+        new THREE.Vector3(to.x - 0.12, 0.33, to.z - 1.20),
+        new THREE.Vector3(to.x, 0.72, to.z - 0.55),
+        to
+      ];
+      const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+      const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.055, 8, false), MAT.cable);
+      cable.castShadow = true;
+      parent.add(cable);
+    }
+
+    // 电动汽车充电站：充电车位一排 + 立柱式充电桩 + 正在充电的车辆
+    function addChargingStation(x, z) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+
+      const SLOTS = 6;
+      const PITCH = 3.35;                       // 车位间距
+      const DEPTH = 5.6;                        // 车位进深
+      const W = SLOTS * PITCH;                  // 车位带总宽
+      const PILE_Z = -DEPTH / 2 - 1.45;         // 充电桩所在深度
+
+      // 沥青地坪
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3.4, DEPTH + 6.4), asphaltMat(7, 4));
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(0, 0.095, -0.6);
+      pad.receiveShadow = true;
+      g.add(pad);
+
+      // 车位分隔线 + 后挡线
+      for (let i = 0; i <= SLOTS; i++) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.14, DEPTH), MAT.marking);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(-W / 2 + i * PITCH, 0.112, 0);
+        g.add(line);
+      }
+      const backLine = new THREE.Mesh(new THREE.PlaneGeometry(W, 0.14), MAT.marking);
+      backLine.rotation.x = -Math.PI / 2;
+      backLine.position.set(0, 0.112, -DEPTH / 2);
+      g.add(backLine);
+
+      // 充电专用车位涂装（靠桩一侧的深绿带，含白色车位号区）
+      for (let i = 0; i < SLOTS; i++) {
+        const cx = -W / 2 + PITCH * (i + 0.5);
+        const zone = new THREE.Mesh(new THREE.PlaneGeometry(PITCH - 0.34, 1.35), MAT.chargeZone);
+        zone.rotation.x = -Math.PI / 2;
+        zone.position.set(cx, 0.118, -DEPTH / 2 + 0.78);
+        g.add(zone);
+      }
+
+      // 充电桩 + 充电中的车辆（第 5 位留空）
+      const CHARGING = [true, true, true, true, false, true];
+      const carColors = [MAT.carBody[0], MAT.carBody[1], MAT.carBody[2], MAT.carBody[3]];
+
+      for (let i = 0; i < SLOTS; i++) {
+        const cx = -W / 2 + PITCH * (i + 0.5);
+        addCharger(g, cx, PILE_Z);
+
+        if (!CHARGING[i]) continue;
+
+        // 车倒车入位（车头朝 +z 外侧，车尾靠充电桩）
+        const car = makeCar(carColors[i % carColors.length]);
+        car.position.set(cx, 0, 0.15);
+        car.rotation.y = Math.PI;
+        car.rotation.z = rnd(-0.005, 0.005);
+        g.add(car);
+
+        // 线缆：桩侧挂枪 → 车尾左侧充电口
+        addChargeCable(
+          g,
+          new THREE.Vector3(cx + 0.34, 1.04, PILE_Z + 0.08),
+          new THREE.Vector3(cx + 1.05, 0.98, 0.15 - 1.55)
+        );
+      }
+
+      buildingGroup.add(g);
+    }
+
     // 停车场
     function addParkingLot(x, z) {
       const g = new THREE.Group();
@@ -2059,39 +2270,10 @@
         g.add(line);
       }
 
-      // 车辆：车身 + 车顶 + 玻璃 + 四轮
+      // 车辆（复用 makeCar：车身 + 包围 + 玻璃舱 + 四轮）
       const carColors = [MAT.carBody[0], MAT.carBody[1], MAT.carBody[2], MAT.carBody[3]];
       for (let i = 0; i < 4; i++) {
-        const car = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.95, 4.4), carColors[i]);
-        body.position.y = 0.75;
-        body.castShadow = true; body.receiveShadow = true;
-        car.add(body);
-
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.42, 1.2), carColors[i]);
-        hood.position.set(0, 1.20, -1.5);
-        hood.castShadow = true;
-        car.add(hood);
-
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.86, 0.78, 2.2), MAT.carGlass);
-        cabin.position.set(0, 1.55, 0.15);
-        cabin.castShadow = true;
-        car.add(cabin);
-
-        const roofTop = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.12, 1.9), carColors[i]);
-        roofTop.position.set(0, 1.96, 0.15);
-        car.add(roofTop);
-
-        for (const wx of [-1, 1]) {
-          for (const wz of [-1, 1]) {
-            const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.28, 20), MAT.tire);
-            tire.rotation.z = Math.PI / 2;
-            tire.position.set(wx * 0.98, 0.36, wz * 1.45);
-            tire.castShadow = true;
-            car.add(tire);
-          }
-        }
-
+        const car = makeCar(carColors[i]);
         car.position.set(-7.2 + i * 3.6, 0, (i % 2 === 0 ? -3.6 : 3.6));
         car.rotation.y = (i % 2 === 0 ? 0 : Math.PI);
         car.rotation.z = rnd(-0.006, 0.006);
@@ -2184,15 +2366,15 @@
 
           const panel = new THREE.Mesh(new THREE.BoxGeometry(pw * 0.94, 0.14, ph * 0.94), mat);
           panel.position.set(px, y + (tiltHeight || 0.9) * 0.55, pz);
-          panel.rotation.x = -tilt;
+          panel.rotation.x = tilt;                 // 坡向反向：低边朝 +z、高边朝 -z
           panel.castShadow = true; panel.receiveShadow = true;
           parent.add(panel);
 
-          // 前后支架
+          // 前后支架（+z 侧矮支架、-z 侧高支架，与坡向一致）
           const l1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), MAT.alu);
-          l1.position.set(px - pw * 0.30, y + 0.28, pz - ph * 0.34);
+          l1.position.set(px - pw * 0.30, y + 0.28, pz + ph * 0.34);
           const l2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55 + (tiltHeight || 0.9), 0.12), MAT.alu);
-          l2.position.set(px + pw * 0.30, y + (0.55 + (tiltHeight || 0.9)) / 2, pz + ph * 0.34);
+          l2.position.set(px + pw * 0.30, y + (0.55 + (tiltHeight || 0.9)) / 2, pz - ph * 0.34);
           l1.castShadow = true; l2.castShadow = true;
           parent.add(l1, l2);
         }
@@ -2298,15 +2480,7 @@
         }
       }
 
-      // 环绕灌木
-      for (let i = 0; i < 24; i++) {
-        const ang = (i / 24) * Math.PI * 2;
-        const b = new THREE.Mesh(new THREE.SphereGeometry(rnd(0.7, 1.15), 12, 8), MAT.bush);
-        b.position.set(Math.cos(ang) * 32, 0.6, Math.sin(ang) * 20);
-        b.scale.set(1, 0.7, 1);
-        b.castShadow = true;
-        buildingGroup.add(b);
-      }
+      // （原「环绕灌木」球阵已按要求移除，避免铺装面上散布绿色球体）
 
       // 路灯
       addLampPost(buildingGroup, -20, 43, 0);
@@ -2371,7 +2545,7 @@
     const viewPositions = {
       all: { pos: [72, 54, 72], target: [0, 16, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
-      charge: { pos: [-34, 20, -74], target: [-34, 5, -30] },
+      charge: { pos: [52, 26, -62], target: [18, 1, -34] },
       ac: { pos: [34, 34, 8], target: [34, 14, -14] }
     };
 
@@ -2480,6 +2654,9 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
 
 
 
