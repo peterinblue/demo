@@ -1827,15 +1827,41 @@
         g.add(b);
       }
 
-      // 大型卷帘门
+      // 大型卷帘门：门帘 + 三段式门框（左右竖框 + 上过梁）
+      // 修复 z-fighting：原写法门帘与门框外表面都落在 w/2+0.28 这一层，同向共面导致闪烁摩尔纹。
+      // 现改为「门帘贴墙 + 门框外凸」两层错开 0.07，且门框各段拼接不叠加，任何重合面法线均相反，彻底消除闪烁。
       for (const s of [1, -1]) {
-        const door = new THREE.Mesh(new THREE.BoxGeometry(0.28, h * 0.60, d * 0.30), MAT.darkMetal);
-        door.position.set(s * (w / 2 + 0.14), h * 0.32, 0);
-        door.castShadow = true;
-        g.add(door);
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.16, h * 0.64, d * 0.34), MAT.warn);
-        frame.position.set(s * (w / 2 + 0.20), h * 0.33, 0);
-        g.add(frame);
+        const xw = w / 2;                    // 墙面位置
+        const doorW = d * 0.26;              // 门洞宽（沿 z）
+        const doorH = h * 0.58;              // 门洞高
+        const doorBase = h * 0.02;           // 门帘离地高度
+
+        // 卷帘门帘：内表面离墙 0.03，外表面落在 +0.11
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.08, doorH, doorW + 0.04), MAT.darkMetal);
+        leaf.position.set(s * (xw + 0.07), doorBase + doorH / 2, 0);
+        leaf.castShadow = true; leaf.receiveShadow = true;
+        g.add(leaf);
+
+        // 门框：竖框贯穿门洞高度，过梁压在竖框顶面（拼接关系，仅相邻不重叠）
+        const fD = 0.16;                     // 框厚（沿墙法向，外表面落在 +0.18）
+        const fW = 0.22;                     // 框截面宽
+        const fxC = s * (xw + 0.02 + fD / 2);
+        const jambGeo = new THREE.BoxGeometry(fD, doorH, fW);
+
+        const jambL = new THREE.Mesh(jambGeo, MAT.warn);
+        jambL.position.set(fxC, doorBase + doorH / 2, -(doorW + fW) / 2);
+        jambL.castShadow = true;
+        g.add(jambL);
+
+        const jambR = new THREE.Mesh(jambGeo, MAT.warn);
+        jambR.position.set(fxC, doorBase + doorH / 2, (doorW + fW) / 2);
+        jambR.castShadow = true;
+        g.add(jambR);
+
+        const lintel = new THREE.Mesh(new THREE.BoxGeometry(fD, fW, doorW + fW * 2), MAT.warn);
+        lintel.position.set(fxC, doorBase + doorH + fW / 2, 0);
+        lintel.castShadow = true;
+        g.add(lintel);
       }
 
       // 屋脊通风器
@@ -2453,6 +2479,7 @@
     // 初始化
     initTheme();
     init3D();
+
 
 
 
