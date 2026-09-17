@@ -2,459 +2,704 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>航能E联 · 用电负荷 — 数智能源管理平台</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>证件照制作 · 一键拍证件照 / 报名照</title>
+<meta name="description" content="网页版证件照制作：自动识别人脸人体、纠正角度、智能抠图换底色、按标准尺寸裁切、自动排版。灵感来自开源项目 LiYing。" />
 <style>
   :root{
-    --bg1:#04102e; --bg2:#071a45; --panel:rgba(16,42,102,.35); --panel2:rgba(10,26,66,.55);
-    --line:rgba(64,140,255,.28); --line2:rgba(64,140,255,.14);
-    --txt:#dce8ff; --sub:#8fa8d8; --accent:#35d0ff; --accent2:#3f8cff;
-    --orange:#ffb454; --ok:#33e0a1; --danger:#ff5f7e;
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1f2533; --sub:#6b7385; --line:#e6e9f2;
+    --brand:#3b6ef0; --brand-d:#2a55c8; --ok:#1faa6b; --warn:#e08600; --danger:#e0506b;
+    --radius:16px; --shadow:0 8px 28px rgba(31,37,51,.08);
   }
-  *{box-sizing:border-box;margin:0;padding:0}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
   body{
-    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--txt);
-    background:radial-gradient(1100px 600px at 80% -10%,#0d2a6e 0%,transparent 55%),
-               radial-gradient(900px 700px at -10% 110%,#101a5e 0%,transparent 50%),
-               linear-gradient(160deg,var(--bg1),var(--bg2));
-    min-height:100vh;overflow-x:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.55; -webkit-font-smoothing:antialiased;
   }
-  /* ===== 顶栏 ===== */
-  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
-    padding:0 16px;height:52px;background:rgba(4,14,44,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
-  .burger{display:none;background:none;border:1px solid var(--line);border-radius:8px;color:var(--txt);
-    width:34px;height:34px;font-size:16px;cursor:pointer}
-  .logo{display:flex;align-items:center;gap:10px;white-space:nowrap}
-  .logo .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#2f6bff);
-    display:grid;place-items:center;color:#03102e;font-weight:800;font-size:15px}
-  .logo b{font-size:15px}
-  .logo span{font-size:12px;color:var(--sub);display:block}
-  .tabs{display:flex;gap:6px;margin-left:8px}
-  .tab{padding:6px 16px;border-radius:8px;font-size:13px;color:var(--sub);cursor:pointer;border:1px solid transparent;white-space:nowrap}
-  .tab.active{color:#04102e;background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700}
-  .tab .new{font-size:10px;background:var(--danger);color:#fff;border-radius:6px;padding:1px 4px;margin-left:4px;vertical-align:2px}
-  .top-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub)}
-  .top-right select{background:#0a1c4e;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px}
-  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2f6bff,var(--accent));
-    display:grid;place-items:center;color:#04102e;font-weight:700;font-size:12px}
-  /* ===== 布局 ===== */
-  .layout{display:flex;min-height:calc(100vh - 52px)}
-  .sidebar{width:212px;flex-shrink:0;border-right:1px solid var(--line2);padding:14px 10px;background:rgba(5,16,48,.5)}
-  .side-group{font-size:12px;color:var(--sub);padding:8px 10px;letter-spacing:1px}
-  .side-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;font-size:13px;color:var(--sub);cursor:pointer;position:relative}
-  .side-item .arrow{margin-left:auto;font-size:10px;transition:.2s}
-  .side-item:hover{color:var(--txt);background:rgba(53,208,255,.08)}
-  .side-item.active{color:#fff;background:linear-gradient(90deg,rgba(53,208,255,.22),rgba(63,140,255,.10));
-    border:1px solid rgba(53,208,255,.4);box-shadow:inset 0 0 18px rgba(53,208,255,.08)}
-  .side-item.active::before{content:"";position:absolute;left:-10px;top:20%;height:60%;width:3px;border-radius:2px;background:var(--accent)}
-  .side-sub{margin:4px 0 6px 22px;border-left:1px dashed var(--line);padding-left:6px}
-  .side-sub .side-item{font-size:12px;padding:7px 10px}
-  .badge-new{font-size:10px;background:var(--danger);color:#fff;border-radius:6px;padding:1px 5px;margin-left:6px}
-  .main{flex:1;padding:16px 18px 40px;min-width:0}
-  /* ===== 面板 ===== */
-  .panel-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
-  .panel-head h1{font-size:17px}
-  .panel-head .crumb{font-size:12px;color:var(--sub)}
-  .formula{font-size:12px;color:var(--accent);background:rgba(53,208,255,.08);border:1px dashed rgba(53,208,255,.35);
-    border-radius:8px;padding:6px 12px;display:inline-block;margin:6px 0 12px}
-  .filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel2);
-    border:1px solid var(--line);border-radius:14px;padding:12px 14px}
-  .filter label{font-size:12px;color:var(--sub)}
-  .filter select,.filter input{background:#0a1c4e;color:var(--txt);border:1px solid var(--line);
-    border-radius:8px;padding:7px 9px;font-size:12px;outline:none}
-  .filter input[type=date]{color-scheme:dark}
-  .filter input.cap{width:76px}
-  .btn{padding:8px 18px;border-radius:9px;border:1px solid var(--line);background:rgba(53,208,255,.12);
-    color:var(--txt);font-size:13px;cursor:pointer;white-space:nowrap;transition:.2s}
-  .btn:hover{background:rgba(53,208,255,.25)}
-  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04102e;font-weight:700;border:none}
-  .btn.primary:hover{filter:brightness(1.12)}
-  .quick{display:flex;gap:6px}
-  .quick button{font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid var(--line);
-    background:transparent;color:var(--sub);cursor:pointer}
-  .quick button.on,.quick button:hover{color:var(--accent);border-color:var(--accent)}
-  .hint{font-size:11px;color:var(--sub);width:100%}
-  /* ===== 图块 ===== */
-  .checks{display:flex;flex-wrap:wrap;gap:12px;margin:14px 2px 4px;font-size:12px;color:var(--sub)}
-  .checks label{display:flex;align-items:center;gap:5px;cursor:pointer}
-  .checks input{accent-color:var(--accent)}
-  .chart-card{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
-  .chart-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
-  .chart-head h2{font-size:15px}
-  .legend{display:flex;gap:14px;font-size:12px;color:var(--sub);margin-left:auto}
-  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
-  .chart-body{display:flex;gap:16px;align-items:stretch}
-  .chart-wrap{flex:1;min-width:0;position:relative}
-  canvas{width:100%;display:block}
-  .tooltip{position:absolute;pointer-events:none;background:rgba(6,18,52,.95);border:1px solid var(--accent);
-    border-radius:8px;padding:7px 10px;font-size:12px;color:var(--txt);display:none;z-index:5;white-space:nowrap;line-height:1.7}
-  .stats{width:218px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;justify-content:center}
-  .stat{background:rgba(53,208,255,.05);border:1px solid var(--line2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--sub)}
-  .stat b{color:var(--txt);font-size:14px;font-family:Consolas,monospace}
-  .stat .t{color:var(--accent)}
-  footer{margin-top:26px;border-top:1px solid var(--line2);padding-top:14px;font-size:11px;color:var(--sub);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
-  .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);opacity:0;
-    background:rgba(6,18,52,.96);border:1px solid var(--ok);color:var(--ok);border-radius:10px;
-    padding:10px 20px;font-size:13px;z-index:99;transition:.3s;pointer-events:none}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .toast.err{border-color:var(--danger);color:var(--danger)}
-  @media (max-width:900px){
-    .burger{display:block}
-    .sidebar{position:fixed;left:0;top:52px;bottom:0;z-index:49;transform:translateX(-105%);transition:.25s;background:#050f30}
-    .sidebar.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.5)}
-    .chart-body{flex-direction:column}
-    .stats{width:100%;flex-direction:row;flex-wrap:wrap}
-    .stat{flex:1;min-width:140px}
-    .tabs .tab:not(.active){display:none}
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 16px 60px;}
+  header.top{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px;
   }
+  .logo{
+    width:46px; height:46px; border-radius:13px; flex:0 0 auto;
+    background:linear-gradient(135deg,#3b6ef0,#7aa0ff); display:flex; align-items:center; justify-content:center;
+    font-size:24px; box-shadow:var(--shadow);
+  }
+  .title h1{font-size:20px; margin:0; letter-spacing:.5px;}
+  .title p{margin:2px 0 0; color:var(--sub); font-size:12.5px;}
+  .badge{margin-left:auto; font-size:11.5px; color:var(--ok); background:#e7f7ef; border:1px solid #c7ecd9; padding:5px 10px; border-radius:999px; white-space:nowrap;}
+  .badge b{color:var(--ok);}
+
+  .layout{display:grid; grid-template-columns:1fr 372px; gap:18px; align-items:start;}
+  @media (max-width:880px){ .layout{grid-template-columns:1fr;} }
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);}
+  .stage{padding:16px;}
+  .stage .hint{color:var(--sub); font-size:12.5px; margin:0 0 12px;}
+
+  /* dropzone */
+  .drop{
+    border:2px dashed #c7d0e6; border-radius:14px; padding:34px 18px; text-align:center; cursor:pointer;
+    background:linear-gradient(180deg,#fafbff,#f3f6ff); transition:.2s;
+  }
+  .drop:hover{border-color:var(--brand); background:#eef3ff;}
+  .drop .big{font-size:40px; margin-bottom:6px;}
+  .drop .t{font-size:15px; font-weight:600;}
+  .drop .s{font-size:12px; color:var(--sub); margin-top:6px;}
+  .drop .acts{display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap;}
+
+  .preview-box{display:none; text-align:center;}
+  .preview-box.show{display:block;}
+  .canvas-frame{
+    display:inline-block; background:
+      conic-gradient(#eef1f7 25%, #ffffff 0 50%, #eef1f7 0 75%, #ffffff 0) 0/22px 22px;
+    padding:10px; border-radius:12px; border:1px solid var(--line); max-width:100%;
+  }
+  #previewCanvas{display:block; max-width:100%; height:auto; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,.12);}
+  .preview-meta{font-size:12px; color:var(--sub); margin-top:10px;}
+
+  /* sheet */
+  .sheet-box{display:none; margin-top:16px; border-top:1px dashed var(--line); padding-top:14px;}
+  .sheet-box.show{display:block;}
+  #sheetCanvas{max-width:100%; height:auto; border:1px solid var(--line); border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.1); background:#fff;}
+
+  /* controls */
+  .panel{padding:14px 14px 18px;}
+  .panel h2{font-size:13px; margin:0 0 10px; color:var(--brand-d); display:flex; align-items:center; gap:7px;}
+  .panel h2 .n{width:18px; height:18px; border-radius:6px; background:var(--brand); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center;}
+  .sec{padding:12px 0; border-bottom:1px solid var(--line);}
+  .sec:last-child{border-bottom:none;}
+  .sec > .lab{font-size:12.5px; color:var(--sub); margin-bottom:9px; font-weight:600;}
+
+  .row{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    flex:1 1 auto; min-width:64px; text-align:center; padding:9px 6px; border:1px solid var(--line); border-radius:10px;
+    background:#fff; cursor:pointer; font-size:12.5px; transition:.15s; user-select:none;
+  }
+  .chip:hover{border-color:var(--brand);}
+  .chip.on{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600;}
+
+  .bg-swatches{display:flex; gap:8px; flex-wrap:wrap;}
+  .sw{width:40px; height:40px; border-radius:10px; border:2px solid var(--line); cursor:pointer; position:relative; overflow:hidden;}
+  .sw.on{border-color:var(--brand); box-shadow:0 0 0 2px #cfe0ff;}
+  .sw.custom{display:flex; align-items:center; justify-content:center; font-size:18px; background:#fff; color:var(--sub);}
+
+  select, input[type=number], input[type=text]{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:10px; font-size:13px; background:#fff; color:var(--ink);
+    font-family:inherit;
+  }
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  label.fld{font-size:11.5px; color:var(--sub); display:block; margin-bottom:4px;}
+
+  .slider{margin:10px 0;}
+  .slider .top{display:flex; justify-content:space-between; font-size:12px; color:var(--sub); margin-bottom:4px;}
+  .slider .top b{color:var(--ink); font-weight:600;}
+  input[type=range]{width:100%; accent-color:var(--brand);}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:11px 14px; border-radius:11px; border:none;
+    font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; width:100%;
+  }
+  .btn.primary{background:var(--brand); color:#fff;}
+  .btn.primary:hover{background:var(--brand-d);}
+  .btn.ghost{background:#eef2fb; color:var(--brand-d);}
+  .btn.ghost:hover{background:#e3eafb;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btns{display:grid; gap:9px;}
+
+  /* status / loader */
+  .status{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:60;
+    background:#1f2533; color:#fff; padding:10px 16px; border-radius:999px; font-size:13px; box-shadow:var(--shadow);
+    display:none; align-items:center; gap:9px; max-width:92vw;
+  }
+  .status.show{display:inline-flex;}
+  .spin{width:15px; height:15px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:sp 0.8s linear infinite; flex:0 0 auto;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  .note{font-size:11.5px; color:var(--sub); background:#f7f9fe; border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-top:10px; line-height:1.5;}
+  .note b{color:var(--ink);}
+
+  /* camera modal */
+  .modal{position:fixed; inset:0; background:rgba(15,18,28,.82); display:none; align-items:center; justify-content:center; z-index:80; padding:16px;}
+  .modal.show{display:flex;}
+  .modal .box{background:#fff; border-radius:16px; padding:14px; max-width:480px; width:100%;}
+  .modal video{width:100%; border-radius:10px; background:#000; transform:scaleX(-1);}
+  .modal .mact{display:flex; gap:10px; margin-top:12px;}
+
+  footer{margin-top:26px; text-align:center; color:var(--sub); font-size:11.5px;}
+  footer a{color:var(--brand-d); text-decoration:none;}
+  .reset{margin-top:10px;}
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">🪪</div>
+    <div class="title">
+      <h1>证件照制作</h1>
+      <p>自动识别人脸人体 · 纠正角度 · 智能换底色 · 标准尺寸裁切 · 一键排版</p>
+    </div>
+    <div class="badge">🔒 <b>本地处理</b> · 照片不上传</div>
+  </header>
 
-<!-- 顶栏 -->
-<div class="topbar">
-  <button class="burger" id="burger">☰</button>
-  <div class="logo">
-    <div class="mark">航</div>
-    <div><b>航能E联</b><span>数智能源管理平台</span></div>
+  <div class="layout">
+    <!-- LEFT: stage -->
+    <div class="card stage">
+      <p class="hint">拍证件照、做报名照、给家里人处理一寸二寸照片，全程在浏览器本地完成。</p>
+
+      <div class="drop" id="drop">
+        <div class="big">📷</div>
+        <div class="t">点击选择照片，或把图片拖到这里</div>
+        <div class="s">建议使用单人居中、正面清晰的肖像照（手机自拍/相机均可）</div>
+        <div class="acts">
+          <button class="chip" id="pickBtn" style="flex:0 0 auto; min-width:120px;">📁 选择照片</button>
+          <button class="chip" id="camBtn" style="flex:0 0 auto; min-width:120px;">🤳 拍照</button>
+        </div>
+      </div>
+
+      <div class="preview-box" id="previewBox">
+        <div class="canvas-frame">
+          <canvas id="previewCanvas" width="295" height="413"></canvas>
+        </div>
+        <div class="preview-meta" id="previewMeta">一寸 · 295×413 px（300dpi）</div>
+
+        <div class="sheet-box" id="sheetBox">
+          <div class="preview-meta" style="margin-bottom:8px;">排版预览（点击右侧「下载排版照」导出打印用高清图）</div>
+          <canvas id="sheetCanvas" width="1500" height="1050"></canvas>
+        </div>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*" hidden />
+    </div>
+
+    <!-- RIGHT: controls -->
+    <div class="card panel">
+      <div class="sec">
+        <div class="lab">① 底色（智能抠图后替换）</div>
+        <div class="bg-swatches" id="bgSwatches">
+          <div class="sw on" data-bg="#ffffff" style="background:#ffffff" title="白底"></div>
+          <div class="sw" data-bg="#438edb" style="background:#438edb" title="蓝底"></div>
+          <div class="sw" data-bg="#ff0000" style="background:#ff0000" title="红底"></div>
+          <div class="sw" data-bg="#00a86b" style="background:#00a86b" title="绿底"></div>
+          <div class="sw custom" id="bgCustom" title="自定义颜色">+</div>
+        </div>
+        <input type="color" id="bgColorPicker" value="#438edb" style="display:none; width:100%; margin-top:8px; height:38px; border:1px solid var(--line); border-radius:10px;" />
+        <div class="row" style="margin-top:8px;">
+          <div class="chip" id="bgTransparent" style="flex:1 1 100%;">🪟 透明背景（PNG）</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="lab">② 证件照尺寸</div>
+        <select id="sizeSel"></select>
+        <div class="grid2" id="customSize" style="margin-top:8px; display:none;">
+          <div><label class="fld">宽 (mm)</label><input type="number" id="cw" value="25" min="5" max="200" /></div>
+          <div><label class="fld">高 (mm)</label><input type="number" id="ch" value="35" min="5" max="200" /></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="lab">③ 手动微调（AI 已自动定位，可继续精修）</div>
+        <div class="slider">
+          <div class="top"><span>缩放</span><b id="zoomV">100%</b></div>
+          <input type="range" id="zoom" min="0.7" max="2" step="0.01" value="1" />
+        </div>
+        <div class="slider">
+          <div class="top"><span>左右位移</span><b id="offXV">0</b></div>
+          <input type="range" id="offX" min="-300" max="300" step="1" value="0" />
+        </div>
+        <div class="slider">
+          <div class="top"><span>上下位移</span><b id="offYV">0</b></div>
+          <input type="range" id="offY" min="-300" max="300" step="1" value="0" />
+        </div>
+        <div class="slider">
+          <div class="top"><span>旋转微调</span><b id="rotV">0°</b></div>
+          <input type="range" id="rot" min="-15" max="15" step="0.5" value="0" />
+        </div>
+        <div class="slider">
+          <div class="top"><span>亮度</span><b id="brightV">0</b></div>
+          <input type="range" id="bright" min="-40" max="40" step="1" value="0" />
+        </div>
+        <div class="slider">
+          <div class="top"><span>对比度</span><b id="contrastV">0</b></div>
+          <input type="range" id="contrast" min="-40" max="40" step="1" value="0" />
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="lab">④ 排版（冲印用，自动铺满相纸）</div>
+        <select id="paperSel">
+          <option value="none">不排版（仅单张）</option>
+          <option value="5inch">5寸相纸 (127×89mm)</option>
+          <option value="6inch">6寸相纸 (152×102mm)</option>
+          <option value="a4">A4 (210×297mm)</option>
+        </select>
+        <div class="slider" style="margin-top:10px;">
+          <div class="top"><span>照片间距</span><b id="gapV">0 px</b></div>
+          <input type="range" id="gap" min="0" max="40" step="1" value="0" />
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div class="chip" id="cropLines" style="flex:1 1 100%;">✂️ 添加裁剪参考线</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="lab">⑤ 导出</div>
+        <div class="btns">
+          <button class="btn primary" id="dlSingle">⬇️ 下载证件照</button>
+          <button class="btn ghost" id="dlSheet">⬇️ 下载排版照</button>
+        </div>
+        <div class="reset"><button class="btn ghost" id="resetBtn" style="background:#fdeef1; color:var(--danger);">↺ 重新选择照片</button></div>
+        <div class="note">
+          <b>小贴士：</b>AI 模型首次加载需联网（约几 MB，之后浏览器缓存）。换底色依赖人体分割模型，若环境无法访问模型，将自动切换为「手动裁剪模式」（不替换背景）。
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="tabs">
-    <div class="tab">首页</div>
-    <div class="tab">工况数据</div>
-    <div class="tab active">用电负荷<span class="new">新</span></div>
-  </div>
-  <div class="top-right">
-    <select><option>郑许园区</option><option>闵行航天城</option><option>阜阳配电室</option></select>
-    <span>🔔</span><div class="avatar">A</div><span>ladmin</span>
+
+  <footer>
+    灵感来自开源项目 <a href="https://github.com/aoguai/LiYing" target="_blank" rel="noopener">LiYing（丽影）</a> · 全部图像处理在本地浏览器完成，照片不会上传到任何服务器。
+  </footer>
+</div>
+
+<!-- status -->
+<div class="status" id="status"><span class="spin"></span><span id="statusText">处理中…</span></div>
+
+<!-- camera modal -->
+<div class="modal" id="camModal">
+  <div class="box">
+    <video id="camVideo" autoplay playsinline></video>
+    <div class="mact">
+      <button class="btn primary" id="camShot">📸 拍照</button>
+      <button class="btn ghost" id="camClose">取消</button>
+    </div>
   </div>
 </div>
 
-<div class="layout">
-  <!-- 侧栏 -->
-  <aside class="sidebar" id="sidebar">
-    <div class="side-group">智 能 能 源</div>
-    <div class="side-item">历史数据<span class="arrow">▾</span></div>
-    <div class="side-sub">
-      <div class="side-item">工况数据</div>
-      <div class="side-item active">用电负荷<span class="badge-new">新</span></div>
-    </div>
-    <div class="side-item">告警管理<span class="arrow">▸</span></div>
-    <div class="side-item">报警管理<span class="arrow">▸</span></div>
-    <div class="side-item" style="padding-left:26px">告警记录</div>
-    <div class="side-item">通讯管理<span class="arrow">▸</span></div>
-    <div class="side-item">公辅管理<span class="arrow">▸</span></div>
-  </aside>
+<script type="module">
+/* ============ 配置 ============ */
+const FACE_URL = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/face_detector.task";
+const SEG_URL  = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite";
+const WASM     = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 
-  <!-- 主区 -->
-  <main class="main">
-    <div class="panel-head">
-      <h1>10kV进线一段、二段 — 用电负荷</h1>
-      <span class="crumb">历史数据 / 用电负荷</span>
-    </div>
-    <div class="formula">用电负荷率 = 视在功率 ÷ 额定容量 × 100%</div>
+const DPI = 300;
+const mm2px = (mm) => Math.max(1, Math.round(mm / 25.4 * DPI));
 
-    <!-- 筛选区 -->
-    <div class="filter">
-      <label>线路</label>
-      <select id="line">
-        <option value="1">10kV进线一段</option>
-        <option value="2">10kV进线二段</option>
-        <option value="all">全部（一段/二段对比）</option>
-      </select>
-      <label>额定容量(kVA)</label>
-      <input class="cap" id="cap1" type="number" value="1600" min="1" title="进线一段" />
-      <input class="cap" id="cap2" type="number" value="1600" min="1" title="进线二段" style="display:none" />
-      <label>开始日期</label><input type="date" id="d1" />
-      <label>结束日期</label><input type="date" id="d2" />
-      <div class="quick">
-        <button data-k="today" class="on">今天</button>
-        <button data-k="7">近7天</button>
-        <button data-k="30">近30天</button>
-      </div>
-      <button class="btn primary" id="btnQuery">🔍 查询</button>
-      <button class="btn" id="btnExport">⬇ 导出Excel</button>
-      <div class="hint">默认查询当天数据；日期跨度最长一个月（31天）；采样间隔 10 分钟/点。</div>
-    </div>
+const SIZES = {
+  "1inch":   {name:"一寸",       w:25, h:35},
+  "2inch":   {name:"二寸",       w:35, h:49},
+  "x1inch":  {name:"小一寸",     w:22, h:32},
+  "x2inch":  {name:"小二寸",     w:35, h:45},
+  "d1inch":  {name:"大一寸",     w:33, h:48},
+  "d2inch":  {name:"大二寸",     w:35, h:53},
+  "passport":{name:"护照/签证",  w:33, h:48},
+  "id":      {name:"身份证",     w:26, h:32},
+  "sq":      {name:"正方形(2寸)",w:51, h:51},
+  "resume":  {name:"简历照",     w:25, h:35},
+  "custom":  {name:"自定义",     w:25, h:35}
+};
 
-    <div class="checks">
-      <label><input type="checkbox" id="ckS" checked> 视在功率曲线</label>
-      <label><input type="checkbox" id="ckR" checked> 用电负荷率曲线</label>
-      <label><input type="checkbox" id="ckGrid" checked> 显示100%参考线</label>
-    </div>
+const PAPERS = {
+  "5inch": {w: mm2px(127), h: mm2px(89)},
+  "6inch": {w: mm2px(152), h: mm2px(102)},
+  "a4":    {w: mm2px(210), h: mm2px(297)}
+};
 
-    <!-- 图表：视在功率 -->
-    <div class="chart-card" id="cardS">
-      <div class="chart-head">
-        <h2>视在功率</h2>
-        <div class="legend" id="legendS"></div>
-      </div>
-      <div class="chart-body">
-        <div class="chart-wrap"><canvas id="cvS" height="260"></canvas><div class="tooltip" id="tipS"></div></div>
-        <div class="stats" id="statsS"></div>
-      </div>
-    </div>
+/* ============ 状态 ============ */
+const S = {
+  vision:null, faceDetector:null, segmenter:null, aiReady:false,
+  sourceCanvas:null, maskCanvas:null, cutoutCanvas:null, faceBox:null,
+  bg:"#ffffff", transparent:false,
+  sizeKey:"1inch", cw:25, ch:35,
+  zoom:1, offX:0, offY:0, rot:0, bright:0, contrast:0,
+  paper:"none", gap:0, cropLines:false,
+  hasImage:false
+};
 
-    <!-- 图表：用电负荷率 -->
-    <div class="chart-card" id="cardR">
-      <div class="chart-head">
-        <h2>用电负荷率</h2>
-        <div class="legend" id="legendR"></div>
-      </div>
-      <div class="chart-body">
-        <div class="chart-wrap"><canvas id="cvR" height="260"></canvas><div class="tooltip" id="tipR"></div></div>
-        <div class="stats" id="statsR"></div>
-      </div>
-    </div>
+/* ============ DOM ============ */
+const $ = (id)=>document.getElementById(id);
+const drop=$("drop"), previewBox=$("previewBox"), fileInput=$("fileInput");
+const previewCanvas=$("previewCanvas"), sheetCanvas=$("sheetCanvas");
+const previewMeta=$("previewMeta"), sheetBox=$("sheetBox");
+const statusEl=$("status"), statusText=$("statusText");
 
-    <footer>
-      <span>航能E联 · 数智能源管理平台 — 用电负荷分析（DEMO/01）</span>
-      <span id="now"></span>
-    </footer>
-  </main>
-</div>
+function setStatus(t, spin=true){ statusText.textContent=t; statusEl.classList.add("show"); if(!spin) statusEl.querySelector(".spin").style.display="none"; else statusEl.querySelector(".spin").style.display=""; }
+function hideStatus(){ statusEl.classList.remove("show"); }
 
-<div class="toast" id="toast"></div>
-
-<script>
-/* ================= 工具 ================= */
-function pad(n){return String(n).padStart(2,"0")}
-function dstr(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
-function bjToday(){var n=new Date();return new Date(n.getTime()+(n.getTimezoneOffset()*60000)+8*3600000)}
-function parseD(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
-function addDay(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function seedFrom(str){var h=1779033703;for(var i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}return h>>>0}
-function toast(msg,err){var t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");clearTimeout(t._h);t._h=setTimeout(function(){t.className="toast"},2600)}
-
-/* ================= 数据模拟（确定性：同日期同数据） ================= */
-var SHAPE=[.22,.20,.19,.18,.18,.20,.28,.38,.46,.50,.48,.46,.45,.43,.41,.43,.48,.55,.64,.60,.50,.42,.34,.27]; // 24h 形状
-var PEAK={1:950,2:780}; // 一段/二段 峰值 kVA
-var POINTS=144, STEP_MIN=10, START_OFFSET=1, START_SEC=15; // 00:01:15 起，10分钟/点
-function dayPoints(dateStr,sec){
-  var cap=+((sec===1?capEl1:capEl2).value)||1600;
-  var rnd=mulberry32(seedFrom(dateStr+"#"+sec));
-  var base=PEAK[sec], arr=[];
-  for(var i=0;i<POINTS;i++){
-    var min=START_OFFSET+STEP_MIN*i, h=Math.floor(min/60), m=min%60;
-    var s=START_SEC+Math.floor(i/2);
-    var f=SHAPE[h]*(0.92+0.16*rnd())+0.02*rnd();
-    var S=Math.max(0,Math.round(base*f));
-    arr.push({t:dateStr+" "+pad(h)+":"+pad(m)+":"+pad(s), S:S, rate:S/cap});
+/* ============ 加载 AI 模型 ============ */
+async function loadModels(){
+  try{
+    setStatus("正在加载 AI 模型（人脸检测 + 智能抠图）…");
+    S.vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14");
+    const fileset = await S.vision.FilesetResolver.forVisionTasks(WASM);
+    try{
+      S.faceDetector = await S.vision.FaceDetector.createFromOptions(fileset, {
+        baseOptions:{ modelAssetPath:FACE_URL, delegate:"GPU" }, runningMode:"IMAGE", numFaces:1
+      });
+    }catch(e){
+      S.faceDetector = await S.vision.FaceDetector.createFromOptions(fileset, {
+        baseOptions:{ modelAssetPath:FACE_URL, delegate:"CPU" }, runningMode:"IMAGE", numFaces:1
+      });
+    }
+    try{
+      S.segmenter = await S.vision.ImageSegmenter.createFromOptions(fileset, {
+        baseOptions:{ modelAssetPath:SEG_URL, delegate:"GPU" }, runningMode:"IMAGE",
+        outputCategoryMask:true, outputConfidenceMasks:false
+      });
+    }catch(e){
+      S.segmenter = await S.vision.ImageSegmenter.createFromOptions(fileset, {
+        baseOptions:{ modelAssetPath:SEG_URL, delegate:"CPU" }, runningMode:"IMAGE",
+        outputCategoryMask:true, outputConfidenceMasks:false
+      });
+    }
+    S.aiReady = true;
+    hideStatus();
+    if(S.hasImage) processImage(S._pendingImg);
+  }catch(e){
+    console.warn("AI 模型加载失败：", e);
+    S.aiReady = false;
+    hideStatus();
+    if(S.hasImage) processImage(S._pendingImg);
   }
-  return arr;
 }
-function genRange(){
-  var d1=parseD(elD1.value), d2=parseD(elD2.value), days=[];
-  for(var d=new Date(d1);d<=d2;d=addDay(d,1)) days.push(dstr(d));
-  var out={days:days,data:{}};
-  [1,2].forEach(function(sec){
-    out.data[sec]={};days.forEach(function(ds){out.data[sec][ds]=dayPoints(ds,sec)});
-  });
+
+/* ============ 旋转画布 ============ */
+function rotateCanvas(src, angleDeg){
+  const a = angleDeg*Math.PI/180;
+  const w=src.width, h=src.height;
+  const cw=Math.ceil(Math.abs(w*Math.cos(a))+Math.abs(h*Math.sin(a)));
+  const ch=Math.ceil(Math.abs(w*Math.sin(a))+Math.abs(h*Math.cos(a)));
+  const out=document.createElement("canvas"); out.width=cw; out.height=ch;
+  const ctx=out.getContext("2d");
+  ctx.imageSmoothingQuality="high";
+  ctx.translate(cw/2, ch/2); ctx.rotate(a); ctx.drawImage(src, -w/2, -h/2);
   return out;
 }
 
-/* ================= 状态 ================= */
-var elD1=document.getElementById("d1"), elD2=document.getElementById("d2");
-var capEl1=document.getElementById("cap1"), capEl2=document.getElementById("cap2");
-var lineEl=document.getElementById("line");
-var COLORS={1:"#35d0ff",2:"#ffb454"};
-var NAMES={1:"10kV进线一段",2:"10kV进线二段"};
-var cur=null;
-var today=bjToday();
-elD1.value=dstr(today); elD2.value=dstr(today);
-capEl2.style.display=lineEl.value==="all"?"":"none";
-lineEl.addEventListener("change",function(){capEl2.style.display=lineEl.value==="all"?"":"none"});
-document.getElementById("burger").onclick=function(){document.getElementById("sidebar").classList.toggle("open")};
+/* ============ 处理图片 ============ */
+async function processImage(img){
+  S.hasImage=true; S._pendingImg=img;
+  setStatus("AI 识别中…");
+  const orig=document.createElement("canvas");
+  orig.width=img.naturalWidth||img.width; orig.height=img.naturalHeight||img.height;
+  orig.getContext("2d").drawImage(img,0,0);
 
-document.querySelectorAll(".quick button").forEach(function(b){
-  b.onclick=function(){
-    document.querySelectorAll(".quick button").forEach(function(x){x.classList.remove("on")});
-    b.classList.add("on");
-    var t=bjToday();
-    if(b.dataset.k==="today"){elD1.value=dstr(t);elD2.value=dstr(t)}
-    if(b.dataset.k==="7"){elD1.value=dstr(addDay(t,-6));elD2.value=dstr(t)}
-    if(b.dataset.k==="30"){elD1.value=dstr(addDay(t,-29));elD2.value=dstr(t)}
-    doQuery();
-  };
-});
-document.getElementById("btnQuery").onclick=doQuery;
-document.getElementById("btnExport").onclick=doExport;
-["ckS","ckR"].forEach(function(id){
-  document.getElementById(id).onchange=function(){
-    document.getElementById("cardS").style.display=document.getElementById("ckS").checked?"":"none";
-    document.getElementById("cardR").style.display=document.getElementById("ckR").checked?"":"none";
-  };
-});
+  let src=orig, angle=0;
+  if(S.aiReady && S.faceDetector){
+    try{
+      const r=S.faceDetector.detect(orig);
+      if(r.detections && r.detections.length){
+        const k=r.detections[0].keypoints;
+        if(k && k.length>=2){
+          angle=Math.atan2(k[1].y-k[0].y, k[1].x-k[0].x)*180/Math.PI;
+        }
+      }
+    }catch(e){ console.warn("face detect 1 failed", e); }
+  }
+  src=rotateCanvas(orig, -angle);
+  S.sourceCanvas=src;
 
-function validate(){
-  if(!elD1.value||!elD2.value){toast("请选择开始/结束日期",1);return false}
-  var d1=parseD(elD1.value), d2=parseD(elD2.value);
-  if(d1>d2){toast("开始日期不能晚于结束日期",1);return false}
-  if((d2-d1)/86400000>30){toast("日期跨度最长一个月（31天），已自动调整",1);elD2.value=dstr(addDay(d1,30))}
-  return true;
-}
-function doQuery(){
-  if(!validate())return;
-  cur=genRange();
-  renderAll();
+  // 直立后再次检测人脸框
+  S.faceBox=null;
+  if(S.aiReady && S.faceDetector){
+    try{
+      const r=S.faceDetector.detect(src);
+      if(r.detections && r.detections.length){
+        const b=r.detections[0].boundingBox;
+        S.faceBox={x:b.originX, y:b.originY, w:b.width, h:b.height};
+      }
+    }catch(e){ console.warn("face detect 2 failed", e); }
+  }
+
+  // 人体分割
+  S.maskCanvas=null;
+  if(S.aiReady && S.segmenter){
+    try{
+      const seg=S.segmenter.segment(src);
+      const m=seg.categoryMask;
+      const mw=m.width, mh=m.height;
+      const data=(typeof m.getAsUint8Array==="function") ? m.getAsUint8Array() : m.data;
+      const mc=document.createElement("canvas"); mc.width=mw; mc.height=mh;
+      const mx=mc.getContext("2d"); const id=mx.createImageData(mw,mh);
+      for(let i=0;i<mw*mh;i++){
+        const on = data[i] > 0;
+        id.data[i*4]=255; id.data[i*4+1]=255; id.data[i*4+2]=255;
+        id.data[i*4+3]= on?255:0;
+      }
+      mx.putImageData(id,0,0);
+      S.maskCanvas=mc;
+    }catch(e){ console.warn("segment failed", e); }
+  }
+
+  buildCutout();
+  render();
+  hideStatus();
+  if(!S.aiReady){
+    setStatus("未加载到 AI 模型，已启用手动裁剪模式（不替换背景）", false);
+    setTimeout(hideStatus, 3500);
+  }else if(!S.faceBox){
+    setStatus("未检测到人脸，已使用居中裁切，可手动微调", false);
+    setTimeout(hideStatus, 3000);
+  }
 }
 
-/* ================= 图表渲染（原生 canvas，无外部依赖） ================= */
-function niceMax(v){
-  if(v<=0)return 1;
-  var p=Math.pow(10,Math.floor(Math.log(v)/Math.LN10)),f=v/p;
-  var n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;
-  return n*p;
-}
-function drawChart(cv,tip,series,meta){
-  var dpr=window.devicePixelRatio||1;
-  var W=cv.clientWidth||600, H=+cv.getAttribute("height");
-  cv.width=W*dpr;cv.height=H*dpr;
-  var ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
-  var L=52,R=12,T=14,B=30,pw=W-L-R,ph=H-T-B;
-  var maxY=niceMax(meta.maxY), minY=0;
-  var gridC="rgba(90,150,255,.14)", txtC="#7f97c9";
-  ctx.strokeStyle=gridC;ctx.fillStyle=txtC;ctx.font="10px Consolas,monospace";ctx.textAlign="right";
-  var steps=5;
-  for(var i=0;i<=steps;i++){
-    var y=T+ph-ph*i/steps, v=(maxY-minY)*i/steps;
-    ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-R,y);ctx.stroke();
-    ctx.fillText(meta.fmt(v),L-6,y+3);
-  }
-  var total=series[0].pts.length;
-  ctx.textAlign="center";
-  var tickN=Math.min(8,Math.max(2,Math.floor(W/110)));
-  for(var i=0;i<=tickN;i++){
-    var idx=Math.min(total-1,Math.round(total*i/tickN));
-    var x=L+pw*(total===1?0.5:idx/(total-1));
-    ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+ph);ctx.stroke();
-    ctx.fillText(meta.xLabel(series[0].pts[idx],idx,total),x,H-10);
-  }
-  if(meta.ref!=null&&meta.ref<=maxY){
-    var yr=T+ph-ph*meta.ref/(maxY-minY);
-    ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle="rgba(255,95,126,.55)";
-    ctx.beginPath();ctx.moveTo(L,yr);ctx.lineTo(W-R,yr);ctx.stroke();ctx.restore();
-    ctx.fillStyle="rgba(255,95,126,.8)";ctx.textAlign="left";
-    ctx.fillText(meta.refLabel,L+4,yr-4);
-  }
-  series.forEach(function(s){
+/* ============ 合成抠图 ============ */
+function buildCutout(){
+  const w=S.sourceCanvas.width, h=S.sourceCanvas.height;
+  const out=document.createElement("canvas"); out.width=w; out.height=h;
+  const ctx=out.getContext("2d");
+  if(S.maskCanvas){
+    if(!S.transparent){ ctx.fillStyle=S.bg; ctx.fillRect(0,0,w,h); }
+    ctx.drawImage(S.sourceCanvas,0,0);
     ctx.save();
-    ctx.globalAlpha=.16;ctx.fillStyle=s.color;
-    ctx.beginPath();
-    s.pts.forEach(function(p,i){
-      var x=L+pw*(total===1?0.5:i/(total-1)), y=T+ph-ph*p.y/(maxY-minY);
-      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
-    });
-    ctx.lineTo(L+pw,T+ph);ctx.lineTo(L,T+ph);ctx.closePath();ctx.fill();
-    ctx.globalAlpha=1;
-    ctx.strokeStyle=s.color;ctx.lineWidth=1.8;ctx.lineJoin="round";
-    ctx.shadowColor=s.color;ctx.shadowBlur=6;
-    ctx.beginPath();
-    s.pts.forEach(function(p,i){
-      var x=L+pw*(total===1?0.5:i/(total-1)), y=T+ph-ph*p.y/(maxY-minY);
-      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
-    });
-    ctx.stroke();ctx.restore();
-  });
-  cv.onmousemove=cv.ontouchmove=function(ev){
-    var rect=cv.getBoundingClientRect();
-    var cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-rect.left;
-    var idx=Math.round((cx-L)/pw*(total-1));
-    if(idx<0||idx>total-1){tip.style.display="none";return}
-    var html="<div style='color:#8fa8d8'>"+series[0].pts[idx].t+"</div>";
-    series.forEach(function(s){
-      var p=s.pts[idx];
-      html+="<div><i style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+s.color+";margin-right:5px'></i>"
-          +s.name+"：<b style='color:"+s.color+"'>"+meta.tip(p)+"</b></div>";
-    });
-    tip.innerHTML=html;tip.style.display="block";
-    tip.style.left=Math.min(W-180,Math.max(4,cx+14))+"px";tip.style.top=(T+8)+"px";
-  };
-  cv.onmouseleave=cv.ontouchend=function(){tip.style.display="none"};
-}
-function renderChartBlock(cvId,tipId,legendId,statsId,kind){
-  var secs=lineEl.value==="all"?[1,2]:[+lineEl.value];
-  var series=secs.map(function(sec){
-    var pts=[];
-    cur.days.forEach(function(ds){cur.data[sec][ds].forEach(function(p){pts.push({t:p.t,y:kind==="S"?p.S:p.rate*100})})});
-    return {name:NAMES[sec],color:COLORS[sec],pts:pts};
-  });
-  document.getElementById(legendId).innerHTML=series.map(function(s){
-    return "<span><i style='background:"+s.color+"'></i>"+s.name+"</span>"}).join("");
-  var all=[];series.forEach(function(s){all=all.concat(s.pts)});
-  var max=all[0],min=all[0],sum=0;
-  all.forEach(function(p){if(p.y>max.y)max=p;if(p.y<min.y)min=p;sum+=p.y});
-  var unit=kind==="S"?" kVA":" %", dec=kind==="S"?0:2;
-  document.getElementById(statsId).innerHTML=""
-   +"<div class='stat'>最大值：<b>"+max.y.toFixed(dec)+unit+"</b><br>最大值时间：<span class='t'>"+max.t+"</span></div>"
-   +"<div class='stat'>最小值：<b>"+min.y.toFixed(dec)+unit+"</b><br>最小值时间：<span class='t'>"+min.t+"</span></div>"
-   +"<div class='stat'>平均值：<b>"+(sum/all.length).toFixed(dec)+unit+"</b></div>";
-  var peak=0;series.forEach(function(s){s.pts.forEach(function(p){if(p.y>peak)peak=p.y})});
-  var meta=kind==="S"
-    ?{maxY:peak||100,fmt:function(v){return v.toFixed(0)},ref:null,
-      xLabel:function(p,idx,total){return total>290?p.t.slice(5,10):p.t.slice(11,16)},
-      tip:function(p){return p.y.toFixed(0)+" kVA"}}
-    :{maxY:Math.max(100,peak),fmt:function(v){return v.toFixed(0)+"%"},
-      ref:document.getElementById("ckGrid").checked?100:null,refLabel:"100%额定容量",
-      xLabel:function(p,idx,total){return total>290?p.t.slice(5,10):p.t.slice(11,16)},
-      tip:function(p){return p.y.toFixed(2)+" %"}};
-  drawChart(document.getElementById(cvId),document.getElementById(tipId),series,meta);
-}
-function renderAll(){
-  if(document.getElementById("ckS").checked)renderChartBlock("cvS","tipS","legendS","statsS","S");
-  if(document.getElementById("ckR").checked)renderChartBlock("cvR","tipR","legendR","statsR","R");
+    ctx.globalCompositeOperation="destination-in";
+    if(!S.transparent){ ctx.filter="blur(0.6px)"; }
+    ctx.drawImage(S.maskCanvas,0,0,w,h);
+    ctx.restore();
+    ctx.globalCompositeOperation="source-over";
+    ctx.filter="none";
+  }else{
+    ctx.drawImage(S.sourceCanvas,0,0);
+  }
+  S.cutoutCanvas=out;
 }
 
-/* ================= 导出 Excel（XML Spreadsheet 2003，参照参考报表样式） ================= */
-function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function doExport(){
-  if(!cur){if(!validate())return;cur=genRange()}
-  var secs=lineEl.value==="all"?[1,2]:[+lineEl.value];
-  var sheetsXml="";
-  cur.days.forEach(function(ds){
-    var d=parseD(ds);
-    var sheetName=(d.getMonth()+1)+"月"+d.getDate()+"日0点至24点";
-    var rows="";
-    rows+="<Row><Cell><Data ss:Type=\"String\">时间</Data></Cell>";
-    cur.data[secs[0]][ds].forEach(function(p){rows+="<Cell><Data ss:Type=\"String\">"+esc(p.t)+"</Data></Cell>"});
-    rows+="</Row>";
-    secs.forEach(function(sec){
-      var cap=+((sec===1?capEl1:capEl2).value)||1600;
-      var secName=sec===1?"一段":"二段";
-      rows+="<Row><Cell><Data ss:Type=\"String\">测点名称：视在功率("+NAMES[sec]+")</Data></Cell>";
-      cur.data[sec][ds].forEach(function(p){rows+="<Cell><Data ss:Type=\"Number\">"+p.S+"</Data></Cell>"});
-      rows+="</Row>";
-      rows+="<Row><Cell><Data ss:Type=\"String\">变压器容量</Data></Cell>";
-      cur.data[sec][ds].forEach(function(){rows+="<Cell><Data ss:Type=\"Number\">"+cap+"</Data></Cell>"});
-      rows+="</Row>";
-      rows+="<Row><Cell><Data ss:Type=\"String\">"+secName+"负荷率变化趋势</Data></Cell>";
-      cur.data[sec][ds].forEach(function(p){rows+="<Cell ss:StyleID=\"pct\"><Data ss:Type=\"Number\">"+(p.S/cap).toFixed(6)+"</Data></Cell>"});
-      rows+="</Row>";
-    });
-    sheetsXml+="<Worksheet ss:Name=\""+esc(sheetName)+"\"><Table>"
-      +"<Column ss:Width=\"220\"/><Column ss:Width=\"150\"/>"
-      +rows
-      +"</Table></Worksheet>";
-  });
-  var xml="<?xml version=\"1.0\"?><?mso-application progid=\"Excel.Sheet\"?>"
-    +"<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">"
-    +"<Styles><Style ss:ID=\"pct\"><NumberFormat ss:Format=\"0.00%\"/></Style>"
-    +"<Style ss:ID=\"head\"><Font ss:FontName=\"宋体\" ss:Bold=\"1\"/></Style></Styles>"
-    +sheetsXml+"</Workbook>";
-  var blob=new Blob(["\ufeff"+xml],{type:"application/vnd.ms-excel"});
-  var a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  var tag=(cur.days.length>1)?cur.days[0]+"至"+cur.days[cur.days.length-1]:cur.days[0];
-  a.download="10kV进线用电负荷报表_"+tag+".xls";
-  a.click();URL.revokeObjectURL(a.href);
-  toast("已导出："+a.download);
+/* ============ 计算裁切区域 ============ */
+function computeCrop(){
+  const tw=S.targetW, th=S.targetH;
+  const A=tw/th;
+  let cropW, cropH, cx, cy;
+  if(S.faceBox){
+    const fb=S.faceBox;
+    const fcx=fb.x+fb.w/2, fcy=fb.y+fb.h/2;
+    const headH=fb.h*1.55;
+    cropH=headH/0.70;
+    cropW=cropH*A;
+    const headTop=fb.y-0.30*fb.h;
+    cy=headTop+0.15*cropH;
+    cx=fcx;
+  }else{
+    const w=S.sourceCanvas.width, h=S.sourceCanvas.height;
+    cropH=h*0.92; cropW=cropH*A; cx=w/2; cy=h/2;
+  }
+  cropW/=S.zoom; cropH/=S.zoom;
+  const left=cx-cropW/2 + S.offX;
+  const top =cy-cropH/2 + S.offY;
+  return {left, top, width:cropW, height:cropH};
 }
 
-/* ================= 启动 ================= */
-document.getElementById("now").textContent="北京时间 "+dstr(bjToday());
-window.addEventListener("resize",function(){if(cur)renderAll()});
-document.getElementById("ckGrid").onchange=function(){if(cur)renderAll()};
-doQuery();
+/* ============ 渲染单张 ============ */
+function renderSingle(cv){
+  const tw=S.targetW, th=S.targetH;
+  cv.width=tw; cv.height=th;
+  const ctx=cv.getContext("2d");
+  ctx.clearRect(0,0,tw,th);
+  if(!S.transparent){ ctx.fillStyle=S.bg; ctx.fillRect(0,0,tw,th); }
+  const src=S.cutoutCanvas||S.sourceCanvas;
+  if(!src) return;
+  const crop=computeCrop();
+  ctx.save();
+  ctx.translate(tw/2, th/2);
+  if(S.rot) ctx.rotate(S.rot*Math.PI/180);
+  if(S.bright||S.contrast) ctx.filter=`brightness(${100+S.bright}%) contrast(${100+S.contrast}%)`;
+  ctx.imageSmoothingQuality="high";
+  ctx.drawImage(src, crop.left, crop.top, crop.width, crop.height, -tw/2, -th/2, tw, th);
+  ctx.restore();
+  ctx.filter="none";
+}
+
+/* ============ 渲染排版 ============ */
+function renderSheet(){
+  if(S.paper==="none" || !S.cutoutCanvas && !S.sourceCanvas){ sheetBox.classList.remove("show"); return; }
+  const paper=PAPERS[S.paper];
+  const pw=paper.w, ph=paper.h;
+  const photoW=S.targetW, photoH=S.targetH;
+  const gap=S.gap;
+  let cols=Math.floor((pw+gap)/(photoW+gap));
+  let rows=Math.floor((ph+gap)/(photoH+gap));
+  cols=Math.max(1,cols); rows=Math.max(1,rows);
+  const gridW=cols*photoW+(cols-1)*gap;
+  const gridH=rows*photoH+(rows-1)*gap;
+  const ox=(pw-gridW)/2, oy=(ph-gridH)/2;
+
+  sheetCanvas.width=pw; sheetCanvas.height=ph;
+  const ctx=sheetCanvas.getContext("2d");
+  ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,pw,ph);
+
+  // 先渲染单张到离屏
+  const one=document.createElement("canvas");
+  renderSingle(one);
+
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x=ox+c*(photoW+gap), y=oy+r*(photoH+gap);
+      ctx.drawImage(one, x, y, photoW, photoH);
+      if(S.cropLines){
+        ctx.strokeStyle="rgba(120,120,120,.55)"; ctx.lineWidth=1;
+        ctx.strokeRect(x+0.5, y+0.5, photoW-1, photoH-1);
+      }
+    }
+  }
+  sheetBox.classList.add("show");
+  previewMeta.textContent = `${SIZES[S.sizeKey].name} · ${photoW}×${photoH}px · 该相纸可排 ${cols}×${rows}=${cols*rows} 张`;
+}
+
+/* ============ 主渲染 ============ */
+function render(){
+  if(!S.sourceCanvas) return;
+  // 更新目标尺寸
+  const sz = (S.sizeKey==="custom") ? {name:"自定义", w:S.cw, h:S.ch} : SIZES[S.sizeKey];
+  S.targetW=mm2px(sz.w); S.targetH=mm2px(sz.h);
+  renderSingle(previewCanvas);
+  if(S.paper!=="none") renderSheet();
+  else sheetBox.classList.remove("show");
+  if(S.paper==="none") previewMeta.textContent=`${sz.name} · ${S.targetW}×${S.targetH}px（300dpi）`;
+}
+
+/* ============ 初始化尺寸下拉 ============ */
+(function initSizeSel(){
+  const sel=$("sizeSel");
+  for(const k in SIZES){
+    const o=document.createElement("option"); o.value=k;
+    o.textContent=`${SIZES[k].name}（${SIZES[k].w}×${SIZES[k].h}mm）`;
+    sel.appendChild(o);
+  }
+  sel.value="1inch";
+})();
+
+/* ============ 事件绑定 ============ */
+$("pickBtn").onclick=()=>fileInput.click();
+drop.onclick=(e)=>{ if(e.target===drop || e.target.classList.contains("t") || e.target.classList.contains("s")) fileInput.click(); };
+$("camBtn").onclick=openCamera;
+
+fileInput.onchange=(e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{ previewBox.classList.add("show"); drop.style.display="none"; processImage(img); };
+  img.onerror=()=>setStatus("图片加载失败，请换一张", false);
+  img.src=URL.createObjectURL(f);
+};
+
+// 拖拽
+["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor="var(--brand)";}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor="";}));
+drop.addEventListener("drop",e=>{
+  const f=e.dataTransfer.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{ previewBox.classList.add("show"); drop.style.display="none"; processImage(img); };
+  img.src=URL.createObjectURL(f);
+});
+
+// 底色
+$("bgSwatches").addEventListener("click",(e)=>{
+  const sw=e.target.closest(".sw"); if(!sw) return;
+  if(sw.id==="bgCustom"){ $("bgColorPicker").style.display="block"; $("bgColorPicker").click(); return; }
+  document.querySelectorAll(".sw").forEach(s=>s.classList.remove("on"));
+  sw.classList.add("on");
+  S.bg=sw.dataset.bg; S.transparent=false;
+  $("bgTransparent").classList.remove("on");
+  $("bgColorPicker").style.display="none";
+  if(S.cutoutCanvas) buildCutout();
+  render();
+});
+$("bgColorPicker").oninput=(e)=>{ S.bg=e.target.value; S.transparent=false; buildCutout(); render(); };
+$("bgTransparent").onclick=()=>{
+  S.transparent=!S.transparent;
+  $("bgTransparent").classList.toggle("on", S.transparent);
+  if(S.cutoutCanvas) buildCutout();
+  render();
+};
+
+// 尺寸
+$("sizeSel").onchange=(e)=>{
+  S.sizeKey=e.target.value;
+  $("customSize").style.display = (S.sizeKey==="custom")?"grid":"none";
+  render();
+};
+$("cw").oninput=(e)=>{ S.cw=parseFloat(e.target.value)||25; render(); };
+$("ch").oninput=(e)=>{ S.ch=parseFloat(e.target.value)||35; render(); };
+
+// 微调
+const bind=(id,key,fmt,el)=>{
+  $(id).oninput=(e)=>{ S[key]=parseFloat(e.target.value); $(el).textContent=fmt(S[key]); render(); };
+};
+bind("zoom","zoom",v=>Math.round(v*100)+"%","zoomV");
+bind("offX","offX",v=>Math.round(v),"offXV");
+bind("offY","offY",v=>Math.round(v),"offYV");
+bind("rot","rot",v=>v+"°","rotV");
+bind("bright","bright",v=>Math.round(v),"brightV");
+bind("contrast","contrast",v=>Math.round(v),"contrastV");
+$("gap").oninput=(e)=>{ S.gap=parseInt(e.target.value)||0; $("gapV").textContent=S.gap+" px"; renderSheet(); };
+
+$("paperSel").onchange=(e)=>{ S.paper=e.target.value; render(); };
+$("cropLines").onclick=()=>{ S.cropLines=!S.cropLines; $("cropLines").classList.toggle("on",S.cropLines); renderSheet(); };
+
+// 重置
+$("resetBtn").onclick=()=>{
+  previewBox.classList.remove("show"); drop.style.display="block";
+  S.hasImage=false; S.sourceCanvas=null; S.cutoutCanvas=null; S.maskCanvas=null; S.faceBox=null;
+  fileInput.value="";
+};
+
+// 下载
+function dataURLToBlob(dataURL){
+  const [h, d]=dataURL.split(",");
+  const mime=h.match(/:(.*?);/)[1];
+  const bin=atob(d); const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr], {type:mime});
+}
+function downloadCanvas(cv, name){
+  const type = S.transparent ? "image/png" : "image/jpeg";
+  const q = S.transparent ? undefined : 0.96;
+  cv.toBlob((blob)=>{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }, type, q);
+}
+$("dlSingle").onclick=()=>{
+  if(!S.sourceCanvas) return;
+  renderSingle(previewCanvas);
+  const nm = S.transparent ? `证件照_${SIZES[S.sizeKey].name}.png` : `证件照_${SIZES[S.sizeKey].name}.jpg`;
+  downloadCanvas(previewCanvas, nm);
+};
+$("dlSheet").onclick=()=>{
+  if(S.paper==="none"){ setStatus("请先在「排版」中选择相纸尺寸", false); setTimeout(hideStatus,2000); return; }
+  if(!S.sourceCanvas) return;
+  renderSheet();
+  const pname={5:"5寸",6:"6寸",a4:"A4"}[S.paper]||"排版";
+  downloadCanvas(sheetCanvas, `排版照_${SIZES[S.sizeKey].name}_${pname}.jpg`);
+};
+
+/* ============ 相机 ============ */
+let stream=null;
+function openCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ setStatus("当前环境不支持摄像头", false); setTimeout(hideStatus,2000); return; }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"user", width:{ideal:1280}, height:{ideal:960}}, audio:false})
+    .then(s=>{ stream=s; $("camVideo").srcObject=s; $("camModal").classList.add("show"); })
+    .catch(()=>setStatus("无法访问摄像头，请检查权限", false));
+}
+$("camClose").onclick=closeCamera;
+function closeCamera(){
+  $("camModal").classList.remove("show");
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+}
+$("camShot").onclick=()=>{
+  const v=$("camVideo");
+  const c=document.createElement("canvas"); c.width=v.videoWidth||1280; c.height=v.videoHeight||960;
+  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+  closeCamera();
+  previewBox.classList.add("show"); drop.style.display="none";
+  const img=new Image();
+  img.onload=()=>processImage(img);
+  img.src=c.toDataURL("image/jpeg",0.95);
+};
+
+/* ============ 启动 ============ */
+loadModels();
 </script>
 </body>
 </html>
