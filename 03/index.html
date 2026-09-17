@@ -47,9 +47,22 @@
       align-items: center;
       justify-content: center;
       z-index: 20;
-      background:
-        linear-gradient(90deg, transparent 0%, rgba(47,143,255,0.08) 20%, rgba(76,201,255,0.12) 50%, rgba(47,143,255,0.08) 80%, transparent 100%);
-      border-bottom: 1px solid rgba(76,201,255,0.15);
+      /* 深色实底：与下方 3D 场景形成硬分界
+         （原来是一层左右渐隐的半透明蓝，天空直接透上来，标题栏和场景糊成一片） */
+      background: linear-gradient(180deg, #04101f 0%, #071f39 58%, #0a2b4d 100%);
+      border-bottom: 2px solid rgba(76,201,255,0.85);
+      box-shadow: 0 10px 26px rgba(0,8,18,0.68), inset 0 -1px 0 rgba(140,225,255,0.20);
+    }
+
+    /* 标题栏底边：高亮发光分界线（进一步拉开与下方场景的层次） */
+    .header::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -2px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(76,201,255,0) 0%, #4cc9ff 25%, #d8f4ff 50%, #4cc9ff 75%, rgba(76,201,255,0) 100%);
+      box-shadow: 0 0 16px rgba(76,201,255,0.90);
+      pointer-events: none;
     }
 
     .header-title {
@@ -566,23 +579,24 @@
     }
 
     body.light .header {
-      background: linear-gradient(180deg, #ffffff 0%, #eef6fc 62%, #dbeaf7 100%);
-      border-bottom: 2px solid #0090c8;
-      box-shadow: 0 8px 22px rgba(20,50,80,0.18), inset 0 1px 0 rgba(255,255,255,0.95);
+      /* 浅色主题：标题栏同样改为深色实底，与下方浅色内容明显区分 */
+      background: linear-gradient(180deg, #04101f 0%, #0a2643 58%, #10365c 100%);
+      border-bottom: 2px solid #35b6ea;
+      box-shadow: 0 10px 24px rgba(10,30,55,0.32), inset 0 -1px 0 rgba(140,225,255,0.20);
     }
     body.light .header::after {
       background: linear-gradient(90deg, rgba(0,144,200,0) 0%, #0090c8 25%, #4ec8ec 50%, #0090c8 75%, rgba(0,144,200,0) 100%);
       box-shadow: 0 0 12px rgba(0,150,200,0.55);
     }
     body.light .header-title h1 {
-      background: linear-gradient(180deg, #0d2740 0%, #0068a0 45%, #0090c8 100%);
+      background: linear-gradient(180deg, #ffffff 0%, #cfeeff 52%, #6fd6ff 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 1px 3px rgba(255,255,255,0.9));
+      filter: drop-shadow(0 2px 6px rgba(0,16,36,0.80));
     }
-    body.light .header-title p { color: #0a7ba8; text-shadow: none; }
-    body.light .header-side { color: rgba(24,46,74,0.82); }
-    body.light .header-logo { filter: drop-shadow(0 1px 3px rgba(30,60,90,0.35)); }
+    body.light .header-title p { color: rgba(150,222,255,0.92); text-shadow: 0 1px 4px rgba(0,16,36,0.60); }
+    body.light .header-side { color: rgba(214,236,252,0.86); }
+    body.light .header-logo { filter: drop-shadow(0 1px 4px rgba(0,10,20,0.60)); }
 
     body.light .panel {
       background: rgba(255,255,255,0.86);
@@ -1539,6 +1553,14 @@
         color: C('#132a44'), roughness: 0.06, metalness: 0.55,
         clearcoat: 1.0, clearcoatRoughness: 0.04, envMapIntensity: 1.60
       });
+      // 大门门楣名牌底板（深藏青）+ 冷白发光字带 / 灯箱面
+      MAT.gatePanel = new THREE.MeshStandardMaterial({
+        color: C('#12283f'), roughness: 0.42, metalness: 0.45, envMapIntensity: 0.95
+      });
+      MAT.signGlow = new THREE.MeshStandardMaterial({
+        color: C('#eaf7ff'), emissive: S('#7fd8ff'), emissiveIntensity: 2.1,
+        roughness: 0.30, metalness: 0.05, envMapIntensity: 0.70
+      });
       // 幕墙贴图（主厂房）
       MAT.facadeHall = new THREE.MeshStandardMaterial({
         map: TEX.facadeHall, color: C('#ffffff'),
@@ -1774,11 +1796,21 @@
       body.castShadow = true; body.receiveShadow = true;
       g.add(body);
 
-      // 混凝土勒脚（建筑落地感）
-      const plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 1.6, d + 0.8), MAT.concrete);
-      plinth.position.y = 0.8;
-      plinth.castShadow = true; plinth.receiveShadow = true;
-      g.add(plinth);
+      // 混凝土勒脚（建筑落地感）——南立面正门处断开，避免把入口下段整段埋进勒脚
+      // 左/右两段保留完整进深（南面出挑 0.4）；中段在南面退回墙内，正门处露出落地墙面
+      const PGAP = 4.6;                                  // 勒脚断开半宽（略大于门套外沿）
+      const lw = (w / 2 + 0.4) - PGAP;                   // 左/右段宽
+      const plinthParts = [
+        [lw, d + 0.8, -(w / 2 + 0.4 + PGAP) / 2, 0],     // 左段
+        [lw, d + 0.8, (w / 2 + 0.4 + PGAP) / 2, 0],      // 右段
+        [PGAP * 2, d - 0.4, 0, -0.4]                     // 中段（南面退到墙内侧）
+      ];
+      for (const pp of plinthParts) {
+        const pl = new THREE.Mesh(new THREE.BoxGeometry(pp[0], 1.6, pp[1]), MAT.concrete);
+        pl.position.set(pp[2], 0.8, pp[3]);
+        pl.castShadow = true; pl.receiveShadow = true;
+        g.add(pl);
+      }
 
       // 上部玻璃采光带（真实厂房高侧窗）
       const gbH = h * 0.28;
@@ -1796,6 +1828,7 @@
       // 竖向壁柱
       const colCount = 6;
       for (let i = 0; i <= colCount; i++) {
+        if (i === colCount / 2) continue;   // 跳过正中壁柱：原来正好堵在南立面主入口门洞中央
         for (const s of [1, -1]) {
           const pil = new THREE.Mesh(new THREE.BoxGeometry(0.9, h, 0.6), MAT.alu);
           pil.position.set(-w / 2 + (w / colCount) * i, h / 2, s * (d / 2 + 0.10));
@@ -1830,112 +1863,153 @@
       // 进深只铺 d-9，前后各留一条设备带，板阵与屋面设备互不穿插
       addSolarRoof(g, w - 2.5, d - 9, h + 1.1, 17);
 
-      // 入口雨棚
-      const canopy = new THREE.Mesh(new THREE.BoxGeometry(w * 0.34, 0.5, 4.5), MAT.alu);
-      canopy.position.set(0, h * 0.36, d / 2 + 2.2);
-      canopy.castShadow = true;
-      g.add(canopy);
-      for (const s of [-1, 1]) {
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, h * 0.36, 12), MAT.alu);
-        post.position.set(s * w * 0.14, h * 0.18, d / 2 + 4.0);
-        post.castShadow = true;
-        g.add(post);
-      }
+      // 入口雨棚 / 门套 / 明门已并入下方 addMainEntrance()
+      // （原 15.6m 宽 4.5m 深的整片大平板雨棚过于扁平，横贯整面山墙，
+      //   反而把入口拉成"一道窗带"；改为随门洞尺度的窄雨棚 + 门套 + 开启的明门）
 
-      // ---- 正门（南立面主入口）：门套 + 玻璃幕 + 双开玻璃门 + 门槛台阶 + 门头标识 ----
-      // 说明：主厂房是实心体块，无法真开洞，故门套整体外凸 0.10~0.52，
-      //       玻璃面贴墙 0.19、门扇再外凸 0.08，层层错开，避免任何同向共面（z-fighting）。
+      // ---- 正门（南立面主入口）：门套 + 玻璃幕 + 明装双开门（一扇开启）+ 雨棚 + 台阶 + 灯箱 ----
+      // 说明：主厂房是实心体块、无法真开洞，故整组入口构件沿 z 向外层层错开：
+      //   墙面 15.00 → 玻璃 15.14~15.24 → 竖梃 15.19~15.33 → 门框 15.29~15.39
+      //   → 门套 15.10~15.65 → 雨棚前檐 18.10。任何两个面都不同位，杜绝 z-fighting。
+      // 之前的问题：门洞 10.0×3.8 又宽又扁 + 整片玻璃 + 15.6m 大平板雨棚，
+      //   远看就是山墙上一道"窗带"；且 1.6m 勒脚把门的下半段整段埋掉。
       (function addMainEntrance() {
-        const zWall = d / 2;              // 南墙外表面
-        const OW = 10.0;                  // 门洞宽
-        const OH = 3.8;                   // 门洞高
-        const fD = 0.42;                  // 门套进深
-        const fZ = zWall + 0.10 + fD / 2; // 门套中心 z
-        const DOOR_H = 2.55;              // 门扇高（上方留玻璃亮子）
+        const zWall = d / 2;                  // 南墙外表面 = 15.00
+        const OW = 7.2;                       // 门洞宽（收窄加高，接近"门"的比例）
+        const OH = 4.10;                      // 门洞高
+        const fD = 0.55;                      // 门套进深
+        const fZ = zWall + 0.10 + fD / 2;     // 门套中心 z
+        const SILL = 0.30;                    // 门槛平台高
+        const DOOR_H = 2.80;                  // 门扇净高（其上为固定亮子）
+        const dW = 3.30;                      // 双开门总宽
+        const CH = 5.00;                      // 雨棚中心标高
+        const CD = 3.00;                      // 雨棚外挑深度
+        const cz0 = zWall + 0.10;             // 雨棚内端起 z
 
-        // 门套：左右竖框 + 上过梁（拼接不重叠）
+        // ① 门套：深色包边在浅色墙板上勾出清晰的"洞口"轮廓
         for (const s of [-1, 1]) {
-          const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.34, OH, fD), MAT.alu);
-          jamb.position.set(s * (OW / 2 + 0.17), OH / 2, fZ);
+          const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.55, OH, fD), MAT.darkMetal);
+          jamb.position.set(s * (OW / 2 + 0.275), OH / 2, fZ);
           jamb.castShadow = true; jamb.receiveShadow = true;
           g.add(jamb);
+
+          const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, OH + 0.55, fD + 0.06), MAT.alu);
+          edge.position.set(s * (OW / 2 + 0.62), (OH + 0.55) / 2, fZ);
+          edge.castShadow = true;
+          g.add(edge);
         }
-        const head = new THREE.Mesh(new THREE.BoxGeometry(OW + 0.68, 0.36, fD), MAT.alu);
-        head.position.set(0, OH + 0.18, fZ);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.10, 0.55, fD), MAT.darkMetal);
+        head.position.set(0, OH + 0.275, fZ);
         head.castShadow = true; head.receiveShadow = true;
         g.add(head);
 
-        // 玻璃幕（固定扇，贴墙 0.19）
-        const glaze = new THREE.Mesh(new THREE.BoxGeometry(OW - 0.06, OH - 0.16, 0.10), MAT.glass);
-        glaze.position.set(0, (OH - 0.16) / 2, zWall + 0.19);
+        // ② 玻璃幕（贴墙 0.19）+ 竖梃 + 门上横梃
+        const glaze = new THREE.Mesh(new THREE.BoxGeometry(OW - 0.10, OH - 0.20, 0.10), MAT.glass);
+        glaze.position.set(0, (OH - 0.20) / 2, zWall + 0.19);
         g.add(glaze);
 
-        // 幕墙分格：两侧竖梃 + 门顶横梃（外凸 0.06）
-        for (const gx of [-3.4, 3.4]) {
-          const mull = new THREE.Mesh(new THREE.BoxGeometry(0.13, OH - 0.16, 0.13), MAT.alu);
-          mull.position.set(gx, (OH - 0.16) / 2, zWall + 0.25);
+        for (const gx of [-2.55, 2.55]) {
+          const mull = new THREE.Mesh(new THREE.BoxGeometry(0.14, OH - 0.20, 0.14), MAT.alu);
+          mull.position.set(gx, (OH - 0.20) / 2, zWall + 0.26);
           mull.castShadow = true;
           g.add(mull);
         }
-        const transom = new THREE.Mesh(new THREE.BoxGeometry(OW - 0.06, 0.15, 0.13), MAT.alu);
-        transom.position.set(0, DOOR_H + 0.10, zWall + 0.25);
+        const transom = new THREE.Mesh(new THREE.BoxGeometry(OW - 0.10, 0.16, 0.16), MAT.alu);
+        transom.position.set(0, SILL + DOOR_H + 0.34, zWall + 0.26);
         transom.castShadow = true;
         g.add(transom);
 
-        // 双开玻璃门：深色门框（左右边梃 + 中缝 + 上框）+ 玻璃门扇
-        const dW = 3.20;                  // 门组总宽
-        const fr = MAT.darkMetal;
-        for (const dx of [-dW / 2, 0, dW / 2]) {
-          const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, DOOR_H + 0.12, 0.11), fr);
-          bar.position.set(dx, (DOOR_H + 0.12) / 2, zWall + 0.32);
-          bar.castShadow = true;
-          g.add(bar);
-        }
-        const top = new THREE.Mesh(new THREE.BoxGeometry(dW + 0.12, 0.12, 0.11), fr);
-        top.position.set(0, DOOR_H + 0.06, zWall + 0.32);
-        g.add(top);
-        const sillBar = new THREE.Mesh(new THREE.BoxGeometry(dW + 0.12, 0.10, 0.16), fr);
-        sillBar.position.set(0, 0.05, zWall + 0.32);
-        g.add(sillBar);
-
-        // 玻璃门扇（两扇，位于深色门框内侧，外凸于固定玻璃）
+        // ③ 明装双开门：深色门框 + 玻璃扇，两扇向外开启 26° —— 一眼是"门"而不是"窗"
+        const HINGE = dW / 2;
         for (const s of [-1, 1]) {
-          const leaf = new THREE.Mesh(new THREE.BoxGeometry(dW / 2 - 0.16, DOOR_H - 0.16, 0.07), MAT.glassDeep);
-          leaf.position.set(s * (dW / 4 + 0.01), (DOOR_H - 0.16) / 2 + 0.08, zWall + 0.30);
-          leaf.castShadow = true;
-          g.add(leaf);
-          // 门拉手
-          const hd = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.95, 0.05), MAT.alu);
-          hd.position.set(s * 0.22, 1.35, zWall + 0.37);
-          g.add(hd);
+          const leafW = dW / 2 - 0.06;
+          const pivot = new THREE.Group();
+          pivot.position.set(s * HINGE, SILL, zWall + 0.34);
+
+          const mkBar = (bw, bh, px, py) => {
+            const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.10), MAT.darkMetal);
+            m.position.set(px, py, 0);
+            m.castShadow = true;
+            pivot.add(m);
+          };
+          mkBar(0.12, DOOR_H, -leafW / 2 + 0.06, DOOR_H / 2);   // 左（铰链侧）边梃
+          mkBar(0.12, DOOR_H, leafW / 2 - 0.06, DOOR_H / 2);    // 右（开启侧）边梃
+          mkBar(leafW, 0.12, 0, DOOR_H - 0.06);                 // 上冒头
+          mkBar(leafW, 0.34, 0, 0.17);                          // 下冒头
+          mkBar(leafW, 0.10, 0, DOOR_H * 0.42);                 // 中冒头
+
+          // 门上玻璃 + 门下夹板玻璃（分两段，避免整扇一块大玻璃又像窗）
+          const gl1 = new THREE.Mesh(new THREE.BoxGeometry(leafW - 0.24, DOOR_H * 0.50, 0.06), MAT.glassDeep);
+          gl1.position.set(0, DOOR_H * 0.72, 0);
+          pivot.add(gl1);
+          const gl2 = new THREE.Mesh(new THREE.BoxGeometry(leafW - 0.24, DOOR_H * 0.24, 0.06), MAT.glassDeep);
+          gl2.position.set(0, DOOR_H * 0.24, 0);
+          pivot.add(gl2);
+
+          // 拉手（装在开启侧竖边梃上）
+          const hd = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.10, 0.06), MAT.alu);
+          hd.position.set(-s * (leafW / 2 - 0.24), 1.35, 0.10);
+          hd.castShadow = true;
+          pivot.add(hd);
+
+          pivot.rotation.y = s * 0.46;        // 向外开启（左扇 -0.46 / 右扇 +0.46）
+          g.add(pivot);
         }
 
-        // 门槛台阶（一级，向外挑出）
-        const sill = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.8, 0.15, 1.50), MAT.concrete);
-        sill.position.set(0, 0.075, zWall + 1.15);
-        sill.castShadow = true; sill.receiveShadow = true;
-        g.add(sill);
+        // ④ 台阶：上层平台（与门槛同高）+ 下层踏步
+        const step1 = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.30, SILL, 1.20), MAT.concrete);
+        step1.position.set(0, SILL / 2, zWall + 0.10 + 0.60);
+        step1.castShadow = true; step1.receiveShadow = true;
+        g.add(step1);
 
-        // 入口标识柱（门两侧立式灯箱，增强"入口"识别）
+        const step2 = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.86, SILL / 2, 0.95), MAT.concrete);
+        step2.position.set(0, SILL / 4, zWall + 0.10 + 1.20 + 0.475);
+        step2.castShadow = true; step2.receiveShadow = true;
+        g.add(step2);
+
+        // ⑤ 雨棚（外挑 3.0m，宽度收到门洞尺度）+ 深色前檐 + 檐下发光带 + 两根方柱
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(OW + 3.4, 0.34, CD), MAT.alu);
+        slab.position.set(0, CH, cz0 + CD / 2);
+        slab.castShadow = true; slab.receiveShadow = true;
+        g.add(slab);
+
+        const fascia = new THREE.Mesh(new THREE.BoxGeometry(OW + 3.4, 0.62, 0.20), MAT.darkMetal);
+        fascia.position.set(0, CH - 0.14, cz0 + CD + 0.02);
+        fascia.castShadow = true;
+        g.add(fascia);
+
+        const fglow = new THREE.Mesh(new THREE.BoxGeometry(OW + 2.4, 0.09, 0.06), MAT.signGlow);
+        fglow.position.set(0, CH - 0.38, cz0 + CD + 0.12);
+        g.add(fglow);
+
         for (const s of [-1, 1]) {
-          const box = new THREE.Mesh(new THREE.BoxGeometry(0.42, 2.3, 0.34), MAT.darkMetal);
-          box.position.set(s * (OW / 2 + 1.0), 1.15, zWall + 1.05);
-          box.castShadow = true;
-          g.add(box);
-          const lit = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1.9, 0.04), MAT.lampGlass);
-          lit.position.set(s * (OW / 2 + 1.0), 1.25, zWall + 1.23);
-          g.add(lit);
+          const col = new THREE.Mesh(new THREE.BoxGeometry(0.30, CH - 0.17, 0.30), MAT.darkMetal);
+          col.position.set(s * (OW / 2 + 1.15), (CH - 0.17) / 2, cz0 + CD - 0.40);
+          col.castShadow = true; col.receiveShadow = true;
+          g.add(col);
         }
 
-        // 门头标识：位于雨棚上方，深色底板 + 三条自发光光带
-        const sign = new THREE.Mesh(new THREE.BoxGeometry(OW * 0.80, 1.00, 0.16), MAT.darkMetal);
-        sign.position.set(0, h * 0.36 + 1.75, zWall + 0.12);
+        // ⑥ 门头标识：雨棚之上的深色底板 + 三条自发光字带（厂名 / 入口）
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.6, 1.05, 0.18), MAT.gatePanel);
+        sign.position.set(0, 6.30, zWall + 0.22);
         sign.castShadow = true;
         g.add(sign);
         for (let i = 0; i < 3; i++) {
-          const bar = new THREE.Mesh(new THREE.BoxGeometry(OW * 0.80 - 0.8, 0.09, 0.05), MAT.lampGlass);
-          bar.position.set(0, h * 0.36 + 1.75 + 0.30 - i * 0.30, zWall + 0.21);
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.6 - 1.4 - i * 0.9, 0.10, 0.06), MAT.signGlow);
+          bar.position.set(0, 6.62 - i * 0.32, zWall + 0.35);
           g.add(bar);
+        }
+
+        // ⑦ 入口两侧立式灯箱（把入口从墙面上"拎"出来）
+        for (const s of [-1, 1]) {
+          const box = new THREE.Mesh(new THREE.BoxGeometry(0.46, 2.45, 0.36), MAT.darkMetal);
+          box.position.set(s * (OW / 2 + 2.60), 1.225, zWall + 0.78);
+          box.castShadow = true; box.receiveShadow = true;
+          g.add(box);
+
+          const lit = new THREE.Mesh(new THREE.BoxGeometry(0.28, 2.05, 0.05), MAT.signGlow);
+          lit.position.set(s * (OW / 2 + 2.60), 1.30, zWall + 0.97);
+          g.add(lit);
         }
       })();
 
@@ -2172,39 +2246,73 @@
       roofSlab.castShadow = true;
       g.add(roofSlab);
 
-      // 门柱 + 灯
+      // 门柱（加高到 6.6m + 柱脚基座，撑得起门楣）
       // 【关键】柱心正对围墙门洞端头（x=±WALL.GATE、z=围墙轴线），柱体把墙端头包进去，
       // 柱与围墙连成一体；此前柱位在 z=0（比围墙缩进 4m）且不在门洞端头，看着与围墙"脱开"
       const pz = WALL.ZS - z;
+      const PH = 6.60;                    // 柱身高（原 5.4 太矮，加门楣后比例失衡）
       for (const side of [-1, 1]) {
-        const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.4, 5.4, 1.4), MAT.concrete);
-        pillar.position.set(side * WALL.GATE, 2.7, pz);
+        const baseP = new THREE.Mesh(new THREE.BoxGeometry(2.10, 0.80, 2.10), MAT.fenceCap);
+        baseP.position.set(side * WALL.GATE, 0.40, pz);
+        baseP.castShadow = true; baseP.receiveShadow = true;
+        g.add(baseP);
+
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.50, PH, 1.50), MAT.concrete);
+        pillar.position.set(side * WALL.GATE, PH / 2, pz);
         pillar.castShadow = true; pillar.receiveShadow = true;
         g.add(pillar);
 
-        const capP = new THREE.Mesh(new THREE.BoxGeometry(1.82, 0.35, 1.82), MAT.alu);
-        capP.position.set(side * WALL.GATE, 5.55, pz);
+        const capP = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.36, 1.98), MAT.fenceCap);
+        capP.position.set(side * WALL.GATE, PH + 0.18, pz);
         capP.castShadow = true;
         g.add(capP);
 
-        const lampBall = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 12), MAT.lampGlass);
-        lampBall.position.set(side * WALL.GATE, 6.0, pz);
+        const lampBall = new THREE.Mesh(new THREE.SphereGeometry(0.44, 16, 12), MAT.lampGlass);
+        lampBall.position.set(side * WALL.GATE, PH + 0.95, pz);
         g.add(lampBall);
 
         const gl = new THREE.PointLight(S('#ffd9a0').getHex(), 0.9, 22, 2);
-        gl.position.set(side * WALL.GATE, 5.9, pz);
+        gl.position.set(side * WALL.GATE, PH + 0.85, pz);
         g.add(gl);
+      }
+
+      // 门楣横梁（龙门架）+ 中央发光名牌
+      // —— 加一道横梁，原来"围墙上的缺口"才成为一眼可辨的"大门"
+      const SPAN = WALL.GATE * 2;         // 门洞净宽 20.8m
+      const beamY = 5.30;
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(SPAN, 0.95, 0.90), MAT.darkMetal);
+      beam.position.set(0, beamY, pz);
+      beam.castShadow = true; beam.receiveShadow = true;
+      g.add(beam);
+
+      const beamCap = new THREE.Mesh(new THREE.BoxGeometry(SPAN, 0.10, 1.02), MAT.alu);
+      beamCap.position.set(0, beamY + 0.53, pz);
+      beamCap.castShadow = true;
+      g.add(beamCap);
+
+      // 名牌：深色底板 + 三条冷白发光字带（园区 / 企业名称）
+      const plateW = SPAN * 0.46;
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(plateW, 1.15, 0.20), MAT.gatePanel);
+      plate.position.set(0, beamY, pz + 0.46);
+      plate.castShadow = true;
+      g.add(plate);
+      for (let i = 0; i < 3; i++) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(plateW - 1.0 - i * 1.1, 0.10, 0.06), MAT.signGlow);
+        bar.position.set(0, beamY + 0.32 - i * 0.32, pz + 0.62);
+        g.add(bar);
       }
 
       // 双向道闸：闸机立柱 + 左右两条短杆（各 5.0m）
       // 位置贴在围墙门洞线上（z=+3.2），否则会被 2.5m 围墙完全遮挡、外侧看不见
+      // bx：整组右移，让开左侧门卫亭（原居中时左杆端头顶在岗亭上）
       const bz = 3.2;
+      const bx = 3.4;
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
-      post.position.set(0, 0.78, bz);
+      post.position.set(bx, 0.78, bz);
       post.castShadow = true; post.receiveShadow = true;
       g.add(post);
       const postCap = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.14, 0.74), MAT.chargerTop);
-      postCap.position.set(0, 1.62, bz);
+      postCap.position.set(bx, 1.62, bz);
       g.add(postCap);
 
       for (const side of [-1, 1]) {
@@ -2214,7 +2322,7 @@
             new THREE.BoxGeometry(1.25, 0.34, 0.36),
             (k % 2 === 0) ? MAT.warn : MAT.warnRed
           );
-          seg.position.set(side * (0.625 + 1.25 * k), 1.15, bz);
+          seg.position.set(bx + side * (0.625 + 1.25 * k), 1.15, bz);
           seg.castShadow = true;
           g.add(seg);
         }
@@ -2914,6 +3022,7 @@
     // 初始化
     initTheme();
     init3D();
+
 
 
 
