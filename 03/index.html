@@ -58,20 +58,21 @@
     }
 
     .header-title h1 {
-      font-size: 1.6rem;
+      font-size: 1.62rem;
       font-weight: 700;
       letter-spacing: 2px;
-      background: linear-gradient(180deg, #fff 0%, #4cc9ff 100%);
+      background: linear-gradient(180deg, #ffffff 0%, #a8e8ff 52%, #4cc9ff 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 24px rgba(76,201,255,0.45);
+      filter: drop-shadow(0 2px 7px rgba(0,16,36,0.85)) drop-shadow(0 0 16px rgba(76,201,255,0.35));
     }
 
     .header-title p {
       font-size: 0.75rem;
-      color: rgba(76,201,255,0.85);
+      color: rgba(140,220,255,0.92);
       letter-spacing: 4px;
-      margin-top: -2px;
+      margin-top: -1px;
+      text-shadow: 0 1px 4px rgba(0,16,36,0.75);
     }
 
     .header-side {
@@ -88,12 +89,13 @@
     .header-side.left { left: 16px; }
     .header-side.right { right: 16px; }
 
+    /* 个人印章 logo（1:1） */
     .header-logo {
-      height: 28px;
+      height: 32px;
       width: auto;
-      aspect-ratio: 400 / 374;
+      aspect-ratio: 1 / 1;
       object-fit: contain;
-      filter: drop-shadow(0 0 6px rgba(76,201,255,0.4));
+      filter: drop-shadow(0 1px 4px rgba(0,10,20,0.55)) drop-shadow(0 0 8px rgba(255,120,110,0.35));
     }
 
     .time-badge {
@@ -500,10 +502,14 @@
     }
 
     @media (max-width: 768px) {
-      .header { height: 52px; }
+      .header { height: 54px; }
       .header-title h1 { font-size: 1rem; letter-spacing: 1px; }
       .header-title p { font-size: 0.6rem; letter-spacing: 2px; }
-      .header-side { display: none; }
+      /* 移动端保留个人 logo，隐藏右侧时间/天气与名字文字 */
+      .header-side.right { display: none; }
+      .header-side.left { left: 10px; gap: 8px; }
+      .header-side.left span { display: none; }
+      .header-logo { height: 26px; }
 
       /* 左右看板：窄屏下始终贴边可见，不再隐藏 */
       .left-column, .right-column {
@@ -560,18 +566,23 @@
     }
 
     body.light .header {
-      background: linear-gradient(90deg, transparent 0%, rgba(0,150,200,0.06) 20%, rgba(0,170,210,0.10) 50%, rgba(0,150,200,0.06) 80%, transparent 100%);
-      border-bottom: 1px solid rgba(0,140,180,0.20);
+      background: linear-gradient(180deg, #ffffff 0%, #eef6fc 62%, #dbeaf7 100%);
+      border-bottom: 2px solid #0090c8;
+      box-shadow: 0 8px 22px rgba(20,50,80,0.18), inset 0 1px 0 rgba(255,255,255,0.95);
+    }
+    body.light .header::after {
+      background: linear-gradient(90deg, rgba(0,144,200,0) 0%, #0090c8 25%, #4ec8ec 50%, #0090c8 75%, rgba(0,144,200,0) 100%);
+      box-shadow: 0 0 12px rgba(0,150,200,0.55);
     }
     body.light .header-title h1 {
-      background: linear-gradient(180deg, #16304a 0%, #0088aa 100%);
+      background: linear-gradient(180deg, #0d2740 0%, #0068a0 45%, #0090c8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: none;
+      filter: drop-shadow(0 1px 3px rgba(255,255,255,0.9));
     }
-    body.light .header-title p { color: rgba(0,130,170,0.85); }
-    body.light .header-side { color: rgba(30,50,80,0.75); }
-    body.light .header-logo { filter: drop-shadow(0 0 4px rgba(0,150,200,0.35)); }
+    body.light .header-title p { color: #0a7ba8; text-shadow: none; }
+    body.light .header-side { color: rgba(24,46,74,0.82); }
+    body.light .header-logo { filter: drop-shadow(0 1px 3px rgba(30,60,90,0.35)); }
 
     body.light .panel {
       background: rgba(255,255,255,0.86);
@@ -637,18 +648,23 @@
     }
 
     body.black .header {
-      background: linear-gradient(90deg, transparent 0%, rgba(80,200,255,0.05) 20%, rgba(80,200,255,0.09) 50%, rgba(80,200,255,0.05) 80%, transparent 100%);
-      border-bottom: 1px solid rgba(95,208,255,0.18);
+      background: linear-gradient(180deg, #01040a 0%, #05101f 62%, #071a2e 100%);
+      border-bottom: 2px solid rgba(95,208,255,0.70);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.75), inset 0 1px 0 rgba(120,220,255,0.10);
+    }
+    body.black .header::after {
+      background: linear-gradient(90deg, rgba(95,208,255,0) 0%, #5fd0ff 25%, #d6f4ff 50%, #5fd0ff 75%, rgba(95,208,255,0) 100%);
+      box-shadow: 0 0 16px rgba(95,208,255,0.85);
     }
     body.black .header-title h1 {
-      background: linear-gradient(180deg, #9fe4ff 0%, #2f8fff 100%);
+      background: linear-gradient(180deg, #d8f6ff 0%, #6fd6ff 45%, #2f8fff 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: none;
+      filter: drop-shadow(0 0 14px rgba(60,170,255,0.45));
     }
-    body.black .header-title p { color: rgba(95,208,255,0.75); }
-    body.black .header-side { color: rgba(180,210,235,0.7); }
-    body.black .header-logo { filter: drop-shadow(0 0 6px rgba(0,240,255,0.4)); }
+    body.black .header-title p { color: rgba(120,215,255,0.85); }
+    body.black .header-side { color: rgba(180,210,235,0.75); }
+    body.black .header-logo { filter: drop-shadow(0 0 8px rgba(255,110,100,0.45)); }
 
     body.black .panel {
       background: rgba(8, 20, 38, 0.80);
@@ -1259,7 +1275,33 @@
       return finishTexture(o.c, 1, 1);
     }
 
+    // 园区围墙：清水混凝土板 + 竖向分缝 + 压顶（一张贴图代表 4m × 2.4m 墙段）
+    function texFence() {
+      const W = 512, H = 256;
+      const o = canvas2d(W, H), ctx = o.ctx;
+      ctx.fillStyle = '#ccd0d3'; ctx.fillRect(0, 0, W, H);
+      blotches(ctx, W, H, [160, 166, 172], 26, 62, 0.32);
+      blotches(ctx, W, H, [232, 236, 239], 18, 48, 0.34);
+      // 竖向分缝（每 128px = 1m 一块板）
+      ctx.strokeStyle = 'rgba(108,116,124,0.75)'; ctx.lineWidth = 3;
+      for (let x = 0; x <= W; x += 128) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+      for (let x = 0; x <= W; x += 128) {
+        ctx.beginPath(); ctx.moveTo(x + 3, 0); ctx.lineTo(x + 3, H); ctx.stroke();
+      }
+      // 压顶分界 + 底部勒脚
+      ctx.fillStyle = 'rgba(104,112,120,0.60)'; ctx.fillRect(0, 0, W, 5);
+      ctx.fillStyle = 'rgba(124,130,136,0.55)'; ctx.fillRect(0, H - 30, W, 4);
+      ctx.fillStyle = 'rgba(92,98,105,0.34)'; ctx.fillRect(0, H - 26, W, 26);
+      weathering(ctx, W, H, 28, [100, 108, 118], 0.15);
+      grain(ctx, W, H, 10);
+      return finishTexture(o.c, 1, 1);
+    }
+
     function initTextures() {
+      TEX.fence = texFence();
       TEX.concrete = texConcrete();
       TEX.metalWall = texMetalWall();
       TEX.asphalt = texAsphalt();
@@ -1438,6 +1480,11 @@
     function asphaltMat(rx, ry) { return groundMatFactory('asphalt_' + rx + '_' + ry, TEX.asphalt, rx, ry, 0.94, 0.03, 0.45); }
     function pavingMat(rx, ry) { return groundMatFactory('paving_' + rx + '_' + ry, TEX.paving, rx, ry, 0.68, 0.06, 0.80); }
     function grassMat(rx, ry) { return groundMatFactory('grass_' + rx + '_' + ry, TEX.grass, rx, ry, 0.96, 0.00, 0.42); }
+    // 围墙墙面材质（按墙段长度决定横向铺贴次数，贴图 = 4m 一段）
+    function fenceMat(len) {
+      const rx = Math.max(1, Math.round(len / 4));
+      return groundMatFactory('fence_' + rx, TEX.fence, rx, 1, 0.86, 0.03, 0.55);
+    }
     function solarMatFor(pw, ph) {
       const rx = Math.max(1, Math.round(pw / 5)), ry = Math.max(1, Math.round(ph / 5));
       const key = 'solar_' + rx + '_' + ry;
@@ -1482,6 +1529,11 @@
       MAT.glass = new THREE.MeshPhysicalMaterial({
         color: C('#2b4d72'), roughness: 0.07, metalness: 0.52,
         clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 1.75
+      });
+      // 入口幕墙玻璃（比常规建筑玻璃更深，保证门厅在浅色墙面上有足够对比）
+      MAT.glassDeep = new THREE.MeshPhysicalMaterial({
+        color: C('#132a44'), roughness: 0.06, metalness: 0.55,
+        clearcoat: 1.0, clearcoatRoughness: 0.04, envMapIntensity: 1.60
       });
       // 幕墙贴图（主厂房）
       MAT.facadeHall = new THREE.MeshStandardMaterial({
@@ -1655,7 +1707,8 @@
       ground.receiveShadow = true;
       scene.add(ground);
 
-      const padGeo = new THREE.PlaneGeometry(250, 250);
+      // 园区铺装范围对齐围墙（墙外为草地，营造"园区边界"）
+      const padGeo = new THREE.PlaneGeometry(172, 128);
       groundPad = new THREE.Mesh(padGeo, MAT.paving);
       groundPad.rotation.x = -Math.PI / 2;
       groundPad.position.y = 0.04;
@@ -1663,7 +1716,7 @@
       scene.add(groundPad);
 
       // 极淡网格（保留大屏科技感，减弱存在感）
-      gridHelper = new THREE.GridHelper(180, 60, 0x8fc0e4, 0x3d6b96);
+      gridHelper = new THREE.GridHelper(164, 56, 0x8fc0e4, 0x3d6b96);
       gridHelper.position.y = 0.09;
       gridHelper.material.opacity = 0.11;
       gridHelper.material.transparent = true;
@@ -1692,11 +1745,12 @@
       addOfficeBuilding(-38, 18, 22, 16, 9);   // 左侧研发办公楼
       addWorkshop(40, -16, 28, 20, 9);         // 右侧生产车间
       addStorageTanks(-44, -24);               // 西北储罐区
-      addChargingStation(18, -34);             // 东北电动车充电站（原烟囱位置一带）
-      addGateHouse(0, 52);                     // 南门岗
-      addParkingLot(28, 38);                   // 东南停车场
+      addChargingStation(40, -30.7, Math.PI); // 车间北侧电动车充电站（车位/充电桩紧贴车间北墙，桩体外缘留 5cm 不入墙）
+      addGateHouse(0, 50);                     // 南门岗（园区大门）
+      addParkingLot(50, 18);                   // 东南停车场（移出主干道，避免与路面重叠）
       addGreenArea(-30, 42);                   // 西南绿化带
       addPipeRack();                           // 工艺管廊
+      addPerimeterWall();                      // 园区围墙
     }
 
     // 主厂房：钢结构大跨厂房，金属墙板 + 玻璃腰带 + 满铺光伏
@@ -1782,6 +1836,103 @@
         post.castShadow = true;
         g.add(post);
       }
+
+      // ---- 正门（南立面主入口）：门套 + 玻璃幕 + 双开玻璃门 + 门槛台阶 + 门头标识 ----
+      // 说明：主厂房是实心体块，无法真开洞，故门套整体外凸 0.10~0.52，
+      //       玻璃面贴墙 0.19、门扇再外凸 0.08，层层错开，避免任何同向共面（z-fighting）。
+      (function addMainEntrance() {
+        const zWall = d / 2;              // 南墙外表面
+        const OW = 10.0;                  // 门洞宽
+        const OH = 3.8;                   // 门洞高
+        const fD = 0.42;                  // 门套进深
+        const fZ = zWall + 0.10 + fD / 2; // 门套中心 z
+        const DOOR_H = 2.55;              // 门扇高（上方留玻璃亮子）
+
+        // 门套：左右竖框 + 上过梁（拼接不重叠）
+        for (const s of [-1, 1]) {
+          const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.34, OH, fD), MAT.alu);
+          jamb.position.set(s * (OW / 2 + 0.17), OH / 2, fZ);
+          jamb.castShadow = true; jamb.receiveShadow = true;
+          g.add(jamb);
+        }
+        const head = new THREE.Mesh(new THREE.BoxGeometry(OW + 0.68, 0.36, fD), MAT.alu);
+        head.position.set(0, OH + 0.18, fZ);
+        head.castShadow = true; head.receiveShadow = true;
+        g.add(head);
+
+        // 玻璃幕（固定扇，贴墙 0.19）
+        const glaze = new THREE.Mesh(new THREE.BoxGeometry(OW - 0.06, OH - 0.16, 0.10), MAT.glass);
+        glaze.position.set(0, (OH - 0.16) / 2, zWall + 0.19);
+        g.add(glaze);
+
+        // 幕墙分格：两侧竖梃 + 门顶横梃（外凸 0.06）
+        for (const gx of [-3.4, 3.4]) {
+          const mull = new THREE.Mesh(new THREE.BoxGeometry(0.13, OH - 0.16, 0.13), MAT.alu);
+          mull.position.set(gx, (OH - 0.16) / 2, zWall + 0.25);
+          mull.castShadow = true;
+          g.add(mull);
+        }
+        const transom = new THREE.Mesh(new THREE.BoxGeometry(OW - 0.06, 0.15, 0.13), MAT.alu);
+        transom.position.set(0, DOOR_H + 0.10, zWall + 0.25);
+        transom.castShadow = true;
+        g.add(transom);
+
+        // 双开玻璃门：深色门框（左右边梃 + 中缝 + 上框）+ 玻璃门扇
+        const dW = 3.20;                  // 门组总宽
+        const fr = MAT.darkMetal;
+        for (const dx of [-dW / 2, 0, dW / 2]) {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, DOOR_H + 0.12, 0.11), fr);
+          bar.position.set(dx, (DOOR_H + 0.12) / 2, zWall + 0.32);
+          bar.castShadow = true;
+          g.add(bar);
+        }
+        const top = new THREE.Mesh(new THREE.BoxGeometry(dW + 0.12, 0.12, 0.11), fr);
+        top.position.set(0, DOOR_H + 0.06, zWall + 0.32);
+        g.add(top);
+        const sillBar = new THREE.Mesh(new THREE.BoxGeometry(dW + 0.12, 0.10, 0.16), fr);
+        sillBar.position.set(0, 0.05, zWall + 0.32);
+        g.add(sillBar);
+
+        // 玻璃门扇（两扇，位于深色门框内侧，外凸于固定玻璃）
+        for (const s of [-1, 1]) {
+          const leaf = new THREE.Mesh(new THREE.BoxGeometry(dW / 2 - 0.16, DOOR_H - 0.16, 0.07), MAT.glassDeep);
+          leaf.position.set(s * (dW / 4 + 0.01), (DOOR_H - 0.16) / 2 + 0.08, zWall + 0.30);
+          leaf.castShadow = true;
+          g.add(leaf);
+          // 门拉手
+          const hd = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.95, 0.05), MAT.alu);
+          hd.position.set(s * 0.22, 1.35, zWall + 0.37);
+          g.add(hd);
+        }
+
+        // 门槛台阶（一级，向外挑出）
+        const sill = new THREE.Mesh(new THREE.BoxGeometry(OW + 1.8, 0.15, 1.50), MAT.concrete);
+        sill.position.set(0, 0.075, zWall + 1.15);
+        sill.castShadow = true; sill.receiveShadow = true;
+        g.add(sill);
+
+        // 入口标识柱（门两侧立式灯箱，增强"入口"识别）
+        for (const s of [-1, 1]) {
+          const box = new THREE.Mesh(new THREE.BoxGeometry(0.42, 2.3, 0.34), MAT.darkMetal);
+          box.position.set(s * (OW / 2 + 1.0), 1.15, zWall + 1.05);
+          box.castShadow = true;
+          g.add(box);
+          const lit = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1.9, 0.04), MAT.lampGlass);
+          lit.position.set(s * (OW / 2 + 1.0), 1.25, zWall + 1.23);
+          g.add(lit);
+        }
+
+        // 门头标识：位于雨棚上方，深色底板 + 三条自发光光带
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(OW * 0.80, 1.00, 0.16), MAT.darkMetal);
+        sign.position.set(0, h * 0.36 + 1.75, zWall + 0.12);
+        sign.castShadow = true;
+        g.add(sign);
+        for (let i = 0; i < 3; i++) {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(OW * 0.80 - 0.8, 0.09, 0.05), MAT.lampGlass);
+          bar.position.set(0, h * 0.36 + 1.75 + 0.30 - i * 0.30, zWall + 0.21);
+          g.add(bar);
+        }
+      })();
 
       buildingGroup.add(g);
     }
@@ -1996,18 +2147,18 @@
       const g = new THREE.Group();
       g.position.set(x, 0, z);
 
-      // 门卫亭
-      const booth = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.6, 4.2), MAT.concrete);
-      booth.position.set(0, 1.8, 0);
+      // 门卫亭（置于车道左侧墙内侧，不再堵住门洞正中）
+      const booth = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.6, 3.8), MAT.concrete);
+      booth.position.set(-7.2, 1.8, 1.6);
       booth.castShadow = true; booth.receiveShadow = true;
       g.add(booth);
 
-      const win = new THREE.Mesh(new THREE.BoxGeometry(5.4, 1.7, 4.4), MAT.glass);
-      win.position.set(0, 2.1, 0);
+      const win = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 4.0), MAT.glass);
+      win.position.set(-7.2, 2.1, 1.6);
       g.add(win);
 
-      const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.45, 5.2), MAT.alu);
-      roofSlab.position.set(0, 3.85, 0);
+      const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.45, 4.6), MAT.alu);
+      roofSlab.position.set(-7.2, 3.85, 1.6);
       roofSlab.castShadow = true;
       g.add(roofSlab);
 
@@ -2031,14 +2182,29 @@
         g.add(gl);
       }
 
-      // 道闸
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(15, 0.30, 0.55), MAT.warn);
-      bar.position.set(0, 1.5, 0);
-      bar.castShadow = true;
-      g.add(bar);
-      const barTip = new THREE.Mesh(new THREE.BoxGeometry(15, 0.32, 0.18), MAT.warnRed);
-      barTip.position.set(0, 1.5, 0.30);
-      g.add(barTip);
+      // 双向道闸：闸机立柱 + 左右两条短杆（各 5.0m）
+      // 位置贴在围墙门洞线上（z=+3.2），否则会被 2.5m 围墙完全遮挡、外侧看不见
+      const bz = 3.2;
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
+      post.position.set(0, 0.78, bz);
+      post.castShadow = true; post.receiveShadow = true;
+      g.add(post);
+      const postCap = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.14, 0.74), MAT.chargerTop);
+      postCap.position.set(0, 1.62, bz);
+      g.add(postCap);
+
+      for (const side of [-1, 1]) {
+        // 闸杆拆成 4 段红黄相间（整根同色在浅色路面上太细看不清）
+        for (let k = 0; k < 4; k++) {
+          const seg = new THREE.Mesh(
+            new THREE.BoxGeometry(1.25, 0.34, 0.36),
+            (k % 2 === 0) ? MAT.warn : MAT.warnRed
+          );
+          seg.position.set(side * (0.625 + 1.25 * k), 1.15, bz);
+          seg.castShadow = true;
+          g.add(seg);
+        }
+      }
 
       buildingGroup.add(g);
     }
@@ -2185,9 +2351,11 @@
     }
 
     // 电动汽车充电站：充电车位一排 + 立柱式充电桩 + 正在充电的车辆
-    function addChargingStation(x, z) {
+    // ry 用于整体转向：π 表示「充电桩朝 +z 一侧」，便于把桩排贴着建筑北墙布置
+    function addChargingStation(x, z, ry) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
+      if (ry) g.rotation.y = ry;
 
       const SLOTS = 6;
       const PITCH = 3.35;                       // 车位间距
@@ -2256,17 +2424,17 @@
       const g = new THREE.Group();
       g.position.set(x, 0, z);
 
-      const lot = new THREE.Mesh(new THREE.PlaneGeometry(24, 20), MAT.asphalt2);
+      const lot = new THREE.Mesh(new THREE.PlaneGeometry(24, 16), MAT.asphalt2);
       lot.rotation.x = -Math.PI / 2;
-      lot.position.y = 0.08;
+      lot.position.y = 0.105;
       lot.receiveShadow = true;
       g.add(lot);
 
       // 车位线
       for (let i = 0; i < 6; i++) {
-        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 15), MAT.marking);
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 11), MAT.marking);
         line.rotation.x = -Math.PI / 2;
-        line.position.set(-9 + i * 3.6, 0.10, 0);
+        line.position.set(-9 + i * 3.6, 0.118, 0);
         g.add(line);
       }
 
@@ -2321,8 +2489,16 @@
       buildingGroup.add(g);
     }
 
+    // 压力容器（储罐区）安全隔离区：防火堤外扩安全距离内严禁任何绿植
+    // 储罐区中心 (-44,-24)，4 罐 + 防火堤 x-58.6~-29.4 z-39.6~-8.4
+    function inTankSafetyZone(x, z) {
+      return x > -86 && x < -14 && z > -58 && z < 4;
+    }
+
     // 写实树：锥形树干 + 多层球冠（远景树关闭投影以省性能）
     function addTree(parent, x, z, s, noShadow) {
+      // 储罐区（压力容器）周边一律不种树，避免树冠穿罐 / 遮挡罐体
+      if (inTankSafetyZone(x, z)) return;
       const t = new THREE.Group();
       t.position.set(x, 0, z);
       t.scale.setScalar(s);
@@ -2428,9 +2604,9 @@
       road1.receiveShadow = true;
       buildingGroup.add(road1);
 
-      const road2 = new THREE.Mesh(new THREE.PlaneGeometry(15, 150), asphaltMat(3, 26));
+      const road2 = new THREE.Mesh(new THREE.PlaneGeometry(15, 104), asphaltMat(3, 18));
       road2.rotation.x = -Math.PI / 2;
-      road2.position.set(-58, 0.085, 0);
+      road2.position.set(-58, 0.085, -2);
       road2.receiveShadow = true;
       buildingGroup.add(road2);
 
@@ -2456,38 +2632,101 @@
         buildingGroup.add(curb2);
       }
 
-      // 树木（注意：右侧生产车间占位 x 26~54 / z -26~-6，树位须避开，
-      //       否则树冠会从墙体穿出、顶在卷帘门框上）
+      // 树木（树位需避开所有建筑 / 道路 / 车位 / 围墙内设施，否则会出现树冠穿墙穿罐）
+      // 园区主要占位：主厂房 x-23~23 z-21~9 ｜ 办公楼 x-49~-27 z10~26 ｜ 车间 x26~54 z-26~-6
+      //              储罐区 x-61~-27 z-40~-8 ｜ 充电站 x28~52 z-36~-27 ｜ 停车场 x38~62 z10~26
+      //              绿化带 x-41~-19 z34~50 ｜ 主干道 z28.5~43.5 ｜ 南北路 x-65.8~-50.2
+      //              围墙 x±80 / z-62~54
+      // 注：储罐区（压力容器）周边安全区内的树位已删除，并由 inTankSafetyZone() 兜底拦截
       const treePositions = [
-        [-42, -28], [-52, -16], [-48, 6], [-50, 26],
-        [42, -32], [62, -22], [50, 10], [48, 30],
-        [-28, 44], [0, 48], [26, 46], [-16, -42],
-        [16, 44], [34, 30], [-64, 40], [-66, -40]
+        [-48, 6], [-70, 20],
+        [62, -22], [74, 6], [50, 4], [74, 12],
+        [-28, 44], [-22, 46], [26, 46],
+        [16, 44], [34, 48], [48, 46], [64, 46],
+        [-8, -46]
       ];
       treePositions.forEach(function (p) {
         addTree(buildingGroup, p[0], p[1], rnd(0.85, 1.3));
       });
 
       // 外围远景树林带：成簇分布（均匀撒点会显得像人工摆设）
+      // 半径下限取 108，再逐棵判定必须落在围墙矩形之外（含拐角），否则会穿进园区
       const CLUSTERS = 11;
       for (let k = 0; k < CLUSTERS; k++) {
         const ang = (k / CLUSTERS) * Math.PI * 2 + rnd(-0.13, 0.13);
-        const r = rnd(86, 148);
+        const r = rnd(112, 172);
         const cx = Math.cos(ang) * r, cz = Math.sin(ang) * r;
         const n = 2 + ((Math.random() * 3) | 0);
         for (let j = 0; j < n; j++) {
-          addTree(buildingGroup, cx + rnd(-10, 10), cz + rnd(-10, 10), rnd(1.15, 1.95), true);
+          const tx = cx + rnd(-8, 8), tz = cz + rnd(-8, 8);
+          // 围墙（x±80 / z-62~54）外扩 6m 才允许种植
+          const outsideWall = (Math.abs(tx) > 86) || (tz < -68) || (tz > 60);
+          if (!outsideWall) continue;
+          addTree(buildingGroup, tx, tz, rnd(1.15, 1.95), true);
         }
       }
 
       // （原「环绕灌木」球阵已按要求移除，避免铺装面上散布绿色球体）
 
-      // 路灯
-      addLampPost(buildingGroup, -20, 43, 0);
-      addLampPost(buildingGroup, 20, 43, Math.PI);
-      addLampPost(buildingGroup, -50, 20, -Math.PI / 2);
-      addLampPost(buildingGroup, -50, -20, -Math.PI / 2);
-      addLampPost(buildingGroup, 52, 8, Math.PI / 2);
+      // 路灯（避开建筑体与储罐罐体：原 (-48,20) 落在办公楼内、(-48,-20) 落在罐体内）
+      addLampPost(buildingGroup, -20, 45, 0);
+      addLampPost(buildingGroup, 20, 45, Math.PI);
+      addLampPost(buildingGroup, -52.5, 20, -Math.PI / 2);
+      addLampPost(buildingGroup, -64, -20, -Math.PI / 2);
+      addLampPost(buildingGroup, 56, 2, Math.PI / 2);
+    }
+
+    /* ---- 园区围墙（混凝土板 + 立柱 + 压顶，南侧留大门洞口） ---- */
+    const WALL = { X: 80, ZS: 54, ZN: -62, H: 2.5, T: 0.34, GATE: 10.4 };
+
+    function addPerimeterWall() {
+      const g = new THREE.Group();
+      const H = WALL.H, T = WALL.T, WX = WALL.X, ZS = WALL.ZS, ZN = WALL.ZN, GATE = WALL.GATE;
+
+      // 一段围墙：起点 → 终点（墙身 + 压顶 + 立柱），立柱间距约 8m
+      function run(x1, z1, x2, z2) {
+        const dx = x2 - x1, dz = z2 - z1;
+        const len = Math.sqrt(dx * dx + dz * dz);
+        if (len < 0.01) return;
+        const ry = Math.atan2(dx, dz);          // 局部 z 轴对准墙段方向
+        const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+
+        const body = new THREE.Mesh(new THREE.BoxGeometry(T, H, len), fenceMat(len));
+        body.position.set(cx, H / 2, cz);
+        body.rotation.y = ry;
+        body.castShadow = true; body.receiveShadow = true;
+        g.add(body);
+
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(T + 0.20, 0.16, len), MAT.fenceCap);
+        cap.position.set(cx, H + 0.08, cz);
+        cap.rotation.y = ry;
+        cap.castShadow = true; cap.receiveShadow = true;
+        g.add(cap);
+
+        const n = Math.max(1, Math.round(len / 8));
+        for (let i = 0; i <= n; i++) {
+          const t = i / n;
+          const px = x1 + dx * t, pz = z1 + dz * t;
+          const col = new THREE.Mesh(new THREE.BoxGeometry(0.60, H + 0.62, 0.60), MAT.fenceCap);
+          col.position.set(px, (H + 0.62) / 2, pz);
+          col.castShadow = true; col.receiveShadow = true;
+          g.add(col);
+          const cap2 = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.16, 0.78), MAT.fenceCap);
+          cap2.position.set(px, H + 0.70, pz);
+          cap2.castShadow = true;
+          g.add(cap2);
+        }
+      }
+
+      // 南墙（大门两侧）→ 东墙 → 北墙 → 西墙（闭合）
+      // 注意：南墙必须从 +GATE 起画到 WX，否则会横跨门洞把大门封死
+      run(GATE, ZS, WX, ZS);
+      run(WX, ZS, WX, ZN);
+      run(-WX, ZN, WX, ZN);
+      run(-WX, ZN, -WX, ZS);
+      run(-WX, ZS, -GATE, ZS);
+
+      buildingGroup.add(g);
     }
 
     function addLampPost(parent, x, z, ry) {
@@ -2545,7 +2784,7 @@
     const viewPositions = {
       all: { pos: [72, 54, 72], target: [0, 16, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
-      charge: { pos: [52, 26, -62], target: [18, 1, -34] },
+      charge: { pos: [42, 24, -60], target: [40, 1, -31] },
       ac: { pos: [34, 34, 8], target: [34, 14, -14] }
     };
 
@@ -2654,6 +2893,12 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
+
+
+
 
 
 
