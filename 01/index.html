@@ -31,6 +31,10 @@
   .title p{margin:2px 0 0; color:var(--sub); font-size:12.5px;}
   .badge{margin-left:auto; font-size:11.5px; color:var(--ok); background:#e7f7ef; border:1px solid #c7ecd9; padding:5px 10px; border-radius:999px; white-space:nowrap;}
   .badge b{color:var(--ok);}
+  .aibadge{display:inline-block; font-size:11.5px; padding:5px 10px; border-radius:999px; margin:0 0 2px;}
+  .aibadge.ok{color:var(--ok); background:#e7f7ef; border:1px solid #c7ecd9;}
+  .aibadge.wait{color:var(--warn); background:#fff5e6; border:1px solid #ffe2b3;}
+  .aibadge.off{color:var(--danger); background:#fdeef1; border:1px solid #f7c9d4;}
 
   .layout{display:grid; grid-template-columns:1fr 372px; gap:18px; align-items:start;}
   @media (max-width:880px){ .layout{grid-template-columns:1fr;} }
@@ -178,8 +182,10 @@
     <!-- RIGHT: controls -->
     <div class="card panel">
       <div class="sec">
-        <div class="lab">① 底色（智能抠图后替换）</div>
-        <div class="bg-swatches" id="bgSwatches">
+        <div class="lab">① AI 去背景（智能抠图 · 人物外全部去除）</div>
+        <div class="aibadge wait" id="aiBadge">⏳ AI 模型加载中…</div>
+        <button class="btn primary" id="aiRemoveBg" style="margin-top:10px;">🤖 AI 去背景（纯白底色）</button>
+        <div class="bg-swatches" id="bgSwatches" style="margin-top:14px;">
           <div class="sw on" data-bg="#ffffff" style="background:#ffffff" title="白底"></div>
           <div class="sw" data-bg="#438edb" style="background:#438edb" title="蓝底"></div>
           <div class="sw" data-bg="#ff0000" style="background:#ff0000" title="红底"></div>
@@ -190,6 +196,7 @@
         <div class="row" style="margin-top:8px;">
           <div class="chip" id="bgTransparent" style="flex:1 1 100%;">🪟 透明背景（PNG）</div>
         </div>
+        <div class="note" style="margin-top:10px;">上传/拍照后会自动抠出人像并换<b>纯白底</b>；点上方按钮可重新执行，或在色板中改蓝/红/绿/自定义/透明底色。</div>
       </div>
 
       <div class="sec">
@@ -254,7 +261,7 @@
         </div>
         <div class="reset"><button class="btn ghost" id="resetBtn" style="background:#fdeef1; color:var(--danger);">↺ 重新选择照片</button></div>
         <div class="note">
-          <b>小贴士：</b>AI 模型首次加载需联网（约几 MB，之后浏览器缓存）。换底色依赖人体分割模型，若环境无法访问模型，将自动切换为「手动裁剪模式」（不替换背景）。
+          <b>小贴士：</b>AI 模型与运行时已镜像到本站点（同源加载，无需外部 CDN），首次加载约十几 MB，之后浏览器缓存。抠图依赖人体分割模型；若极端情况下加载失败，将自动切换为「手动裁剪模式」（不替换背景）。
         </div>
       </div>
     </div>
@@ -283,7 +290,7 @@
 /* ============ 配置 ============ */
 const FACE_URL = "./models/face_landmarker.task";   // 镜像到本仓库，国内可达
 const SEG_URL  = "./models/selfie_segmenter.tflite"; // 镜像到本仓库，国内可达
-const WASM     = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const WASM     = "./wasm";                            // 运行时也镜像到本仓库，彻底去 CDN 依赖
 
 const DPI = 300;
 const mm2px = (mm) => Math.max(1, Math.round(mm / 25.4 * DPI));
@@ -310,7 +317,7 @@ const PAPERS = {
 
 /* ============ 状态 ============ */
 const S = {
-  vision:null, faceLandmarker:null, faceReady:false, segmenter:null, aiReady:false,
+  vision:null, faceLandmarker:null, faceReady:false, segmenter:null, aiReady:false, _loading:true,
   sourceCanvas:null, maskCanvas:null, cutoutCanvas:null, faceBox:null,
   bg:"#ffffff", transparent:false,
   sizeKey:"1inch", cw:25, ch:35,
@@ -332,6 +339,7 @@ function hideStatus(){ statusEl.classList.remove("show"); }
 /* ============ 加载 AI 模型 ============ */
 async function loadModels(){
   try{
+    S._loading=true; updateAiBadge();
     setStatus("正在加载 AI 模型（人脸关键点 + 智能抠图）…");
     S.vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14");
     const fileset = await S.vision.FilesetResolver.forVisionTasks(WASM);
@@ -355,22 +363,40 @@ async function loadModels(){
     try{
       S.segmenter = await S.vision.ImageSegmenter.createFromOptions(fileset, {
         baseOptions:{ modelAssetPath:SEG_URL, delegate:"GPU" }, runningMode:"IMAGE",
-        outputCategoryMask:true, outputConfidenceMasks:false
+        outputCategoryMask:false, outputConfidenceMasks:true
       });
     }catch(e){
       S.segmenter = await S.vision.ImageSegmenter.createFromOptions(fileset, {
         baseOptions:{ modelAssetPath:SEG_URL, delegate:"CPU" }, runningMode:"IMAGE",
-        outputCategoryMask:true, outputConfidenceMasks:false
+        outputCategoryMask:false, outputConfidenceMasks:true
       });
     }
     S.aiReady = true;
+    updateAiBadge();
     hideStatus();
     if(S.hasImage) processImage(S._pendingImg);
   }catch(e){
     console.warn("AI 模型加载失败：", e);
     S.aiReady = false;
+    updateAiBadge();
     hideStatus();
     if(S.hasImage) processImage(S._pendingImg);
+  }
+}
+
+/* AI 抠图状态徽标 */
+function updateAiBadge(){
+  const el=$("aiBadge");
+  if(!el) return;
+  if(S.aiReady){
+    el.textContent="🤖 AI 抠图已就绪";
+    el.className="aibadge ok";
+  }else if(S._loading){
+    el.textContent="⏳ AI 模型加载中…";
+    el.className="aibadge wait";
+  }else{
+    el.textContent="⚠️ 未加载 AI 模型（手动模式，不换底）";
+    el.className="aibadge off";
   }
 }
 
@@ -422,23 +448,32 @@ async function processImage(img){
     }catch(e){ console.warn("face box detect failed", e); }
   }
 
-  // 人体分割
+  // 人体分割（AI 去背景核心）
   S.maskCanvas=null;
   if(S.aiReady && S.segmenter){
     try{
       const seg=S.segmenter.segment(src);
-      const m=seg.categoryMask;
-      const mw=m.width, mh=m.height;
-      const data=(typeof m.getAsUint8Array==="function") ? m.getAsUint8Array() : m.data;
-      const mc=document.createElement("canvas"); mc.width=mw; mc.height=mh;
-      const mx=mc.getContext("2d"); const id=mx.createImageData(mw,mh);
-      for(let i=0;i<mw*mh;i++){
-        const on = data[i] > 0;
-        id.data[i*4]=255; id.data[i*4+1]=255; id.data[i*4+2]=255;
-        id.data[i*4+3]= on?255:0;
+      let maskMP=null, conf=true;
+      if(seg.confidenceMasks && seg.confidenceMasks[0]){ maskMP=seg.confidenceMasks[0]; conf=true; }
+      else if(seg.categoryMask){ maskMP=seg.categoryMask; conf=false; }
+      if(maskMP){
+        const mw=maskMP.width, mh=maskMP.height;
+        // 置信度遮罩 → Float32(0..1)；类别遮罩 → Uint8(0/1)
+        const raw = conf
+          ? (typeof maskMP.getAsFloat32Array==="function" ? maskMP.getAsFloat32Array() : null)
+          : (typeof maskMP.getAsUint8Array==="function" ? maskMP.getAsUint8Array() : null);
+        const mc=document.createElement("canvas"); mc.width=mw; mc.height=mh;
+        const mx=mc.getContext("2d"); const id=mx.createImageData(mw,mh);
+        for(let i=0;i<mw*mh;i++){
+          let a;
+          if(conf && raw){ a = Math.max(0, Math.min(1, raw[i])); }
+          else { a = (raw && raw[i] > 0) ? 1 : 0; }
+          id.data[i*4]=255; id.data[i*4+1]=255; id.data[i*4+2]=255;
+          id.data[i*4+3]= Math.round(a*255);
+        }
+        mx.putImageData(id,0,0);
+        S.maskCanvas=mc;
       }
-      mx.putImageData(id,0,0);
-      S.maskCanvas=mc;
     }catch(e){ console.warn("segment failed", e); }
   }
 
@@ -452,8 +487,11 @@ async function processImage(img){
     setStatus("抠图模型已加载但本次未生成人像遮罩，请换一张人像清晰的照片", false);
     setTimeout(hideStatus, 3500);
   }else if(!S.faceBox){
-    setStatus("未检测到人脸，已使用居中裁切，可手动微调", false);
+    setStatus("✅ 已去除背景（纯白底）· 未检测到人脸，已使用居中裁切，可手动微调", false);
     setTimeout(hideStatus, 3000);
+  }else{
+    setStatus("✅ 已智能去除背景并换纯白底，可改色或微调", false);
+    setTimeout(hideStatus, 2600);
   }
 }
 
@@ -467,7 +505,8 @@ function buildCutout(){
     ctx.drawImage(S.sourceCanvas,0,0);
     ctx.save();
     ctx.globalCompositeOperation="destination-in";
-    if(!S.transparent){ ctx.filter="blur(0.6px)"; }
+    // 轻微羽化：让人像与底色之间过渡自然（低分辨率遮罩放大后更需柔边）
+    ctx.filter="blur(1.5px)";
     ctx.drawImage(S.maskCanvas,0,0,w,h);
     ctx.restore();
     ctx.globalCompositeOperation="source-over";
@@ -648,12 +687,44 @@ $("gap").oninput=(e)=>{ S.gap=parseInt(e.target.value)||0; $("gapV").textContent
 $("paperSel").onchange=(e)=>{ S.paper=e.target.value; render(); };
 $("cropLines").onclick=()=>{ S.cropLines=!S.cropLines; $("cropLines").classList.toggle("on",S.cropLines); renderSheet(); };
 
-// 重置
-$("resetBtn").onclick=()=>{
-  previewBox.classList.remove("show"); drop.style.display="block";
-  S.hasImage=false; S.sourceCanvas=null; S.cutoutCanvas=null; S.maskCanvas=null; S.faceBox=null;
-  fileInput.value="";
+// AI 去背景（纯白）一键执行
+$("aiRemoveBg").onclick=()=>{
+  if(!S.hasImage){ setStatus("请先选择或拍摄一张照片", false); setTimeout(hideStatus,2000); return; }
+  S.bg="#ffffff"; S.transparent=false;
+  document.querySelectorAll("#bgSwatches .sw").forEach(s=>s.classList.toggle("on", s.dataset.bg==="#ffffff"));
+  $("bgColorPicker").style.display="none";
+  $("bgTransparent").classList.remove("on");
+  if(S.aiReady && S.maskCanvas){
+    buildCutout(); render();
+    setStatus("✅ 已去除背景并替换为纯白底色", false); setTimeout(hideStatus,2000);
+  }else if(S.aiReady){
+    buildCutout(); render();
+    setStatus("AI 已就绪但未生成人像遮罩，请换一张人像清晰的照片", false); setTimeout(hideStatus,2600);
+  }else{
+    setStatus("正在重新加载 AI 模型…"); loadModels();
+  }
 };
+
+// 重置（彻底复位，回到选图界面）
+function resetAll(){
+  previewBox.classList.remove("show"); drop.style.display="block"; sheetBox.classList.remove("show");
+  S.hasImage=false; S.sourceCanvas=null; S.cutoutCanvas=null; S.maskCanvas=null; S.faceBox=null;
+  S.zoom=1; S.offX=0; S.offY=0; S.rot=0; S.bright=0; S.contrast=0;
+  S.sizeKey="1inch"; S.paper="none"; S.gap=0; S.cropLines=false; S.transparent=false; S.bg="#ffffff";
+  fileInput.value="";
+  $("sizeSel").value="1inch"; $("customSize").style.display="none";
+  $("paperSel").value="none"; $("gap").value=0; $("gapV").textContent="0 px";
+  $("zoom").value=1; $("zoomV").textContent="100%";
+  $("offX").value=0; $("offXV").textContent="0";
+  $("offY").value=0; $("offYV").textContent="0";
+  $("rot").value=0; $("rotV").textContent="0°";
+  $("bright").value=0; $("brightV").textContent="0";
+  $("contrast").value=0; $("contrastV").textContent="0";
+  $("cropLines").classList.remove("on");
+  document.querySelectorAll("#bgSwatches .sw").forEach(s=>s.classList.toggle("on", s.dataset.bg==="#ffffff"));
+  $("bgTransparent").classList.remove("on"); $("bgColorPicker").style.display="none";
+}
+$("resetBtn").onclick=resetAll;
 
 // 下载
 function dataURLToBlob(dataURL){
