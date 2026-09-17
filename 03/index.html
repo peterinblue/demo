@@ -1589,6 +1589,12 @@
       MAT.marking = new THREE.MeshStandardMaterial({
         color: C('#e8ecef'), roughness: 0.70, metalness: 0.02, envMapIntensity: 0.60
       });
+      // 平贴地面的深灰石材收边（路侧绿带 / 树池压边）
+      // 【关键】地面上的"线"必须是零厚度的面片：原来用 BoxGeometry 做路缘石，
+      // 高出路面 0.34m，在俯视角度看就是一条"凸起的白线"，还带投影
+      MAT.curbFlat = new THREE.MeshStandardMaterial({
+        color: C('#79818a'), roughness: 0.88, metalness: 0.02, envMapIntensity: 0.42
+      });
       // 警示黄
       MAT.warn = new THREE.MeshStandardMaterial({
         color: C('#e8b93a'), roughness: 0.45, metalness: 0.30, envMapIntensity: 0.85
@@ -1744,20 +1750,19 @@
       ground.receiveShadow = true;
       worldGroup.add(ground);
 
-      // 园区铺装范围对齐围墙（墙外为草地，营造"园区边界"）
-      const padGeo = new THREE.PlaneGeometry(172, 128);
+      // 园区铺装：范围严格收在围墙内
+      // 【修正】原来 172x128 比围墙（x±80 / z-62~54，墙厚 0.34）大一圈，
+      // 铺装会甩到墙外草地上，看着像"围墙外还铺了石材"
+      // 墙内表面 x±79.83 / z-61.83~53.83 → 铺装取 159.6 x 115.6，中心 z=-4
+      const padGeo = new THREE.PlaneGeometry(159.6, 115.6);
       groundPad = new THREE.Mesh(padGeo, MAT.paving);
       groundPad.rotation.x = -Math.PI / 2;
-      groundPad.position.y = 0.04;
+      groundPad.position.set(0, 0.04, -4);
       groundPad.receiveShadow = true;
       worldGroup.add(groundPad);
 
-      // 极淡网格（保留大屏科技感，减弱存在感）
-      gridHelper = new THREE.GridHelper(164, 56, 0x8fc0e4, 0x3d6b96);
-      gridHelper.position.y = 0.09;
-      gridHelper.material.opacity = 0.11;
-      gridHelper.material.transparent = true;
-      gridHelper.depthWrite = false;
+      // 极淡网格：改用矩形网格线（GridHelper 是正方形 164x164，半径方向会溢到墙外草地上）
+      gridHelper = paintGrid();
       worldGroup.add(gridHelper);
 
       buildingGroup = new THREE.Group();
@@ -1785,7 +1790,7 @@
       addChargingStation(40, -30.7, Math.PI); // 车间北侧电动车充电站（车位/充电桩紧贴车间北墙，桩体外缘留 5cm 不入墙）
       addGateHouse(0, 50);                     // 南门岗（园区大门）
       addParkingLot(50, 18);                   // 东南停车场（移出主干道，避免与路面重叠）
-      addGreenArea(-30, 42);                   // 西南绿化带
+      addGreenArea(-30, 48.6);                 // 主干道南侧路侧绿带（z 44.2~53，不再压马路）
       addPipeRack();                           // 工艺管廊
       addPerimeterWall();                      // 园区围墙
     }
@@ -2471,9 +2476,13 @@
       const PILE_Z = -DEPTH / 2 - 1.45;         // 充电桩所在深度
 
       // 沥青地坪
+      // 标高取 0.052（园区铺装 0.04 + 12mm）：车辆抬到地坪面上，轮胎不陷进沥青；
+      // 与铺装落差只有 1cm 级，地坪边缘不会露出 5.5cm 的"悬空浮板"立面
+      const PAD_Y = 0.052;
+      const MK_Y = PAD_Y + 0.008;                // 车位线：平贴地坪上方 8mm，零厚度面片
       const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3.4, DEPTH + 6.4), asphaltMat(7, 4));
       pad.rotation.x = -Math.PI / 2;
-      pad.position.set(0, 0.095, -0.6);
+      pad.position.set(0, PAD_Y, -0.6);
       pad.receiveShadow = true;
       g.add(pad);
 
@@ -2481,12 +2490,14 @@
       for (let i = 0; i <= SLOTS; i++) {
         const line = new THREE.Mesh(new THREE.PlaneGeometry(0.14, DEPTH), MAT.marking);
         line.rotation.x = -Math.PI / 2;
-        line.position.set(-W / 2 + i * PITCH, 0.112, 0);
+        line.position.set(-W / 2 + i * PITCH, MK_Y, 0);
+        line.receiveShadow = true;
         g.add(line);
       }
       const backLine = new THREE.Mesh(new THREE.PlaneGeometry(W, 0.14), MAT.marking);
       backLine.rotation.x = -Math.PI / 2;
-      backLine.position.set(0, 0.112, -DEPTH / 2);
+      backLine.position.set(0, MK_Y, -DEPTH / 2);
+      backLine.receiveShadow = true;
       g.add(backLine);
 
       // 充电专用车位涂装（靠桩一侧的深绿带，含白色车位号区）
@@ -2494,7 +2505,8 @@
         const cx = -W / 2 + PITCH * (i + 0.5);
         const zone = new THREE.Mesh(new THREE.PlaneGeometry(PITCH - 0.34, 1.35), MAT.chargeZone);
         zone.rotation.x = -Math.PI / 2;
-        zone.position.set(cx, 0.118, -DEPTH / 2 + 0.78);
+        zone.position.set(cx, MK_Y, -DEPTH / 2 + 0.78);
+        zone.receiveShadow = true;
         g.add(zone);
       }
 
@@ -2510,7 +2522,7 @@
 
         // 车倒车入位（车头朝 +z 外侧，车尾靠充电桩）
         const car = makeCar(carColors[i % carColors.length]);
-        car.position.set(cx, 0, 0.15);
+        car.position.set(cx, PAD_Y, 0.15);
         car.rotation.y = Math.PI;
         car.rotation.z = rnd(-0.005, 0.005);
         g.add(car);
@@ -2527,30 +2539,60 @@
     }
 
     // 停车场
+    // 【修正】原来 6 条 11m 长的车位线整条拉通、车骑在线上，没有中间通道，
+    // 俯视看像"沥青上画了一排长白条"。改为标准两排车位 + 中间通道
     function addParkingLot(x, z) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
 
-      const lot = new THREE.Mesh(new THREE.PlaneGeometry(24, 16), MAT.asphalt2);
+      const LOT_W = 24, LOT_D = 16;
+      // 场坪标高：园区铺装 0.04，路面 0.062。场坪取 0.052（比铺装高 12mm），
+      // 车辆抬到面上，轮胎不再陷进沥青；同时与铺装的落差压到 1cm 级，
+      // 场地边缘不会露出一圈 6.5cm 的"悬空浮板"立面
+      const LOT_Y = 0.052;
+      const BAY_W = 3.6, BAY_D = 5.4, AISLE = 5.2;   // 5.4 x 2 + 5.2 = 16
+      const BAYS = 5, BAY_X0 = -BAY_W * BAYS / 2;    // 车位带 x -9~9
+      const MK_Y = LOT_Y + 0.008;                    // 车位线：平贴场坪上方 8mm，零厚度
+
+      const lot = new THREE.Mesh(new THREE.PlaneGeometry(LOT_W, LOT_D), MAT.asphalt2);
       lot.rotation.x = -Math.PI / 2;
-      lot.position.y = 0.105;
+      lot.position.y = LOT_Y;
       lot.receiveShadow = true;
       g.add(lot);
 
-      // 车位线
-      for (let i = 0; i < 6; i++) {
-        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 11), MAT.marking);
-        line.rotation.x = -Math.PI / 2;
-        line.position.set(-9 + i * 3.6, 0.118, 0);
-        g.add(line);
+      // 车位分隔线（上下两排各 5 个车位，只到通道边，不再贯通整块场地）
+      for (let i = 0; i <= BAYS; i++) {
+        for (const s of [-1, 1]) {
+          const line = new THREE.Mesh(new THREE.PlaneGeometry(0.15, BAY_D), MAT.marking);
+          line.rotation.x = -Math.PI / 2;
+          line.position.set(BAY_X0 + i * BAY_W, MK_Y, s * (AISLE / 2 + BAY_D / 2));
+          line.receiveShadow = true;      // 让建筑/车辆的阴影能落在白线上，避免"阴影里白线还发亮"
+          g.add(line);
+        }
+      }
+      // 通道两侧的车位内边线
+      for (const s of [-1, 1]) {
+        const bar = new THREE.Mesh(new THREE.PlaneGeometry(BAY_W * BAYS, 0.15), MAT.marking);
+        bar.rotation.x = -Math.PI / 2;
+        bar.position.set(0, MK_Y, s * (AISLE / 2));
+        bar.receiveShadow = true;
+        g.add(bar);
       }
 
-      // 车辆（复用 makeCar：车身 + 包围 + 玻璃舱 + 四轮）
+      // 车辆（复用 makeCar）：北排 4 辆、南排 3 辆，车头朝里（车尾朝通道）
       const carColors = [MAT.carBody[0], MAT.carBody[1], MAT.carBody[2], MAT.carBody[3]];
+      const zBay = AISLE / 2 + BAY_D / 2;
       for (let i = 0; i < 4; i++) {
-        const car = makeCar(carColors[i]);
-        car.position.set(-7.2 + i * 3.6, 0, (i % 2 === 0 ? -3.6 : 3.6));
-        car.rotation.y = (i % 2 === 0 ? 0 : Math.PI);
+        const car = makeCar(carColors[i % carColors.length]);
+        car.position.set(BAY_X0 + BAY_W * (i + 0.5), LOT_Y, -zBay);
+        car.rotation.y = 0;
+        car.rotation.z = rnd(-0.006, 0.006);
+        g.add(car);
+      }
+      for (let i = 0; i < 3; i++) {
+        const car = makeCar(carColors[(i + 1) % carColors.length]);
+        car.position.set(BAY_X0 + BAY_W * (i + 1.5), LOT_Y, zBay);
+        car.rotation.y = Math.PI;
         car.rotation.z = rnd(-0.006, 0.006);
         g.add(car);
       }
@@ -2558,36 +2600,46 @@
       buildingGroup.add(g);
     }
 
-    // 绿化带
+    // 路侧绿带
+    // 【修正】原来 22x16 放在 (-30,42)：主干道占 z 28.5~43.5，绿化带整个压在马路南半幅上，
+    // 四条白色缘石横穿沥青、草坪盖住路面，俯视看就是"沥青上多出一圈白线网格"。
+    // 现移到主干道南侧、南墙之间（z 44.2~53），并改成平贴地面的石材收边（不再凸起）
     function addGreenArea(x, z) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
 
-      const lawn = new THREE.Mesh(new THREE.PlaneGeometry(22, 16), MAT.grassPatch);
+      const LW = 22, LD = 8.8, B = 0.5;      // 绿带宽 x 深 / 收边宽
+
+      const lawn = new THREE.Mesh(new THREE.PlaneGeometry(LW, LD), MAT.grassPatch);
       lawn.rotation.x = -Math.PI / 2;
-      lawn.position.y = 0.10;
+      lawn.position.y = 0.058;
       lawn.receiveShadow = true;
       g.add(lawn);
 
-      // 路缘石
-      const curbMat = MAT.concrete;
-      const curbs = [[0, -8, 22, 0.5], [0, 8, 22, 0.5], [-11, 0, 0.5, 16], [11, 0, 0.5, 16]];
-      curbs.forEach(function (c) {
-        const curb = new THREE.Mesh(new THREE.BoxGeometry(c[2], 0.32, c[3]), curbMat);
-        curb.position.set(c[0], 0.16, c[1]);
-        curb.receiveShadow = true; curb.castShadow = true;
-        g.add(curb);
+      // 平贴石材收边（零厚度面片，压在地面上 8mm，不凸起、不投影）
+      const edges = [
+        [0, -(LD / 2 + B / 2), LW + B * 2, B],
+        [0, (LD / 2 + B / 2), LW + B * 2, B],
+        [-(LW / 2 + B / 2), 0, B, LD],
+        [(LW / 2 + B / 2), 0, B, LD]
+      ];
+      edges.forEach(function (e) {
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(e[2], e[3]), MAT.curbFlat);
+        p.rotation.x = -Math.PI / 2;
+        p.position.set(e[0], 0.054, e[1]);
+        p.receiveShadow = true;
+        g.add(p);
       });
 
-      const treePos = [[-7, -4], [7, -4], [0, 4], [-4, 5], [5, 5]];
+      const treePos = [[-7, -1.7], [0, -1.7], [7, -1.7], [-3.5, 1.9], [3.5, 1.9]];
       treePos.forEach(function (p) {
         addTree(g, p[0], p[1], rnd(0.9, 1.25));
       });
 
-      // 灌木
+      // 灌木（限制在窄带内）
       for (let i = 0; i < 8; i++) {
         const b = new THREE.Mesh(new THREE.SphereGeometry(rnd(0.6, 0.9), 12, 8), MAT.bush);
-        b.position.set(rnd(-9.5, 9.5), 0.55, rnd(-6.5, 6.5));
+        b.position.set(rnd(-9.5, 9.5), 0.55, rnd(-3.0, 3.0));
         b.scale.set(1, 0.72, 1);
         b.castShadow = true;
         g.add(b);
@@ -2710,53 +2762,141 @@
     }
 
     /* ============ 5. 环境（道路 / 树木 / 路灯） ============ */
+
+    // 园区科技网格：矩形 + 逐条裁剪在围墙内（替代正方形 GridHelper，避免网格线穿到墙外草地）
+    function paintGrid() {
+      const X0 = -78, X1 = 78, Z0 = -60, Z1 = 52, STEP = 6;
+      const pts = [];
+      for (let x = X0; x <= X1 + 0.01; x += STEP) { pts.push(x, 0, Z0, x, 0, Z1); }
+      for (let z = Z0; z <= Z1 + 0.01; z += STEP) { pts.push(X0, 0, z, X1, 0, z); }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      const g = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+        color: 0x8fc0e4, transparent: true, opacity: 0.13, depthWrite: false
+      }));
+      g.position.y = 0.05;      // 低于路面（0.062），网格不会压在沥青上
+      return g;
+    }
+
     function createEnvironment() {
-      // 主干道（带路缘石与车道标线）
-      const road1 = new THREE.Mesh(new THREE.PlaneGeometry(150, 15), asphaltMat(26, 3));
+      // ---------- 道路系统 ----------
+      // 标高统一：铺装 0.04 → 路面 0.062 → 标线 0.070（任何"线"都平贴路面，不凸起）
+      // 次干道 / 引道比主干道低几毫米，交叉处让主干道压在上面（同高会 z-fighting）
+      const Y_ROAD = 0.062, Y_MK = 0.070;
+
+      // 主干道（东西向）：z 28.5~43.5，正对南大门
+      // 【修正】原来只铺到 x±75，距围墙（x±80）还差 4.8m，俯视看就是"半截路悬在铺装中间"。
+      // 现两端延到 x±79.6（墙内表面 79.83），道路通到东西厂界，端头被围墙收住
+      const R1 = { zc: 36, hw: 7.5, x0: -79.6, x1: 79.6 };
+      const road1 = new THREE.Mesh(
+        new THREE.PlaneGeometry(R1.x1 - R1.x0, R1.hw * 2), asphaltMat(28, 3));
       road1.rotation.x = -Math.PI / 2;
-      road1.position.set(0, 0.085, 36);
+      road1.position.set((R1.x0 + R1.x1) / 2, Y_ROAD, R1.zc);
       road1.receiveShadow = true;
       buildingGroup.add(road1);
 
-      const road2 = new THREE.Mesh(new THREE.PlaneGeometry(15, 104), asphaltMat(3, 18));
+      // 次干道（南北向）：x -76~-64
+      // 【修正1】原为 x=-58 宽 15（x -65.5~-50.5），而储罐区防火堤一直伸到 x=-58.6，
+      //          防火堤把西侧 8m 路面整个压掉；东移会撞主厂房，故西移到 x=-70、宽 12
+      // 【修正2】原南端一直伸到 z=50，距南墙内表面（53.83）只剩 3.8m，形成"断头路顶着墙"。
+      //          现改为 T 字口：南端止于主干道北边线（z=28.5），汇入主干道
+      const R2 = { xc: -70, hw: 6, z0: -58, z1: R1.zc - R1.hw };
+      const road2 = new THREE.Mesh(
+        new THREE.PlaneGeometry(R2.hw * 2, R2.z1 - R2.z0), asphaltMat(3, 22));
       road2.rotation.x = -Math.PI / 2;
-      road2.position.set(-58, 0.085, -2);
+      road2.position.set(R2.xc, Y_ROAD - 0.006, (R2.z0 + R2.z1) / 2);
       road2.receiveShadow = true;
       buildingGroup.add(road2);
 
-      // 车道中线
-      const dashMat = MAT.marking;
-      for (let i = 0; i < 20; i++) {
-        const dash = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.26), dashMat);
-        dash.rotation.x = -Math.PI / 2;
-        dash.position.set(-68 + i * 7.2, 0.095, 36);
-        buildingGroup.add(dash);
+      // 大门引道：门洞（z=54）→ 主干道南边缘（z=43.5）
+      // 【修正】原来门口与马路之间只有一块 10.5m 的空白铺装、主干道边线又通长不断，
+      // 车出了大门根本"接不上马路"。现补一条与门洞等宽的沥青引道，并在边线上开口
+      const DW = WALL.GATE;                       // 10.4（门洞半宽）
+      const drive = new THREE.Mesh(
+        new THREE.PlaneGeometry(DW * 2, WALL.ZS - (R1.zc + R1.hw) + 0.5), asphaltMat(6, 3));
+      drive.rotation.x = -Math.PI / 2;
+      drive.position.set(0, Y_ROAD - 0.008, (WALL.ZS + R1.zc + R1.hw) / 2);
+      drive.receiveShadow = true;
+      buildingGroup.add(drive);
+
+      // 厂外进厂引道：大门外一小段铺装，让"车从哪进来"有着落
+      // 注意：这段在围墙外，地面上不画任何标线（白线一律不出围墙）
+      const apron = new THREE.Mesh(
+        new THREE.PlaneGeometry(DW * 2 + 3.2, 14), asphaltMat(7, 4));
+      apron.rotation.x = -Math.PI / 2;
+      apron.position.set(0, Y_ROAD - 0.014, WALL.ZS + 7.2);   // z 54.2~68.2
+      apron.receiveShadow = true;
+      buildingGroup.add(apron);
+
+      // ---------- 地面标线（全部零厚度面片，平贴路面） ----------
+      function paint(w, d, x, z) {
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), MAT.marking);
+        p.rotation.x = -Math.PI / 2;
+        p.position.set(x, Y_MK, z);
+        // 【关键】标线也要接收阴影。此前漏了这一步：建筑/车辆的阴影投不到白线上，
+        // 阴影区里的白线依旧亮白，看上去像"浮在地面上的凸起白条"
+        p.receiveShadow = true;
+        buildingGroup.add(p);
+      }
+      // 带缺口的白实线：axis='x' 沿 x 延伸（fixed 是 z）；gaps 为需断开的 [起,止] 区间
+      function paintLine(axis, fixed, from, to, gaps, w) {
+        let segs = [[from, to]];
+        (gaps || []).forEach(function (gp) {
+          const out = [];
+          segs.forEach(function (sg) {
+            if (gp[1] <= sg[0] || gp[0] >= sg[1]) { out.push(sg); return; }
+            if (gp[0] > sg[0]) out.push([sg[0], gp[0]]);
+            if (gp[1] < sg[1]) out.push([gp[1], sg[1]]);
+          });
+          segs = out;
+        });
+        segs.forEach(function (sg) {
+          const len = sg[1] - sg[0];
+          if (len < 0.6) return;
+          const mid = (sg[0] + sg[1]) / 2;
+          if (axis === 'x') paint(len, w, mid, fixed);
+          else paint(w, len, fixed, mid);
+        });
       }
 
-      // 路缘石
+      const GATE_GAP = [-DW, DW];                          // 大门引道开口
+      const XING_GAP_X = [R2.xc - R2.hw, R2.xc + R2.hw];   // 西侧 T 字口（x 区间）
+
+      // 主干道北侧边线：次干道汇入的 T 字口 + 大门引道处断开
+      paintLine('x', R1.zc - (R1.hw - 0.45), R1.x0 + 0.6, R1.x1 - 0.6,
+        [XING_GAP_X, GATE_GAP], 0.16);
+      // 主干道南侧边线：只在大门引道处断开（次干道止于北侧边线，不越到南半幅）
+      paintLine('x', R1.zc + (R1.hw - 0.45), R1.x0 + 0.6, R1.x1 - 0.6,
+        [GATE_GAP], 0.16);
+      for (let x = R1.x0 + 3; x < R1.x1 - 3; x += 7.2) {
+        const mid = x + 1.6;
+        if (mid > XING_GAP_X[0] - 1.6 && mid < XING_GAP_X[1] + 1.6) continue;
+        if (mid > GATE_GAP[0] - 1.6 && mid < GATE_GAP[1] + 1.6) continue;
+        paint(3.2, 0.24, mid, R1.zc);
+      }
+      // 次干道：两侧边线 + 中心虚线（南端止于 T 字口，不穿过主干道，无需断口）
       for (const s of [1, -1]) {
-        const curb1 = new THREE.Mesh(new THREE.BoxGeometry(150, 0.34, 0.6), MAT.concrete);
-        curb1.position.set(0, 0.17, 36 + s * 7.8);
-        curb1.receiveShadow = true; curb1.castShadow = true;
-        buildingGroup.add(curb1);
-
-        const curb2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.34, 150), MAT.concrete);
-        curb2.position.set(-58 + s * 7.8, 0.17, 0);
-        curb2.receiveShadow = true; curb2.castShadow = true;
-        buildingGroup.add(curb2);
+        paintLine('z', R2.xc + s * (R2.hw - 0.45), R2.z0 + 0.6, R2.z1 - 0.6, [], 0.16);
       }
+      for (let z = R2.z0 + 3; z < R2.z1 - 3; z += 7.2) {
+        paint(0.24, 3.2, R2.xc, z + 1.6);
+      }
+      // 引道：两侧边线（沿门洞两侧，把"进门路线"框出来）+ 出园车道停止线
+      for (const s of [1, -1]) {
+        paintLine('z', s * (DW - 0.28), R1.zc + R1.hw + 0.5, WALL.ZS - 0.5, [], 0.16);
+      }
+      paint(7.2, 0.4, 4.4, R1.zc + R1.hw + 1.3);
 
       // 树木（树位需避开所有建筑 / 道路 / 车位 / 围墙内设施，否则会出现树冠穿墙穿罐）
       // 园区主要占位：主厂房 x-23~23 z-21~9 ｜ 办公楼 x-49~-27 z10~26 ｜ 车间 x26~54 z-26~-6
       //              储罐区 x-61~-27 z-40~-8 ｜ 充电站 x28~52 z-36~-27 ｜ 停车场 x38~62 z10~26
-      //              绿化带 x-41~-19 z34~50 ｜ 主干道 z28.5~43.5 ｜ 南北路 x-65.8~-50.2
-      //              围墙 x±80 / z-62~54
+      //              路侧绿带 x-41~-19 z44.2~53 ｜ 主干道 z28.5~43.5 ｜ 次干道 x-76~-64
+      //              大门引道 x±10.4 z43.5~54 ｜ 围墙 x±80 / z-62~54
       // 注：储罐区（压力容器）周边安全区内的树位已删除，并由 inTankSafetyZone() 兜底拦截
       const treePositions = [
-        [-48, 6], [-70, 20],
+        [-48, 6], [-61.5, 22],
         [62, -22], [74, 6], [50, 4], [74, 12],
-        [-28, 44], [-22, 46], [26, 46],
-        [16, 44], [34, 48], [48, 46], [64, 46],
+        [16, 47.5], [26, 47], [34, 48], [48, 47], [64, 47.5],
         [-8, -46]
       ];
       treePositions.forEach(function (p) {
@@ -2782,11 +2922,11 @@
 
       // （原「环绕灌木」球阵已按要求移除，避免铺装面上散布绿色球体）
 
-      // 路灯（避开建筑体与储罐罐体：原 (-48,20) 落在办公楼内、(-48,-20) 落在罐体内）
-      addLampPost(buildingGroup, -20, 45, 0);
-      addLampPost(buildingGroup, 20, 45, Math.PI);
+      // 路灯（位置逐根核过：不落在建筑体、罐体、路面、绿带里）
+      addLampPost(buildingGroup, -15, 46, 0);          // 大门引道两侧（灯臂伸向引道）
+      addLampPost(buildingGroup, 15, 46, Math.PI);
       addLampPost(buildingGroup, -52.5, 20, -Math.PI / 2);
-      addLampPost(buildingGroup, -64, -20, -Math.PI / 2);
+      addLampPost(buildingGroup, -61.5, -20, -Math.PI / 2);   // 原 -64 正好压在次干道边线上
       addLampPost(buildingGroup, 56, 2, Math.PI / 2);
     }
 
@@ -2972,7 +3112,9 @@
       if (ground) ground.material.color.copy(C(L.ground));
       if (groundPad) groundPad.material.color.copy(C(L.pad));
       if (gridHelper) {
-        gridHelper.setColors(S(L.grid1).getHex(), S(L.grid2).getHex());
+        // 自绘矩形网格（LineSegments）：改线色 + 透明度
+        // （原来是 GridHelper，有 setColors()，换成线网格后没有这个方法，直接改材质）
+        gridHelper.material.color.setHex(S(L.grid1).getHex());
         gridHelper.material.opacity = L.gridOp;
       }
     }
@@ -3008,6 +3150,10 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
+
 
 
 
