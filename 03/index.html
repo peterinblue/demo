@@ -1324,32 +1324,63 @@
         const litRows = {};
         const nLit = Math.max(1, Math.round(rows * litRatio));
         for (let i0 = 0; i0 < nLit; i0++) litRows[order[i0]] = 1;
+
+        // --- ① 先定稿每个窗格（先算后画：溢光层必须垫在清晰窗格下面）---
+        const cells = [];
         for (let r = 0; r < rows; r++) {
-          // 整层统一亮/暗：真实办公楼是"某几层成片亮着"，比逐窗随机会自然得多
-          const floorOn = !!litRows[r];
+          const floorOn = !!litRows[r];      // 整层统一亮/暗：真实办公楼是"某几层成片亮着"
           for (let k = 0; k < cols; k++) {
-            const x = k * cw, y = r * ch;
             const t = Math.random();
-            let col, glow = 0;
+            let col, lit2 = 0;
             if (floorOn && t < 0.82) {
               col = t < 0.58 ? 'rgba(255,206,138,0.98)' : 'rgba(214,232,255,0.90)'; // 暖白工位灯 / 冷白走道灯
-              glow = 1;
+              lit2 = 1;
             } else if (t < 0.10) {
               col = 'rgba(96,124,164,0.30)';                                        // 熄灯但幕墙反一点环境光
             } else {
               col = 'rgba(8,14,22,1)';
             }
-            ctx.fillStyle = col;
-            ctx.fillRect(x + 2, y + 3, cw - 4, ch - 6);
-            if (glow) {
-              // 窗内亮度不均：靠近窗台更亮，天花一侧偏暗，避免"一片死亮"
-              const g = ctx.createLinearGradient(x, y + 3, x, y + ch - 3);
-              g.addColorStop(0.00, 'rgba(255,255,255,0.34)');
-              g.addColorStop(0.55, 'rgba(255,255,255,0.05)');
-              g.addColorStop(1.00, 'rgba(0,0,0,0.30)');
-              ctx.fillStyle = g;
-              ctx.fillRect(x + 2, y + 3, cw - 4, ch - 6);
-            }
+            cells.push({ x: k * cw, y: r * ch, col: col, lit: lit2 });
+          }
+        }
+
+        // --- ② 亮窗溢光：把"亮窗 ↔ 暗幕墙"的像素级硬边摊成柔和过渡 ---
+        // 为什么必须做：亮窗与暗幕墙原本是硬边，相机一动，边界像素就在"全亮"与"全暗"
+        // 两个采样之间反复归属 —— 一条又长又直的亮暗边界（尤其**最下面那排窗**与勒脚/
+        // 地面相接处，"建筑底部边缘闪"夜间最明显的就是它）跳起来极刺眼。
+        // 加一层高斯溢光后，边界两侧的色差被摊到十几个像素上，单像素跳变幅度大幅降低；
+        // 顺带这才是真实夜景该有的样子（窗光本来就会在幕墙上洇开一圈）。
+        {
+          const litCv = canvas2d(W, H), lctx = litCv.ctx;
+          for (let i2 = 0; i2 < cells.length; i2++) {
+            const c2 = cells[i2];
+            if (!c2.lit) continue;
+            lctx.fillStyle = c2.col;
+            lctx.fillRect(c2.x + 2, c2.y + 3, cw - 4, ch - 6);
+          }
+          const blurCv = canvas2d(W, H);
+          const bp = Math.max(3, Math.round(cw * 0.13));
+          blurCv.ctx.filter = 'blur(' + bp + 'px)';
+          blurCv.ctx.drawImage(litCv.c, 0, 0);
+          blurCv.ctx.filter = 'none';
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(blurCv.c, 0, 0);
+          ctx.globalAlpha = 1;
+        }
+
+        // --- ③ 再画清晰窗格（压在溢光上面，保住"窗格"而非"一片糊亮"）---
+        for (let i3 = 0; i3 < cells.length; i3++) {
+          const c3 = cells[i3];
+          ctx.fillStyle = c3.col;
+          ctx.fillRect(c3.x + 2, c3.y + 3, cw - 4, ch - 6);
+          if (c3.lit) {
+            // 窗内亮度不均：靠近窗台更亮，天花一侧偏暗，避免"一片死亮"
+            const g = ctx.createLinearGradient(c3.x, c3.y + 3, c3.x, c3.y + ch - 3);
+            g.addColorStop(0.00, 'rgba(255,255,255,0.34)');
+            g.addColorStop(0.55, 'rgba(255,255,255,0.05)');
+            g.addColorStop(1.00, 'rgba(0,0,0,0.30)');
+            ctx.fillStyle = g;
+            ctx.fillRect(c3.x + 2, c3.y + 3, cw - 4, ch - 6);
           }
         }
         return finishTexture(o.c, 1, 1);
@@ -1959,7 +1990,8 @@
       // 表现为画面上一片细密的沙沙闪。dpr=1 的普通显示器等于只有 1 个采样/像素，最明显；
       // 提到 1.5 倍后每个屏幕像素有 2.25 个渲染采样再缩小，闪烁量明显下降。
       // dpr≥2 的高分屏本来就够，不额外加负担。
-      const SUPERSAMPLE_MIN = 1.5;
+      // 注意：窗口 resize 时另有同步设置（在 onWindowResize 里），改这里要一起改
+      const SUPERSAMPLE_MIN = 1.75;
       renderer.setPixelRatio(Math.min(Math.max(window.devicePixelRatio, SUPERSAMPLE_MIN), 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -2005,6 +2037,9 @@
 
       initTextures();
       initMaterials();
+      // 【切换顺滑】三个主题的环境贴图（PMREM）在这里一次生成好。否则第一次切到某个主题时
+      // 要现场跑一遍 PMREM（几十毫秒的 GPU 阻塞），表现就是"切换那一瞬间画面卡一下、跳一下"。
+      ['light', 'dark', 'black'].forEach(function (k) { getEnvMap(k); });
 
       // ---- 天空穹顶 ----
       skyMesh = createSkyDome();
@@ -2110,6 +2145,64 @@
     }
 
     // 主厂房：钢结构大跨厂房，金属墙板 + 玻璃腰带 + 满铺光伏
+    /* ---- 建筑接地阴影（接触遮蔽）过渡带 ----
+       「建筑底部边缘闪」的机制：建筑与地面之间是一条又长又直的水平硬交线，
+       两侧色差大（浅色勒脚 ↔ 灰蓝铺装）。相机一动，边界像素在"墙面"和"地面"
+       两个采样之间反复归属 —— 一条长直线整体同步跳，比立面零散细节扎眼得多。
+       这里在建筑四周铺一圈**从墙脚向外渐隐的柔和暗带**：
+         · 视觉上＝真实建筑根部的接触阴影（AO），真实感只增不减；
+         · 关键是它把交线两侧的**对比度压下来**——紧贴墙脚的地面由亮转暗，
+           与墙面的色差大幅缩小，于是边界像素跳变的**幅度**显著降低。
+       注意：它是贴地的半透明面片，必须自带 polygonOffset + 抬高标高，
+       否则它自己就会跟铺装打 z-fighting（等于把一个闪烁换成另一个）。 */
+    const CONTACT_MATS = [];
+    const CONTACT_CACHE = {};
+    function contactShadeTex(w, d, band) {
+      const key = w.toFixed(2) + '|' + d.toFixed(2) + '|' + band.toFixed(2);
+      if (CONTACT_CACHE[key]) return CONTACT_CACHE[key];
+      const S = 256;
+      const o = canvas2d(S, S), ctx = o.ctx;
+      const img = ctx.createImageData(S, S);
+      const HW = w / 2 + band, HD = d / 2 + band;      // 面片半尺寸（世界米）
+      for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+          const wx = ((x + 0.5) / S * 2 - 1) * HW;
+          const wz = ((y + 0.5) / S * 2 - 1) * HD;
+          // 到建筑外轮廓的距离（外部为正）——切比雪夫 ⇒ 矩形环
+          const dOut = Math.max(Math.abs(wx) - w / 2, Math.abs(wz) - d / 2);
+          let t = 1 - dOut / band;
+          t = t < 0 ? 0 : (t > 1 ? 1 : t);
+          const a = Math.pow(t, 1.45);                 // 靠墙陡、外缘缓，自然收尾
+          const k = (y * S + x) * 4;
+          img.data[k] = 20; img.data[k + 1] = 24; img.data[k + 2] = 30;
+          img.data[k + 3] = Math.round(a * 112);       // 最大不透明度 ≈ 0.44
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      const t2 = finishTexture(o.c, 1, 1);
+      t2.wrapS = t2.wrapT = THREE.ClampToEdgeWrapping;
+      CONTACT_CACHE[key] = t2;
+      return t2;
+    }
+    function addContactShade(parent, w, d, band) {
+      band = band || 1.8;
+      const mat = new THREE.MeshBasicMaterial({
+        map: contactShadeTex(w, d, band), transparent: true, depthWrite: false,
+        toneMapped: false, fog: true,
+        // 铺装是 polygonOffsetUnits = +4（往后推），这里 -24 稳稳压在前面；
+        // polygonOffsetUnits 的单位是"深度缓冲最小可分辨单元"，会随距离自动放大，
+        // 所以这个偏置在 14m 和 300m 处同样有效。
+        polygonOffset: true, polygonOffsetFactor: -12, polygonOffsetUnits: -24
+      });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w + band * 2, d + band * 2), mat);
+      m.rotation.x = -Math.PI / 2;
+      m.position.y = 0.046;                            // 铺装(0.040) 之上 6mm
+      m.renderOrder = 2;
+      parent.add(m);
+      CONTACT_MATS.push(mat);
+      return m;
+    }
+
     function addFactoryMainHall(x, z, w, d, h) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
@@ -2329,7 +2422,9 @@
         }
       })();
 
-      buildingGroup.add(g);
+            addContactShade(g, w + 0.9, d + 0.9, 1.9);   // 接地阴影过渡带（主厂房）
+
+buildingGroup.add(g);
     }
 
     // 研发办公楼：玻璃幕墙塔楼 + 层间腰线
@@ -2386,7 +2481,9 @@
 
       addSolarRoof(g, w * 0.62, d * 0.62, h + 2.6, 14);
 
-      buildingGroup.add(g);
+            addContactShade(g, w + 1.1, d + 1.1, 2.0);   // 接地阴影过渡带（办公楼·勒脚外扩 0.5）
+
+buildingGroup.add(g);
     }
 
     // 生产车间：压型钢板厂房 + 采光带 + 卷帘门
@@ -2467,7 +2564,9 @@
       // 光伏避开后排通风器：进深收 6m，底部落到屋面板（h+0.1）上
       addSolarRoof(g, w - 3.5, d - 6, h + 0.12, 18);
 
-      buildingGroup.add(g);
+            addContactShade(g, w + 0.7, d + 0.7, 1.8);   // 接地阴影过渡带（生产车间）
+
+buildingGroup.add(g);
     }
 
     // 储罐区：不锈钢罐 + 防火堤 + 管廊
@@ -3588,7 +3687,9 @@
       registerNightLight(subLight, 2.4, 0);
       nightPool(g, 0, 0.090, BD / 2 + 1.6, 3.2, 0.42);
 
-      buildingGroup.add(g);
+            addContactShade(g, FW, FD, 1.3);             // 接地阴影过渡带（配电站·按围栏外围）
+
+buildingGroup.add(g);
     }
 
     // withLight：是否挂真实点光源。远景处的灯只保留光晕/光锥/地面光斑（表现"灯亮着"），
@@ -3851,6 +3952,9 @@
         m.emissiveIntensity = night ? 1.30 : 0;
         if (dirty) m.needsUpdate = true;
       });
+      // ⑤ 接地阴影：晚间地面本来就暗，再足量叠一层会让建筑根部糊成一团；
+      //    傍晚基调偏暖，也稍收一点。白天保持满强度（那时地面最亮、交线对比最大）。
+      CONTACT_MATS.forEach(function (m) { m.opacity = night ? 0.85 : (key === 'dark' ? 0.92 : 1.0); });
       // ⑤ 植被 / 光伏等：晚间压暗（白天原样恢复）——否则夜里树还是亮绿的，"夜色"立不住
       NIGHT_DIM.forEach(function (d) {
         d.mat.color.copy(d.mat.userData.dayColor).multiplyScalar(night ? d.k : 1);
@@ -3906,6 +4010,10 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
+
 
 
 
