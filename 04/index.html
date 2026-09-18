@@ -108,7 +108,12 @@
       height: 30px;
       width: 30px;
       object-fit: contain;
-      filter: drop-shadow(0 1px 4px rgba(0,10,20,0.55)) drop-shadow(0 0 8px rgba(255,120,110,0.35));
+      /* 【第23轮】红色印章 → 纯白：brightness(0) 把不透明像素压成黑，invert(1) 再翻成纯白，
+         alpha 通道原样保留 —— 印章轮廓与笔触不变，只换颜色。
+         三种主题的标题栏都是深色实底，白色对比最强、最醒目。 */
+      filter: brightness(0) invert(1)
+              drop-shadow(0 1px 5px rgba(0, 10, 20, 0.72))
+              drop-shadow(0 0 10px rgba(255, 255, 255, 0.55));
     }
 
     .time-badge {
@@ -598,7 +603,7 @@
     }
     body.light .header-title p { color: rgba(150,222,255,0.92); text-shadow: 0 1px 4px rgba(0,16,36,0.60); }
     body.light .header-side { color: rgba(214,236,252,0.86); }
-    body.light .header-logo { filter: drop-shadow(0 1px 4px rgba(0,10,20,0.60)); }
+    body.light .header-logo { filter: brightness(0) invert(1) drop-shadow(0 1px 5px rgba(0, 10, 20, 0.72)); }
 
     body.light .panel {
       background: rgba(255,255,255,0.86);
@@ -682,7 +687,7 @@
     }
     body.black .header-title p { color: rgba(120,215,255,0.85); }
     body.black .header-side { color: rgba(180,210,235,0.75); }
-    body.black .header-logo { filter: drop-shadow(0 0 8px rgba(255,110,100,0.45)); }
+    body.black .header-logo { filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(210, 235, 255, 0.62)); }
 
     body.black .panel {
       background: rgba(8, 20, 38, 0.80);
@@ -3164,9 +3169,10 @@ buildingGroup.add(g);
     }
 
     // 写实树：锥形树干 + 多层球冠（远景树关闭投影以省性能）
-    function addTree(parent, x, z, s, noShadow) {
-      // 储罐区（压力容器）周边一律不种树，避免树冠穿罐 / 遮挡罐体
-      if (inTankSafetyZone(x, z)) return;
+    function addTree(parent, x, z, s, noShadow, force) {
+      // 储罐区（压力容器）周边一律不种树，避免树冠穿罐 / 遮挡罐体。
+      // force=true 供"围墙内侧环带"使用：那里离罐区边界 ≥18m，不必被这个粗粒度矩形拦住
+      if (!force && inTankSafetyZone(x, z)) return;
       const t = new THREE.Group();
       t.position.set(x, 0, z);
       t.scale.setScalar(s);
@@ -3274,7 +3280,9 @@ buildingGroup.add(g);
 
     // 园区科技网格：矩形 + 逐条裁剪在围墙内（替代正方形 GridHelper，避免网格线穿到墙外草地）
     function paintGrid() {
-      const X0 = -78, X1 = 78, Z0 = -60, Z1 = 52, STEP = 6;
+      // 【第23轮】外围这一圈现在是绿化带 + 树池草皮，网格线再画过去就成了"草坪上的网格"，
+      //          所以内收到铺装主体范围（离树池内边 ≥1.4m）
+      const X0 = -74, X1 = 74, Z0 = -56, Z1 = 48, STEP = 6;
       const pts = [];
       for (let x = X0; x <= X1 + 0.01; x += STEP) { pts.push(x, 0, Z0, x, 0, Z1); }
       for (let z = Z0; z <= Z1 + 0.01; z += STEP) { pts.push(X0, 0, z, X1, 0, z); }
@@ -3296,7 +3304,9 @@ buildingGroup.add(g);
       // 主干道（东西向）：z 28.5~43.5，正对南大门
       // 【修正】原来只铺到 x±75，距围墙（x±80）还差 4.8m，俯视看就是"半截路悬在铺装中间"。
       // 现两端延到 x±79.6（墙内表面 79.83），道路通到东西厂界，端头被围墙收住
-      const R1 = { zc: 36, hw: 7.5, x0: -79.6, x1: 79.6 };
+      // 【第23轮·修正】上一版把两端一直铺到 x±79.6（贴到墙内表面）—— 用户反馈"马路尽头顶着围墙"
+      // 不合理。现两端各退回 7.6m 到 x±72，退出来的这条环带用来做围墙内侧绿化（绿带 + 乔木）。
+      const R1 = { zc: 36, hw: 7.5, x0: -72, x1: 72 };
       // 主干道层次给 −3（其余沥青面是 −2）：它是全场最高的路面（0.062），
       // 而停车场进车道（0.052）与大门引道（0.054）都跟它有 0.25~0.45m 的搭接重叠。
       // 两者只差 8~10mm，拉远后同样会翻；给主干道更靠前的一档，重叠带永远显示主干道。
@@ -3312,7 +3322,9 @@ buildingGroup.add(g);
       //          防火堤把西侧 8m 路面整个压掉；东移会撞主厂房，故西移到 x=-70、宽 12
       // 【修正2】原南端一直伸到 z=50，距南墙内表面（53.83）只剩 3.8m，形成"断头路顶着墙"。
       //          现改为 T 字口：南端止于主干道北边线（z=28.5），汇入主干道
-      const R2 = { xc: -70, hw: 6, z0: -58, z1: R1.zc - R1.hw };
+      // 【第23轮·修正2】北端 z-58 → -52：同样不再顶到北墙；
+      //          半宽 6 → 5（x -75~-65）：西侧 x-77 要放围墙内侧树池，路面不能压到树池上
+      const R2 = { xc: -70, hw: 5, z0: -52, z1: R1.zc - R1.hw };
       const road2 = new THREE.Mesh(
         new THREE.PlaneGeometry(R2.hw * 2, R2.z1 - R2.z0), asphaltMat(3, 22));
       road2.rotation.x = -Math.PI / 2;
@@ -3461,10 +3473,12 @@ buildingGroup.add(g);
       // 【本轮】原 [-8, -46]（主厂房北侧铺装面上的孤树）一并移除：
       //        与上一轮移除的 [-48, 6] 同属"整片铺装上只孤零零一棵"，
       //        紧贴厂房北侧、无树池、无伴生绿带，观感突兀
+      // 【第23轮·调整】南侧沿主干道那 5 棵（16/26/34/48/64, z≈47）与东侧 x=74 两棵，
+      // 改为由"围墙内侧环带"统一承担（它们离墙 6m、又没树池，且与新的环带树两两只差 3.5~4.3m）。
+      // 合并后南侧 / 东侧变成一条贴墙、等间距 15.5m 的连续树列。
       const treePositions = [
         [-61.5, 22],                                    // 原 [-48, 6]（储罐区南侧孤树）已按要求移除
-        [62, -22], [74, 6], [50, 4], [74, 12],
-        [16, 47.5], [26, 47], [34, 48], [48, 47], [64, 47.5]
+        [62, -22], [50, 4]
       ];
       treePositions.forEach(function (p) {
         addTree(buildingGroup, p[0], p[1], rnd(0.85, 1.3));
@@ -3493,26 +3507,104 @@ buildingGroup.add(g);
 
       // （原「环绕灌木」球阵已按要求移除，避免铺装面上散布绿色球体）
 
-      // 路灯（位置逐根核过：不落在建筑体、罐体、路面、绿带里）
-      // 【第 17 轮】原来只有 5 根、且全部挤在大门引道与园区西侧，晚间亮着的灯集中在一处、
-      // 画面上半部分扎眼、下半部分死黑。现按"东/南/西/北各面都有"补到 13 根，
-      // 新增位置对照布局表逐一避让（主厂房 x-23~23/z-21~9、办公楼 x-49~-27/z10~26、
-      // 车间 x26~54/z-26~-6、储罐区 x-61~-27/z-40~-8、充电站 x28~52/z-36~-27、
-      // 停车场 x38~62/z10~26、主干道 z28.5~43.5、次干道 x-76~-64、配电站围栏 x62.4~75.6/z-60.6~-47.4）。
-      addLampPost(buildingGroup, -15, 46, 0);          // 大门引道西（灯臂伸向引道）
-      addLampPost(buildingGroup, 15, 46, Math.PI);     // 大门引道东
-      addLampPost(buildingGroup, -52.5, 20, -Math.PI / 2);
-      addLampPost(buildingGroup, -61.5, -20, -Math.PI / 2);   // 原 -64 正好压在次干道边线上
-      addLampPost(buildingGroup, 56, 2, Math.PI / 2);
-      // —— 新增（东、南、北面各补）——
-      addLampPost(buildingGroup, -56, 46, Math.PI / 2);                  // 主干道南侧西段
-      addLampPost(buildingGroup, 56, 46, Math.PI / 2);                   // 主干道南侧东段
-      addLampPost(buildingGroup, 0, 21, Math.PI / 2);                    // 主厂房南广场（正对入口）
-      addLampPost(buildingGroup, 46, -40, -Math.PI / 2);                 // 车间北侧 · 充电车位
-      addLampPost(buildingGroup, 66, 16, Math.PI);                       // 停车场东侧
-      addLampPost(buildingGroup, -25.5, -14, Math.PI, false);            // 储罐区东侧（远景，不挂实光）
-      addLampPost(buildingGroup, 58, -46, -Math.PI / 2, false);          // 东北角 · 配电站前（远景）
-      addLampPost(buildingGroup, 74, -34, Math.PI, false);               // 园区东侧（远景）
+      // ---------- 围墙内侧一圈绿化：紧贴围墙的等间距乔木 + 树池草皮 ----------
+      // 【第23轮·新增】配合上面"马路不再顶到围墙"：退出来的这条环带正好形成围墙内侧绿带，
+      // 沿四条边等间距种树。几何基准：墙内表面 x±79.83 / z-61.83~53.83；
+      // 树心距墙 2.8m（冠幅半径 ≈3.3m，树冠会略微探过墙顶，从墙外看是"墙后一片树"，自然）；
+      // 每棵树下铺 3.2×3.2m 草皮树池（不再出现"树直接长在铺装上"）。
+      const RING_OFF = 2.8, BED = 3.2, RING_STEP = 15.5;
+      const BED_Y = 0.050;                                    // 铺装 0.040 之上 10mm
+      const RX = WALL.X - WALL.T / 2 - RING_OFF;              // ±77.03
+      const RZS = WALL.ZS - WALL.T / 2 - RING_OFF;            // 51.03
+      const RZN = WALL.ZN + WALL.T / 2 + RING_OFF;            // -59.03
+      const bedMat = grassMat(1.6, 1.6, -4);                  // 树池草皮（独立铺贴密度，别用绿带那套 6×4）
+
+      // 树池与这些既有场地重叠则整棵不种（大门引道 / 既有路侧绿带 / 配电站围栏 / 次干道走廊）
+      const RING_BLOCK = [
+        [-12.5, 12.5, 42.5, 55.5],
+        [-42.5, -17.5, 43.5, 53.5],
+        [61.5, 76.2, -61.5, -46.8],
+        [R2.xc - R2.hw - 0.2, R2.xc + R2.hw + 0.2, R2.z0 - 1.2, R2.z1 + 1.2]
+      ];
+      function ringFree(x, z) {
+        const h = BED / 2;
+        return !RING_BLOCK.some(function (b) {
+          return (x + h > b[0]) && (x - h < b[1]) && (z + h > b[2]) && (z - h < b[3]);
+        });
+      }
+      // 还要与"既有树木"拉开 ≥8m：新树贴着老树会又攒成一坨（实测最紧只差 3.5m）。
+      // 既有树 = 园区内保留的 treePositions + 路侧绿带那 5 棵（addGreenArea(-30,48.6) 内的相对坐标）
+      const EXIST_TREES = treePositions.slice();
+      [[-37, 46.9], [-30, 46.9], [-23, 46.9], [-33.5, 50.5], [-26.5, 50.5]].forEach(function (p) {
+        EXIST_TREES.push(p);
+      });
+      function farFromTrees(x, z) {
+        return !EXIST_TREES.some(function (p) {
+          const dx = x - p[0], dz = z - p[1];
+          return dx * dx + dz * dz < 64;              // 8m
+        });
+      }
+      // 四边等间距布点：东/西两条边跑满 z 全段，南/北两条边只跑 x 内段（角部不重复堆树）
+      const ringPts = [];
+      for (let z = RZN; z <= RZS + 0.01; z += RING_STEP) { ringPts.push([RX, z], [-RX, z]); }
+      for (let x = -RX + RING_STEP; x <= RX - 2 + 0.01; x += RING_STEP) {
+        ringPts.push([x, RZN], [x, RZS]);
+      }
+      let ringN = 0;
+      ringPts.forEach(function (p) {
+        if (!ringFree(p[0], p[1]) || !farFromTrees(p[0], p[1])) return;
+        const bed = new THREE.Mesh(new THREE.PlaneGeometry(BED, BED), bedMat);
+        bed.rotation.x = -Math.PI / 2;
+        bed.position.set(p[0], BED_Y, p[1]);
+        bed.receiveShadow = true;
+        buildingGroup.add(bed);
+        // 远景树不投影：这一圈共 30 棵左右，全开 castShadow 会让阴影 pass 陡增，移动端掉帧
+        addTree(buildingGroup, p[0], p[1], rnd(0.80, 0.95), true, true);
+        ringN++;
+      });
+
+      // 路灯（本轮重排：改成"按行等间距"，并把建筑背面补齐）
+      // 【第23轮·修改】用户反馈"三个路灯太集中"。上一版在东北角 40m 见方的范围内挤了
+      // (46,-40)/(58,-46)/(74,-34) 三根（两两相距仅 13~28m），而主厂房 / 车间 / 办公楼
+      // 背面却一根都没有 —— 一侧过密、一侧死黑。现改成**按行等间距布点**：
+      //   ① 南侧沿主干道一行 6 根，间距 24~25m（中间让开大门引道）
+      //   ② 主厂房背面一行 4 根，间距 12m   ③ 车间背面一行 3 根，间距 12m
+      //   ④ 办公楼背面一行 2 根，间距 12m   ⑤ 东西两翼与主厂房南广场保留 6 根
+      // 灯臂一律指向"外侧开阔面"：南侧行朝北打路面，三排背面行朝北打到建筑后的服务区。
+      // 真假光分配：只 11 根挂真实点光源（与上一版 10 根同量级，避免移动端掉帧），
+      // 其余保留光晕 / 光锥 / 地面光斑 —— 夜里看上去一样是"亮着的灯"。
+      const LAMPS = [
+        // ① 南侧 · 沿主干道南沿（z=46）
+        [-64, 46, Math.PI / 2, false],
+        [-40, 46, Math.PI / 2],
+        [-15, 46, 0],                        // 大门引道西（灯臂伸向引道）
+        [15, 46, Math.PI],                   // 大门引道东
+        [40, 46, Math.PI / 2],
+        [64, 46, Math.PI / 2, false],
+        // ② 主厂房背面（北墙外 z=-27），间距 12m
+        [-18, -27, Math.PI / 2],
+        [-6, -27, Math.PI / 2],
+        [6, -27, Math.PI / 2],
+        [18, -27, Math.PI / 2],
+        // ③ 车间背面（充电站之外的 z=-42），间距 12m
+        [32, -42, Math.PI / 2, false],
+        [44, -42, Math.PI / 2, false],
+        [56, -42, Math.PI / 2, false],
+        // ④ 办公楼背面（北墙外 z=5），间距 12m
+        [-44, 5, Math.PI / 2, false],
+        [-32, 5, Math.PI / 2, false],
+        // ⑤ 东西两翼 / 主厂房南广场
+        [-52.5, 20, -Math.PI / 2],
+        [66, 16, Math.PI],                   // 停车场东侧
+        [0, 21, Math.PI / 2],                // 主厂房南广场（正对入口）
+        [-61.5, -20, -Math.PI / 2, false],   // 储罐区东侧（远景，不挂实光）
+        // 【第23轮】原 (58,-46)"配电站前"已删：它离新增的车间背面灯 (56,-42) 只有 4.5m，
+        // 留着就又是一处"两根灯挤在一起"。该角由 (74,-34) 与 (56,-42) 共同覆盖。
+        [74, -34, Math.PI, false]            // 园区东侧（远景）
+      ];
+      LAMPS.forEach(function (L) {
+        addLampPost(buildingGroup, L[0], L[1], L[2], L[3] !== false);
+      });
     }
 
     /* ---- 园区围墙（混凝土板 + 立柱 + 压顶，南侧留大门洞口） ---- */
@@ -4011,6 +4103,9 @@ buildingGroup.add(g);
     // 初始化
     initTheme();
     init3D();
+
+
+
 
 
 
