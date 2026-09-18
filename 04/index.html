@@ -1058,6 +1058,27 @@
     });
 
     // ===================== Three.js 3D 场景（PBR 写实渲染） =====================
+    /* 【第26轮·关键修复】业务随机独立成一条确定性序列，不再用 Math.random。
+       ── 问题的机制（实测数据）──────────────────────────────────────────────
+       Three.js r128 里 Object3D / Material / BufferGeometry 每次构造都要生成 UUID，
+       而 generateUUID 内部**直接调用 Math.random**（每个 UUID 吃掉 4 个）。它不是通过
+       MathUtils 调的，而是 three 闭包内的局部函数 —— 所以"覆盖 THREE.MathUtils.
+       generateUUID"完全无效（实测随机计数一动不动）。
+       后果：**场景对象数量**决定了后续业务随机的序列。本轮为剖切交互新增 193 个网格，
+       实测多消耗 1936 次随机 —— 于是全园 71 棵树、灌木、外围树丛、草叶噪点全部重排。
+       这既让"改动是否影响外观"无法用像素对比验证（真实差异被随机噪声淹没），
+       也让每次改建筑都无谓地扰动植被。
+       ── 解法 ────────────────────────────────────────────────────────────
+       业务随机（树/灌木/外围树丛/云/纹理噪点的形态与抖动）改用自己的线性同余 PRNG，
+       固定种子、与 Math.random 的消耗彻底无关。Three.js 内部继续用 Math.random 生成
+       UUID（UUID 只需唯一，与业务无关）。
+       收益：场景跨版本可复现；以后新增/删减对象都不再扰动植被。 */
+    let _rndState = 20260918;      // 固定种子（改动此值会重排全园植被形态）
+    function srnd() {
+      _rndState = (_rndState * 1664525 + 1013904223) >>> 0;
+      return _rndState / 4294967296;
+    }
+
     let scene, camera, renderer, controls, buildingGroup;
     let ground, groundPad, gridHelper, ambientLight, sunLight, hemiLight, skyMesh, worldGroup;
     let currentTheme = 'dark';
@@ -1083,7 +1104,7 @@
     function clamp255(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
     function S(hex) { return new THREE.Color(hex); }                        // sRGB 直出（天空 / 自发光）
     function C(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }  // 材质基色（线性空间）
-    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function rnd(a, b) { return a + srnd() * (b - a); }   // 业务随机（独立 PRNG）
 
     /* ---------- 夜景系统：幕墙登记 / 光晕贴图 / 灯具构件 ---------- */
     function registerFacade(mat, dayTex, nightTex) {
@@ -1212,7 +1233,7 @@
     function grain(ctx, w, h, amount) {
       const img = ctx.getImageData(0, 0, w, h), d = img.data;
       for (let i = 0; i < d.length; i += 4) {
-        const n = (Math.random() - 0.5) * amount;
+        const n = (srnd() - 0.5) * amount;
         d[i] = clamp255(d[i] + n);
         d[i + 1] = clamp255(d[i + 1] + n);
         d[i + 2] = clamp255(d[i + 2] + n);
@@ -1223,10 +1244,10 @@
     // 低频色斑（污渍 / 风化）
     function blotches(ctx, w, h, color, count, maxR, alpha) {
       for (let i = 0; i < count; i++) {
-        const x = Math.random() * w, y = Math.random() * h;
-        const r = maxR * (0.25 + Math.random() * 0.9);
+        const x = srnd() * w, y = srnd() * h;
+        const r = maxR * (0.25 + srnd() * 0.9);
         const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + (alpha * (0.3 + Math.random() * 0.8)).toFixed(3) + ')');
+        g.addColorStop(0, 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + (alpha * (0.3 + srnd() * 0.8)).toFixed(3) + ')');
         g.addColorStop(1, 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',0)');
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
@@ -1236,11 +1257,11 @@
     // 竖向水渍 / 风化痕（真实建筑外墙最显著的特征）
     function weathering(ctx, w, h, count, rgb, maxAlpha) {
       for (let i = 0; i < count; i++) {
-        const x = Math.random() * w;
-        const bw = 2 + Math.random() * 9;
-        const hh = h * (0.25 + Math.random() * 0.75);
+        const x = srnd() * w;
+        const bw = 2 + srnd() * 9;
+        const hh = h * (0.25 + srnd() * 0.75);
         const g = ctx.createLinearGradient(x, 0, x + bw, 0);
-        const a = (maxAlpha * (0.3 + Math.random() * 0.7)).toFixed(3);
+        const a = (maxAlpha * (0.3 + srnd() * 0.7)).toFixed(3);
         g.addColorStop(0.00, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
         g.addColorStop(0.50, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a + ')');
         g.addColorStop(1.00, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
@@ -1326,7 +1347,7 @@
         const order = [];
         for (let r0 = 0; r0 < rows; r0++) order.push(r0);
         for (let i0 = order.length - 1; i0 > 0; i0--) {
-          const j0 = Math.floor(Math.random() * (i0 + 1));
+          const j0 = Math.floor(srnd() * (i0 + 1));
           const t0 = order[i0]; order[i0] = order[j0]; order[j0] = t0;
         }
         const litRows = {};
@@ -1338,7 +1359,7 @@
         for (let r = 0; r < rows; r++) {
           const floorOn = !!litRows[r];      // 整层统一亮/暗：真实办公楼是"某几层成片亮着"
           for (let k = 0; k < cols; k++) {
-            const t = Math.random();
+            const t = srnd();
             let col, lit2 = 0;
             if (floorOn && t < 0.82) {
               col = t < 0.58 ? 'rgba(255,206,138,0.98)' : 'rgba(214,232,255,0.90)'; // 暖白工位灯 / 冷白走道灯
@@ -1399,7 +1420,7 @@
       for (let r = 0; r < rows; r++) {
         for (let k = 0; k < cols; k++) {
           const x = k * cw, y = r * ch;
-          const t = Math.random();
+          const t = srnd();
           let col;
           if (t < lit) col = 'rgba(255,238,196,0.95)';
           else if (t < lit + 0.18) col = 'rgba(158,196,228,0.92)';
@@ -1454,12 +1475,12 @@
       blotches(ctx, N, N, [56, 78, 48], 44, 48, 0.40);
       blotches(ctx, N, N, [104, 128, 76], 26, 36, 0.24);
       for (let i = 0; i < 1500; i++) {
-        const x = Math.random() * N, y = Math.random() * N;
-        ctx.strokeStyle = 'rgba(' + (58 + Math.random() * 52 | 0) + ',' + (86 + Math.random() * 52 | 0) + ',' + (44 + Math.random() * 34 | 0) + ',' + (0.22 + Math.random() * 0.36).toFixed(2) + ')';
+        const x = srnd() * N, y = srnd() * N;
+        ctx.strokeStyle = 'rgba(' + (58 + srnd() * 52 | 0) + ',' + (86 + srnd() * 52 | 0) + ',' + (44 + srnd() * 34 | 0) + ',' + (0.22 + srnd() * 0.36).toFixed(2) + ')';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x + (Math.random() - 0.5) * 3, y - 2 - Math.random() * 4);
+        ctx.lineTo(x + (srnd() - 0.5) * 3, y - 2 - srnd() * 4);
         ctx.stroke();
       }
       grain(ctx, N, N, 14);
@@ -1504,13 +1525,13 @@
       const o = canvas2d(N, N), ctx = o.ctx;
       ctx.fillStyle = '#c7ced6'; ctx.fillRect(0, 0, N, N);
       for (let i = 0; i < 900; i++) {
-        const y = Math.random() * N;
-        const light = Math.random() > 0.5;
-        ctx.strokeStyle = 'rgba(' + (light ? '255,255,255' : '112,122,134') + ',' + (0.05 + Math.random() * 0.18).toFixed(2) + ')';
-        ctx.lineWidth = Math.random() * 1.6 + 0.3;
+        const y = srnd() * N;
+        const light = srnd() > 0.5;
+        ctx.strokeStyle = 'rgba(' + (light ? '255,255,255' : '112,122,134') + ',' + (0.05 + srnd() * 0.18).toFixed(2) + ')';
+        ctx.lineWidth = srnd() * 1.6 + 0.3;
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(N, y + (Math.random() - 0.5) * 2);
+        ctx.lineTo(N, y + (srnd() - 0.5) * 2);
         ctx.stroke();
       }
       grain(ctx, N, N, 7);
@@ -1644,15 +1665,15 @@
       const R = 380;
       for (let i = 0; i < N; i++) {
         // 只在地平线以上撒点，并按仰角做密度加权（靠近天顶更密）
-        const u = Math.random() * Math.PI * 2;
-        const v = Math.pow(Math.random(), 0.7);           // 0=地平 1=天顶
+        const u = srnd() * Math.PI * 2;
+        const v = Math.pow(srnd(), 0.7);           // 0=地平 1=天顶
         const el = v * Math.PI * 0.5;
         pos[i * 3] = Math.cos(u) * Math.cos(el) * R;
         pos[i * 3 + 1] = Math.sin(el) * R;
         pos[i * 3 + 2] = Math.sin(u) * Math.cos(el) * R;
         // 亮度随机 + 少量偏蓝/偏暖的星
         const b = rnd(0.45, 1.0);
-        const tint = Math.random();
+        const tint = srnd();
         col[i * 3] = b * (tint < 0.18 ? 1.00 : 0.90);
         col[i * 3 + 1] = b * 0.94;
         col[i * 3 + 2] = b * (tint < 0.18 ? 0.82 : 1.00);
@@ -1973,6 +1994,32 @@
         color: C('#2f7a5a'), roughness: 0.84, metalness: 0.02, envMapIntensity: 0.55,
         polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
+
+      /* ---- 第26轮·剖切展示：建筑内部材质（固定色，不参与昼夜主题切换） ----
+         内部件的颜色刻意与外壳拉开（浅灰楼板 / 木地板 / 白隔墙 / 深色家具），
+         因为剖切面一打开，内部就是"读图主体"，对比度必须够。 */
+      MAT.inFloorGray = new THREE.MeshStandardMaterial({ color: C('#c3ccd3'), roughness: 0.90, metalness: 0.0 });
+      MAT.inSlab = new THREE.MeshStandardMaterial({ color: C('#d9dfe4'), roughness: 0.92, metalness: 0.0 });
+      MAT.inFloorShop = new THREE.MeshStandardMaterial({ color: C('#aeb8bf'), roughness: 0.92, metalness: 0.03 });
+      MAT.inFloorWood = new THREE.MeshStandardMaterial({ color: C('#b98a5c'), roughness: 0.66, metalness: 0.02 });
+      MAT.inCorridor = new THREE.MeshStandardMaterial({ color: C('#9aa6ae'), roughness: 0.88, metalness: 0.0 });
+      MAT.inWall = new THREE.MeshStandardMaterial({ color: C('#e8ecee'), roughness: 0.94, metalness: 0.0 });
+      MAT.inCol = new THREE.MeshStandardMaterial({ color: C('#eef1f2'), roughness: 0.95, metalness: 0.0 });
+      MAT.inDeskTop = new THREE.MeshStandardMaterial({ color: C('#8b6244'), roughness: 0.54, metalness: 0.02 });
+      MAT.inDeskLeg = new THREE.MeshStandardMaterial({ color: C('#5c626a'), roughness: 0.56, metalness: 0.34 });
+      MAT.inChair = new THREE.MeshStandardMaterial({ color: C('#39414a'), roughness: 0.74, metalness: 0.06 });
+      MAT.inChairBlue = new THREE.MeshStandardMaterial({ color: C('#3f6ea6'), roughness: 0.70, metalness: 0.05 });
+      MAT.inCabinet = new THREE.MeshStandardMaterial({ color: C('#dce1e3'), roughness: 0.44, metalness: 0.16 });
+      MAT.inCabPanel = new THREE.MeshStandardMaterial({ color: C('#2b343d'), roughness: 0.42, metalness: 0.32 });
+      MAT.inLed = new THREE.MeshStandardMaterial({
+        color: C('#8ad897'), emissive: S('#2d9a46'), emissiveIntensity: 0.8, roughness: 0.50, metalness: 0.08
+      });
+      MAT.inScreen = new THREE.MeshStandardMaterial({
+        color: C('#243a4c'), emissive: S('#2b5b7a'), emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22
+      });
+      MAT.inMachine = new THREE.MeshStandardMaterial({ color: C('#96a0a8'), roughness: 0.52, metalness: 0.40 });
+      MAT.inMachineDark = new THREE.MeshStandardMaterial({ color: C('#49525a'), roughness: 0.55, metalness: 0.36 });
+      MAT.inRack = new THREE.MeshStandardMaterial({ color: C('#c4c9cd'), roughness: 0.58, metalness: 0.30 });
     }
 
     /* ============ 4. 园区建筑群 ============ */
@@ -2127,6 +2174,7 @@
 
       applyTheme(currentTheme);
 
+      setupPick();          // 第26轮：建筑剖切交互（点击楼层 / 点击厂房·配电间掀屋盖）
       animate();
 
       setTimeout(function () {
@@ -2207,6 +2255,20 @@
       parent.add(m);
       CONTACT_MATS.push(mat);
       return m;
+    }
+
+    /* 【第26轮】把几何体 UV 的纵向 v 线性重映射到 [v0, v1]。
+       用途：办公楼幕墙原来是**一片通高**（覆盖 y∈[0.6,30.0]，通高贴图 v=0..1 铺满这 29.4m）。
+       逐层化后必须仍是"同一片幕墙被切成 9 段"：每段的 v 严格等于通高片在该高度处的 v，
+       即 v=(y-0.6)/29.4。这样九段拼合与原通高片逐像素等价，每段却能独立抬升。
+       反面教训：若偷懒按"每层 3.4m × v 各取 1/9"，总高会变成 [0,30.6]、每层窗行数从
+       3.007 变 2.889 —— 实测每层接缝处冒出一条 1~2px 错位细线（全屏差异 2.07%，
+       肉眼就是"窗格被切细了"）。不共享材质也不克隆贴图，只改几何体 UV，零额外显存。 */
+    function setUVrange(geo, v0, v1) {
+      const uv = geo.attributes.uv, k = v1 - v0;
+      for (let i = 0; i < uv.count; i++) uv.setY(i, v0 + uv.getY(i) * k);
+      uv.needsUpdate = true;
+      return geo;
     }
 
     function addFactoryMainHall(x, z, w, d, h) {
@@ -2428,68 +2490,130 @@
         }
       })();
 
-            addContactShade(g, w + 0.9, d + 0.9, 1.9);   // 接地阴影过渡带（主厂房）
+      // ---- 【第26轮·剖切】把已建构件整体搬进"壳组"，点击时壳体升起、露出底部室内平面 ----
+      // 搬家法：不重写上千行建模代码，只在末尾调整父子关系 —— 世界坐标不变，
+      // 于是"未点击时的外观"与改造前逐像素一致（这是本轮能零风险改动的关键）。
+      var shade = addContactShade(g, w + 0.9, d + 0.9, 1.9);   // 接地阴影过渡带（留在地面，不随壳体抬升）
+      var shell = new THREE.Group();
+      for (var ci = g.children.length - 1; ci >= 0; ci--) {
+        var ch = g.children[ci];
+        if (ch === shade) continue;
+        shell.add(ch);                       // add 会自动把它从 g 上摘下来
+      }
+      g.add(shell);
 
-buildingGroup.add(g);
+      var plan = new THREE.Group();
+      plan.visible = false;
+      buildHallPlan(plan, w, d);
+      g.add(plan);
+
+      SHELLS.hall = { unit: regLift(shell), plan: plan, lift: h * 0.95, label: '主厂房', built: true };
+      tagPick(g, { kind: 'shell', bld: 'hall', key: 'hall' });
+      PICK_ROOTS.push(g);
+
+      buildingGroup.add(g);
     }
 
     // 研发办公楼：玻璃幕墙塔楼 + 层间腰线
+    /* 【第26轮·剖切】原来整栋是一块实心 core + 四片通高幕墙 —— 无法"抽走某一层以上"。
+       现按层切分：第 f 层 = 独立 group（层实体 + 四片该层幕墙 + 层顶腰线 + 该层平面图）。
+       腰线归"它上面那一层"（放在该层组的底面），这样第 k 层被抽开时，第 k 层顶面是干净的，
+       平面图不会被腰线压住；腰线在世界坐标里的位置与改造前逐一致（f*floorH, f=1..floors-1）。
+       平面图默认 visible=false 且懒生成 —— 一是省性能（9 层全建约 700 个网格），
+       二是未展开时它与上层 core 空间重叠，隐藏才能保证外观与改造前 100% 相同。 */
     function addOfficeBuilding(x, z, w, d, floors) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
       const floorH = 3.4;
       const h = floors * floorH;
 
-      // 核心体（混凝土）
-      const core = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.concrete);
-      core.position.y = h / 2;
-      core.castShadow = true; core.receiveShadow = true;
-      g.add(core);
-
-      // 四面幕墙（贴图玻璃分格）
       const fMat = MAT.facadeOffice.clone();
       // 【关键修正】clone 出来的材质不在 FACADE_MATS 里，applyTheme 只改原型，于是
       // 这栋楼怎么都不亮（"最高的楼晚间楼层灯没亮"就是这个原因）。clone 的 userData
       // 也不会跟着复制，所以这里要重新登记一次。
       registerFacade(fMat, TEX.facadeOffice, TEX.facadeOfficeN);
-      for (const s of [1, -1]) {
-        const f1 = new THREE.Mesh(new THREE.BoxGeometry(w + 0.30, h - 1.2, 0.18), fMat);
-        f1.position.set(0, h / 2, s * (d / 2 + 0.16));
-        g.add(f1);
-        const f2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, h - 1.2, d + 0.30), fMat);
-        f2.position.set(s * (w / 2 + 0.16), h / 2, 0);
-        g.add(f2);
+
+      const units = [];
+      for (let f = 0; f < floors; f++) {
+        const fl = new THREE.Group();
+        fl.position.y = f * floorH;
+
+        // 层实体（混凝土）
+        const core = new THREE.Mesh(new THREE.BoxGeometry(w, floorH, d), MAT.concrete);
+        core.position.y = floorH / 2;
+        core.castShadow = true; core.receiveShadow = true;
+        fl.add(core);
+
+        // 四面幕墙（该层，贴图玻璃分格）—— 与原"通高一片"逐像素等价：
+        // 原版是一片 BoxGeometry(w+0.30, h-1.2, 0.18)、中心 y=h/2 → 竖直覆盖 [0.6, 30.0]，
+        // 通高贴图 v=0..1 铺满这 29.4m。这里按楼层把同一片切开：切缝落在层高线 y=f*floorH，
+        // 每片的 v 取通高片在该高度处的同一段（见 setUVrange）。首层/顶层是不满高的残段
+        // （2.8m），中间各层满高 3.4m —— 九片拼起来就是原来那一片。厚度与外挑保持不变。
+        const FAC_H = h - 1.2, FAC_Y0 = 0.6;
+        const fy0 = Math.max(FAC_Y0, f * floorH);
+        const fy1 = Math.min(FAC_Y0 + FAC_H, (f + 1) * floorH);
+        if (fy1 > fy0) {
+          const v0 = (fy0 - FAC_Y0) / FAC_H, v1 = (fy1 - FAC_Y0) / FAC_H;
+          const fyh = fy1 - fy0, fcy = (fy0 + fy1) / 2 - f * floorH;
+          for (const s of [1, -1]) {
+            const f1 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(w + 0.30, fyh, 0.18), v0, v1), fMat);
+            f1.position.set(0, fcy, s * (d / 2 + 0.16));
+            fl.add(f1);
+            const f2 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(0.18, fyh, d + 0.30), v0, v1), fMat);
+            f2.position.set(s * (w / 2 + 0.16), fcy, 0);
+            fl.add(f2);
+          }
+        }
+
+        // 层间腰线：放在**本层组的底面**，即世界标高 f*floorH —— 与原代码 f=1..floors-1 完全一致，
+        // 且抽层时随上方一起走，不会压在被展开楼层的平面图上。
+        if (f > 0) {
+          const band = new THREE.Mesh(new THREE.BoxGeometry(w + 0.75, 0.44, d + 0.75), MAT.alu);
+          band.position.y = 0;
+          band.castShadow = true;
+          fl.add(band);
+        }
+
+        // 该层平面图（站在本层顶面上；懒生成 + 默认隐藏）
+        const plan = new THREE.Group();
+        plan.position.y = floorH;
+        plan.visible = false;
+        fl.add(plan);
+
+        tagPick(fl, { kind: 'floor', bld: 'office', f: f, key: 'office|' + f });
+        const u = regLift(fl);
+        units.push({ u: u, f: f, plan: plan, built: false });
+        g.add(fl);
       }
 
-      // 层间腰线
-      for (let f = 1; f < floors; f++) {
-        const band = new THREE.Mesh(new THREE.BoxGeometry(w + 0.75, 0.44, d + 0.75), MAT.alu);
-        band.position.y = f * floorH;
-        band.castShadow = true;
-        g.add(band);
-      }
+      // 顶部机房屋 + 女儿墙 + 光伏 —— 归为"最顶层之上"的独立抬升单元
+      const top = new THREE.Group();
+      top.position.y = h;
+      const topHouse = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55, 2.6, d * 0.55), MAT.concrete);
+      topHouse.position.y = 1.3;
+      topHouse.castShadow = true;
+      top.add(topHouse);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.9, 0.9, d + 0.9), MAT.alu);
+      cap.position.y = 0.45;
+      cap.castShadow = true;
+      top.add(cap);
+      addSolarRoof(top, w * 0.62, d * 0.62, 2.6, 14);
+      tagPick(top, { kind: 'floor', bld: 'office', f: floors - 1, key: 'office|' + (floors - 1) });
+      const topU = regLift(top);
+      g.add(top);
 
-      // 混凝土勒脚
+      // 混凝土勒脚（不带幕墙的落地段，不随楼层抬升）
       const plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 1.0, 2.0, d + 1.0), MAT.concrete);
       plinth.position.y = 1.0;
       plinth.castShadow = true; plinth.receiveShadow = true;
       g.add(plinth);
 
-      // 顶部机房屋 + 女儿墙
-      const topHouse = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55, 2.6, d * 0.55), MAT.concrete);
-      topHouse.position.y = h + 1.3;
-      topHouse.castShadow = true;
-      g.add(topHouse);
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.9, 0.9, d + 0.9), MAT.alu);
-      cap.position.y = h + 0.45;
-      cap.castShadow = true;
-      g.add(cap);
-
-      addSolarRoof(g, w * 0.62, d * 0.62, h + 2.6, 14);
-
             addContactShade(g, w + 1.1, d + 1.1, 2.0);   // 接地阴影过渡带（办公楼·勒脚外扩 0.5）
 
-buildingGroup.add(g);
+      LIFT_OFFICE = floorH * 1.3;
+      OFFICE = { w: w, d: d, floors: floors, floorH: floorH, units: units, top: topU };
+      PICK_ROOTS.push(g);
+      buildingGroup.add(g);
     }
 
     // 生产车间：压型钢板厂房 + 采光带 + 卷帘门
@@ -2570,9 +2694,26 @@ buildingGroup.add(g);
       // 光伏避开后排通风器：进深收 6m，底部落到屋面板（h+0.1）上
       addSolarRoof(g, w - 3.5, d - 6, h + 0.12, 18);
 
-            addContactShade(g, w + 0.7, d + 0.7, 1.8);   // 接地阴影过渡带（生产车间）
+      // ---- 【第26轮·剖切】同主厂房：整体搬进壳组，点击升起露出室内工位平面 ----
+      var shade = addContactShade(g, w + 0.7, d + 0.7, 1.8);   // 接地阴影过渡带（留在地面）
+      var shell = new THREE.Group();
+      for (var ci = g.children.length - 1; ci >= 0; ci--) {
+        var ch = g.children[ci];
+        if (ch === shade) continue;
+        shell.add(ch);
+      }
+      g.add(shell);
 
-buildingGroup.add(g);
+      var plan = new THREE.Group();
+      plan.visible = false;
+      buildShopPlan(plan, w, d);
+      g.add(plan);
+
+      SHELLS.shop = { unit: regLift(shell), plan: plan, lift: h * 0.95, label: '生产车间', built: true };
+      tagPick(g, { kind: 'shell', bld: 'shop', key: 'shop' });
+      PICK_ROOTS.push(g);
+
+      buildingGroup.add(g);
     }
 
     // 储罐区：不锈钢罐 + 防火堤 + 管廊
@@ -3184,7 +3325,7 @@ buildingGroup.add(g);
       t.add(trunk);
 
       // 树冠：多个不规则椭球错落，模拟自然冠形
-      const lm = MAT.leafVariants[(Math.random() * MAT.leafVariants.length) | 0];
+      const lm = MAT.leafVariants[(srnd() * MAT.leafVariants.length) | 0];
       const crown = [
         [0, 4.5, 0, 2.3], [-1.1, 3.9, 0.7, 1.6],
         [1.2, 4.0, -0.6, 1.7], [0.3, 5.5, 0.9, 1.5], [-0.6, 5.3, -1.1, 1.4]
@@ -3491,7 +3632,7 @@ buildingGroup.add(g);
         const ang = (k / CLUSTERS) * Math.PI * 2 + rnd(-0.13, 0.13);
         const r = rnd(112, 172);
         const cx = Math.cos(ang) * r, cz = Math.sin(ang) * r;
-        const n = 2 + ((Math.random() * 3) | 0);
+        const n = 2 + ((srnd() * 3) | 0);
         for (let j = 0; j < n; j++) {
           const tx = cx + rnd(-8, 8), tz = cz + rnd(-8, 8);
           // 围墙（x±80 / z-62~54）外扩 6m 才允许种植
@@ -3748,6 +3889,7 @@ buildingGroup.add(g);
           const post = new THREE.Mesh(postG, MAT.fenceCap);
           post.position.set(x0 + (x1 - x0) * t, FH / 2, z0 + (z1 - z0) * t);
           post.castShadow = true;
+          post.userData.stayPut = true;        // 【第26轮】围栏属场地设施，掀箱盖时留在地面
           g.add(post);
         }
         for (const yy of [FH - 0.16, 0.28]) {
@@ -3755,6 +3897,7 @@ buildingGroup.add(g);
           rail.scale.x = len;
           rail.position.set((x0 + x1) / 2, yy, (z0 + z1) / 2);
           rail.rotation.y = Math.atan2(-(z1 - z0), x1 - x0);
+          rail.userData.stayPut = true;        // 【第26轮】同上：横杆留在地面
           g.add(rail);
         }
       }
@@ -3767,6 +3910,7 @@ buildingGroup.add(g);
         const leaf = new THREE.Mesh(new THREE.BoxGeometry(GATE_W / 2 - 0.08, FH - 0.24, 0.06), MAT.darkMetal);
         leaf.position.set(sx * (GATE_W / 4 + 0.02), (FH - 0.24) / 2, FD / 2);
         leaf.castShadow = true;
+        leaf.userData.stayPut = true;          // 【第26轮】栅栏门留在地面
         g.add(leaf);
       }
 
@@ -3779,12 +3923,492 @@ buildingGroup.add(g);
       subLight.position.set(0, 0.40 + 2.55, BD / 2 + 0.95);
       g.add(subLight);
       registerNightLight(subLight, 2.4, 0);
-      nightPool(g, 0, 0.090, BD / 2 + 1.6, 3.2, 0.42);
+      nightPool(g, 0, 0.090, BD / 2 + 1.6, 3.2, 0.42).userData.stayPut = true;   // 【第26轮】地面光斑留在地面
 
-            addContactShade(g, FW, FD, 1.3);             // 接地阴影过渡带（配电站·按围栏外围）
+      // ---- 【第26轮·剖切】箱壳（含压顶/通风帽/套管/双开门/百叶/警示牌/门灯）整体搬进壳组，
+      //      点击时升起露出室内配电平面；围栏与接地阴影留在原地。 ----
+      var shade = addContactShade(g, FW, FD, 1.3);             // 接地阴影过渡带（配电站·按围栏外围）
+      var shell = new THREE.Group();
+      for (var ci = g.children.length - 1; ci >= 0; ci--) {
+        var ch = g.children[ci];
+        if (ch === shade) continue;
+        if (ch.userData && ch.userData.stayPut) continue;      // 围栏 / 栅栏门留在地面
+        if (ch === subLight) continue;                         // 门灯点光源留在地面向上照
+        shell.add(ch);
+      }
+      g.add(shell);
 
-buildingGroup.add(g);
+      var plan = new THREE.Group();
+      plan.visible = false;
+      buildSubPlan(plan);
+      g.add(plan);
+
+      SHELLS.sub = { unit: regLift(shell), plan: plan, lift: BH + 1.6, label: '配电间', built: true };
+      tagPick(g, { kind: 'shell', bld: 'sub', key: 'sub' });
+      PICK_ROOTS.push(g);
+
+      buildingGroup.add(g);
     }
+
+    /* ==========================================================================
+       第26轮 · 剖切展示 A：室内平面构件工厂
+       —— 全部内部件 castShadow=false（省一遍阴影渲染）、receiveShadow=true（保留层次）
+       —— 内部用固定色材质（MAT.inXxx），不参与昼夜主题切换：剖切面打开后，
+          "读图"是唯一目的，颜色对比优先于与外观调性一致
+       ========================================================================== */
+    function ibox(parent, w, h, d, x, y, z, mat) {
+      var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      m.position.set(x, y, z);
+      m.castShadow = false;
+      m.receiveShadow = true;
+      parent.add(m);
+      return m;
+    }
+
+    // 一道墙（可留若干门洞）。gaps 是"沿墙起点算起的距离区间"数组，如 [[2.1,3.1]]
+    function iwall(parent, x0, z0, x1, z1, hgt, thick, gaps, mat) {
+      var dx = x1 - x0, dz = z1 - z0;
+      var len = Math.sqrt(dx * dx + dz * dz);
+      if (len < 0.01) return;
+      var ux = dx / len, uz = dz / len;
+      var list = (gaps || []).slice().sort(function (p, q) { return p[0] - q[0]; });
+      var segs = [], cur = 0;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i][0] > cur) segs.push([cur, list[i][0]]);
+        cur = Math.max(cur, list[i][1]);
+      }
+      if (cur < len) segs.push([cur, len]);
+      var along = Math.abs(ux) >= Math.abs(uz);
+      for (var k = 0; k < segs.length; k++) {
+        var L = segs[k][1] - segs[k][0];
+        if (L < 0.06) continue;
+        var mid = (segs[k][0] + segs[k][1]) / 2;
+        var m = new THREE.Mesh(
+          along ? new THREE.BoxGeometry(L, hgt, thick) : new THREE.BoxGeometry(thick, hgt, L),
+          mat
+        );
+        m.position.set(x0 + ux * mid, hgt / 2, z0 + uz * mid);
+        m.castShadow = false;
+        m.receiveShadow = true;
+        parent.add(m);
+      }
+    }
+
+    /* ---------- 办公楼标准层平面（w22 × d16：中间走廊 + 两侧房间 + 会议室 + 楼梯间）---------- */
+    function buildOfficePlan(plan, w, d, fi) {
+      var W = w - 1.0, D = d - 1.0;
+      var HW = W / 2, HD = D / 2;
+      var WH = 0.86, T = 0.16, COR = 1.35;
+      var i, k;
+
+      // ① 楼板面层 + 走廊地面
+      ibox(plan, W, 0.14, D, 0, 0.07, 0, MAT.inFloorGray);
+      ibox(plan, W - 0.4, 0.03, COR * 2, 0, 0.155, 0, MAT.inCorridor);
+
+      // ② 走廊两侧纵墙（沿 x 贯通，按房间位置留门洞；门洞区间＝距墙起点(-HW)的距离）
+      var dnorth = [[2.125, 3.125], [7.375, 8.375], [11.0, 12.0], [17.0, 18.0]];
+      var dsouth = [[2.125, 3.125], [7.375, 8.375], [12.625, 13.625], [17.875, 18.875]];
+      iwall(plan, -HW, COR, HW, COR, WH, T, dnorth, MAT.inWall);
+      iwall(plan, -HW, -COR, HW, -COR, WH, T, dsouth, MAT.inWall);
+
+      // ③ 房间横向隔墙（沿 z，中部留 1.0 门洞）
+      var dx = [[3.075, 4.075]];
+      iwall(plan, -5.25, COR, -5.25, HD, WH, T, dx, MAT.inWall);
+      iwall(plan, 0, COR, 0, HD, WH, T, dx, MAT.inWall);
+      iwall(plan, -5.25, -HD, -5.25, -COR, WH, T, dx, MAT.inWall);
+      iwall(plan, 0, -HD, 0, -COR, WH, T, dx, MAT.inWall);
+      iwall(plan, 5.25, -HD, 5.25, -COR, WH, T, dx, MAT.inWall);
+
+      // ④ 标准办公室：2 工位（桌 + 椅）+ 靠幕墙矮柜
+      function room(xa, xb, dir) {
+        var cx = (xa + xb) / 2;
+        var zIn = dir > 0 ? COR : -COR;
+        var zOut = dir > 0 ? HD : -HD;
+        var half = Math.min(1.45, (xb - xa) * 0.24);
+        for (var s = -1; s <= 1; s += 2) {
+          var tx = cx + s * half;
+          var tz = zIn + dir * 2.35;
+          ibox(plan, 1.46, 0.07, 0.74, tx, 0.75, tz, MAT.inDeskTop);
+          ibox(plan, 1.24, 0.68, 0.60, tx, 0.40, tz, MAT.inDeskLeg);
+          var cz = tz - dir * 0.76;
+          ibox(plan, 0.46, 0.10, 0.46, tx, 0.47, cz, MAT.inChair);
+          ibox(plan, 0.44, 0.46, 0.07, tx, 0.70, cz - dir * 0.21, MAT.inChair);
+        }
+        ibox(plan, Math.min(2.1, (xb - xa) * 0.44), 0.60, 0.42,
+             cx, 0.30, zOut - dir * 0.55, MAT.inRack);
+      }
+      room(-HW, -5.25, 1);
+      room(-5.25, 0, 1);
+      room(-5.25, 0, -1);
+      room(0, 5.25, -1);
+      room(5.25, HW, -1);
+
+      // ⑤ 会议室（北侧最东 10.5m 开间）：长桌 + 8 椅 + 2 内柱 + 会议屏
+      var mx = 5.25, mz = (COR + HD) / 2;
+      ibox(plan, 4.6, 0.08, 1.5, mx, 0.75, mz, MAT.inDeskTop);
+      ibox(plan, 4.2, 0.68, 1.2, mx, 0.39, mz, MAT.inDeskLeg);
+      for (i = 0; i < 4; i++) {
+        var px = mx - 1.75 + i * 1.17;
+        for (k = -1; k <= 1; k += 2) {
+          ibox(plan, 0.44, 0.10, 0.44, px, 0.47, mz + k * 1.18, MAT.inChairBlue);
+          ibox(plan, 0.44, 0.44, 0.07, px, 0.70, mz + k * 1.40, MAT.inChairBlue);
+        }
+      }
+      ibox(plan, 0.42, WH, 0.42, mx + 3.4, WH / 2, mz + 2.3, MAT.inCol);
+      ibox(plan, 0.42, WH, 0.42, mx - 3.9, WH / 2, mz - 2.3, MAT.inCol);
+      ibox(plan, 0.09, 0.82, 1.8, mx + 5.02, 1.02, mz, MAT.inScreen);
+
+      // ⑥ 楼梯间（南侧最西）：上行梯段 + 休息平台 + 扶手 + 洁具间隔断
+      var sx = -HW + 1.15, sz = -HD + 0.75;
+      for (i = 0; i < 8; i++) {
+        var hh = 0.16 * (i + 1);
+        ibox(plan, 1.5, hh, 0.30, sx, hh / 2, sz + i * 0.30 + 0.15, MAT.inSlab);
+      }
+      ibox(plan, 1.7, 0.16, 1.30, sx, 1.42, sz + 3.15, MAT.inSlab);
+      ibox(plan, 0.07, 0.62, 2.9, sx + 0.80, 0.61, sz + 1.35, MAT.alu);
+      ibox(plan, T, WH, 2.0, sx + 1.95, WH / 2, -HD + 1.45, MAT.inWall);
+
+      // ⑦ 楼层号标牌（贴地小色块，俯视时帮助辨认）
+      ibox(plan, 1.25, 0.04, 0.62, -HW + 1.4, 0.165, HD - 0.9, MAT.warn);
+    }
+
+    /* ---------- 主厂房室内平面（46 × 30：柱网 + 加工中心带 + 装配线 + 物流区）---------- */
+    function buildHallPlan(plan, w, d) {
+      var W = w - 1.6, D = d - 1.6;
+      var i, k;
+      ibox(plan, W, 0.16, D, 0, 0.08, 0, MAT.inFloorShop);
+      ibox(plan, W - 1.2, 0.03, 4.2, 0, 0.175, 0, MAT.inCorridor);
+
+      // 柱网 5×3（1.05m 柱脚：壳体升起后不会与屋盖打架）
+      var xs = [-18, -9, 0, 9, 18], zs = [-10.5, 0, 10.5];
+      for (i = 0; i < xs.length; i++) {
+        for (k = 0; k < zs.length; k++) {
+          if (xs[i] === 0 && zs[k] === 0) continue;
+          ibox(plan, 0.78, 1.05, 0.78, xs[i], 0.60, zs[k], MAT.concrete);
+        }
+      }
+
+      // 北侧设备带：4 台加工中心 + 操作台
+      for (i = 0; i < 4; i++) {
+        var mx = -16.5 + i * 11.0;
+        ibox(plan, 2.8, 2.05, 2.3, mx, 1.11, -12.2, MAT.inMachine);
+        ibox(plan, 1.3, 0.52, 1.0, mx, 2.40, -12.5, MAT.inMachineDark);
+        ibox(plan, 0.52, 0.92, 0.52, mx + 1.85, 0.54, -12.0, MAT.inMachineDark);
+      }
+
+      // 南侧：3 条装配线 + 线上工位
+      for (i = 0; i < 3; i++) {
+        var ax = -13.5 + i * 13.5;
+        ibox(plan, 11.0, 0.80, 1.9, ax, 0.48, 8.4, MAT.inMachine);
+        ibox(plan, 11.6, 0.10, 2.1, ax, 0.93, 8.4, MAT.inMachineDark);
+        for (k = 0; k < 4; k++) {
+          ibox(plan, 1.15, 0.42, 1.0, ax - 4.05 + k * 2.7, 1.19, 8.4, MAT.inRack);
+        }
+      }
+
+      // 东端成品缓存（托盘垛）
+      for (i = 0; i < 3; i++) ibox(plan, 2.3, 0.95, 1.9, 19.6, 0.56, -4.0 + i * 3.6, MAT.inRack);
+      // 西端货架 2 组（3 层）
+      for (i = 0; i < 2; i++) {
+        var rz = -3.2 + i * 7.2;
+        ibox(plan, 1.15, 2.55, 5.8, -20.7, 1.36, rz, MAT.inRack);
+        for (k = 1; k < 3; k++) ibox(plan, 1.25, 0.10, 5.7, -20.7, k * 0.85, rz, MAT.inMachineDark);
+      }
+
+      // 安全通道标线
+      ibox(plan, W - 2.2, 0.02, 0.14, 0, 0.17, -6.6, MAT.warn);
+      ibox(plan, W - 2.2, 0.02, 0.14, 0, 0.17, 6.2, MAT.warn);
+    }
+
+    /* ---------- 生产车间室内平面（28 × 20：双装配线 + 设备 + 货架）---------- */
+    function buildShopPlan(plan, w, d) {
+      var W = w - 1.6, D = d - 1.6;
+      var i, k;
+      ibox(plan, W, 0.16, D, 0, 0.08, 0, MAT.inFloorShop);
+      ibox(plan, W - 1.2, 0.03, 3.6, 0, 0.175, 0, MAT.inCorridor);
+
+      var zs = [-6.4, 0, 6.4];
+      for (i = -1; i <= 1; i++) {
+        for (k = 0; k < zs.length; k++) {
+          if (i === 0 && zs[k] === 0) continue;
+          ibox(plan, 0.70, 1.00, 0.70, i * 8.6, 0.58, zs[k], MAT.concrete);
+        }
+      }
+
+      for (i = 0; i < 2; i++) {
+        var az = -5.6 + i * 11.2;
+        ibox(plan, 15.0, 0.78, 1.8, 0, 0.47, az, MAT.inMachine);
+        ibox(plan, 15.6, 0.10, 2.0, 0, 0.91, az, MAT.inMachineDark);
+        for (k = 0; k < 5; k++) {
+          ibox(plan, 1.10, 0.40, 0.95, -6.0 + k * 3.0, 1.16, az, MAT.inRack);
+        }
+      }
+
+      for (i = 0; i < 2; i++) {
+        for (k = -1; k <= 1; k += 2) {
+          var ez = k * (2.6 + i * 3.4);
+          ibox(plan, 2.4, 1.90, 2.2, 9.6, 1.03, ez, MAT.inMachine);
+          ibox(plan, 1.1, 0.46, 0.9, 9.6, 2.22, ez, MAT.inMachineDark);
+        }
+      }
+      for (i = -1; i <= 1; i += 2) {
+        ibox(plan, 1.05, 2.35, 4.6, i * 11.2, 1.26, -6.6, MAT.inRack);
+        ibox(plan, 1.15, 0.10, 4.5, i * 11.2, 0.85, -6.6, MAT.inMachineDark);
+      }
+
+      ibox(plan, W - 2.2, 0.02, 0.14, 0, 0.17, -3.0, MAT.warn);
+      ibox(plan, W - 2.2, 0.02, 0.14, 0, 0.17, 3.0, MAT.warn);
+    }
+
+    /* ---------- 配电间室内平面（内净 6.6 × 4.4：木地板 + 三组开关柜 + 方柱 + 控制台）---------- */
+    function buildSubPlan(plan) {
+      var i;
+      ibox(plan, 6.6, 0.12, 4.4, 0, 0.06, 0, MAT.inFloorWood);          // 木地板
+
+      // 西侧一排 4 联开关柜（柜面朝东，带表计/指示灯）
+      for (i = 0; i < 4; i++) {
+        var cz = -1.55 + i * 1.03;
+        ibox(plan, 0.86, 2.02, 1.00, -2.82, 1.08, cz, MAT.inCabinet);
+        ibox(plan, 0.92, 0.30, 1.04, -2.86, 2.24, cz, MAT.inCabPanel);
+        ibox(plan, 0.05, 0.10, 0.11, -2.38, 1.78, cz, MAT.inLed);
+        ibox(plan, 0.05, 0.10, 0.11, -2.38, 1.52, cz, MAT.inLed);
+      }
+      // 北侧 3 联柜
+      for (i = 0; i < 3; i++) {
+        var cx1 = -1.35 + i * 1.06;
+        ibox(plan, 1.02, 2.02, 0.88, cx1, 1.08, -1.62, MAT.inCabinet);
+        ibox(plan, 1.08, 0.30, 0.92, cx1, 2.24, -1.62, MAT.inCabPanel);
+        ibox(plan, 0.11, 0.10, 0.05, cx1, 1.80, -1.17, MAT.inLed);
+      }
+      // 南侧 3 联柜
+      for (i = 0; i < 3; i++) {
+        var cx2 = -1.35 + i * 1.06;
+        ibox(plan, 1.02, 2.02, 0.88, cx2, 1.08, 1.62, MAT.inCabinet);
+        ibox(plan, 1.08, 0.30, 0.92, cx2, 2.24, 1.62, MAT.inCabPanel);
+        ibox(plan, 0.11, 0.10, 0.05, cx2, 1.80, 1.17, MAT.inLed);
+      }
+      // 两根方柱
+      ibox(plan, 0.40, 2.60, 0.40, -0.30, 1.30, -0.95, MAT.inCol);
+      ibox(plan, 0.40, 2.60, 0.40, -0.30, 1.30, 0.95, MAT.inCol);
+      // 靠中央的控制台（桌 + 显示器）
+      ibox(plan, 1.05, 0.70, 0.62, -1.90, 0.35, 0, MAT.inDeskLeg);
+      ibox(plan, 1.14, 0.06, 0.68, -1.90, 0.73, 0, MAT.inDeskTop);
+      ibox(plan, 0.56, 0.38, 0.07, -1.90, 0.95, -0.24, MAT.inScreen);
+    }
+
+    /* ==========================================================================
+       第26轮 · 剖切展示 B：交互系统
+       三条不变式：
+         ① 未展开时外观与改造前逐像素一致 —— 壳体停在原位、室内平面 visible=false；
+         ② 同一时刻只有一个目标呈展开态（展开新目标会先收起旧的）；
+         ③ 抬升动画期间每帧刷新阴影贴图。shadowMap.autoUpdate=false（第19轮为治
+            "阴影边缘沙沙闪"改成按需更新），若不刷新，影子会留在原地不动 ——
+            这是"抬升后影子跟不上"的唯一成因；动画一停即恢复静止，静态性能不受影响。
+       ========================================================================== */
+    var PICK_ROOTS = [];       // 参与射线拾取的根 group（只含可交互建筑）
+    var LIFT_UNITS = [];       // 可抬升单元 {g, baseY, cur, target}
+    var OFFICE = null;         // 办公楼配置
+    var SHELLS = {};           // 厂房 / 车间的壳体配置
+    var pickState = null;      // 当前展开状态 {key}
+    var LIFT_OFFICE = 4.42;    // 楼层抬升量（addOfficeBuilding 里按真实层高覆盖）
+    var tipEl = null, tipTimer = 0;
+
+    function regLift(g) {
+      var u = { g: g, baseY: g.position.y, cur: g.position.y, target: g.position.y };
+      LIFT_UNITS.push(u);
+      return u;
+    }
+    function setLift(u, dy) { if (u) u.target = u.baseY + dy; }
+
+    // 抬升动画：每帧向目标插值；只要还有单元在动就请求一次阴影重算
+    function stepLifts(dt) {
+      var moving = false;
+      for (var i = 0; i < LIFT_UNITS.length; i++) {
+        var u = LIFT_UNITS[i];
+        if (u.cur === u.target) continue;
+        u.cur += (u.target - u.cur) * Math.min(1, dt * 6.0);
+        if (Math.abs(u.target - u.cur) < 0.003) u.cur = u.target;
+        u.g.position.y = u.cur;
+        moving = true;
+      }
+      if (moving && renderer) renderer.shadowMap.needsUpdate = true;
+    }
+
+    // 给整棵子树打拾取标记（平面图里的构件也一并标记：展开后点击内部同样能收起）
+    function tagPick(root, info) {
+      root.traverse(function (o) { if (o.isMesh) o.userData.pick = info; });
+    }
+
+    var _ndc = new THREE.Vector2();
+    var _ray = new THREE.Raycaster();
+    function pickAt(cx, cy) {
+      if (!renderer || !camera || !PICK_ROOTS.length) return null;
+      var r = renderer.domElement.getBoundingClientRect();
+      if (!r.width || !r.height) return null;
+      _ndc.x = ((cx - r.left) / r.width) * 2 - 1;
+      _ndc.y = -((cy - r.top) / r.height) * 2 + 1;
+      _ray.setFromCamera(_ndc, camera);
+      var hits = _ray.intersectObjects(PICK_ROOTS, true);
+      for (var i = 0; i < hits.length; i++) {
+        var o = hits[i].object;
+        while (o) {
+          if (o.userData && o.userData.pick) return o.userData.pick;
+          o = o.parent;
+        }
+      }
+      return null;
+    }
+
+    /* ---- 提示条（动态创建，挂在 3D 容器上；不用 HTML 里现成的样式，避免动到页面骨架）---- */
+    function ensureTip() {
+      if (tipEl) return tipEl;
+      tipEl = document.createElement('div');
+      tipEl.style.cssText =
+        'position:absolute;left:50%;bottom:98px;transform:translate(-50%,10px);max-width:88%;' +
+        'padding:9px 18px;border-radius:20px;background:rgba(10,18,28,.80);color:#eaf3fc;' +
+        'font:500 13px/1.55 system-ui,"Microsoft YaHei",sans-serif;letter-spacing:.2px;' +
+        'border:1px solid rgba(150,205,255,.24);box-shadow:0 10px 28px rgba(0,0,0,.36);' +
+        'pointer-events:none;opacity:0;transition:opacity .26s ease,transform .26s ease;' +
+        'z-index:40;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      container.appendChild(tipEl);
+      return tipEl;
+    }
+    function showTip(text, sticky) {
+      var el = ensureTip();
+      if (!text) {
+        el.style.opacity = '0';
+        el.style.transform = 'translate(-50%,10px)';
+        return;
+      }
+      el.textContent = text;
+      el.style.opacity = '1';
+      el.style.transform = 'translate(-50%,0)';
+      if (tipTimer) { clearTimeout(tipTimer); tipTimer = 0; }
+      if (!sticky) tipTimer = setTimeout(function () { showTip(''); }, 2600);
+    }
+    function hideTip() { showTip(''); }
+
+    function hintOf(info) {
+      if (info.kind === 'floor') return '点击查看 ' + (info.f + 1) + ' 层平面图';
+      var sh = SHELLS[info.bld];
+      return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + '，查看室内平面';
+    }
+
+    function collapseAll() {
+      if (OFFICE) {
+        for (var i = 0; i < OFFICE.units.length; i++) {
+          setLift(OFFICE.units[i].u, 0);
+          OFFICE.units[i].plan.visible = false;
+        }
+        setLift(OFFICE.top, 0);
+      }
+      for (var k in SHELLS) {
+        if (!SHELLS.hasOwnProperty(k)) continue;
+        setLift(SHELLS[k].unit, 0);
+        SHELLS[k].plan.visible = false;
+      }
+      pickState = null;
+    }
+
+    function openPick(info) {
+      if (pickState && pickState.key === info.key) {    // 同一目标再点一次 = 收起
+        collapseAll();
+        hideTip();
+        return;
+      }
+      collapseAll();
+
+      if (info.kind === 'floor') {
+        if (!OFFICE) return;
+        for (var i = 0; i < OFFICE.units.length; i++) {
+          var it = OFFICE.units[i];
+          setLift(it.u, it.f > info.f ? LIFT_OFFICE : 0);
+          it.plan.visible = (it.f === info.f);
+        }
+        setLift(OFFICE.top, LIFT_OFFICE);               // 顶部机房/女儿墙/光伏随之上移
+        var cur = OFFICE.units[info.f];
+        if (cur) {
+          if (!cur.built) { buildOfficePlan(cur.plan, OFFICE.w, OFFICE.d, info.f); cur.built = true; }
+          cur.plan.visible = true;
+        }
+        showTip((info.f + 1) + 'F 平面图　·　点击其它楼层切换 / 再次点击或点空白收起', true);
+      } else {
+        var sh = SHELLS[info.bld];
+        if (!sh) return;
+        setLift(sh.unit, sh.lift);
+        if (!sh.built) { sh.build(sh.plan); sh.built = true; }
+        sh.plan.visible = true;
+        showTip(sh.label + '　·　屋盖已升起，再次点击或点空白收起', true);
+      }
+      pickState = { key: info.key };
+    }
+
+    /* ---- 事件接线：点击（按位移/时长区分"点击"与"拖动旋转"）、悬停光标 ---- */
+    function setupPick() {
+      var dom = renderer.domElement;
+      var x0 = 0, y0 = 0, t0 = 0, moved = false, down = false;
+      var hoverT = 0, hoverKey = '__';
+
+      dom.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0) return;
+        down = true; moved = false;
+        x0 = e.clientX; y0 = e.clientY; t0 = performance.now();
+      });
+      dom.addEventListener('pointermove', function (e) {
+        if (down && (Math.abs(e.clientX - x0) > 6 || Math.abs(e.clientY - y0) > 6)) moved = true;
+        var now = performance.now();
+        if (now - hoverT < 90) return;          // 悬停拾取节流到 ~11Hz
+        hoverT = now;
+        var info = pickAt(e.clientX, e.clientY);
+        var key = info ? info.key : '';
+        if (key === hoverKey) return;
+        hoverKey = key;
+        dom.style.cursor = info ? 'pointer' : '';
+        if (pickState) return;                  // 已展开时不覆盖状态提示
+        if (info) showTip(hintOf(info), true);
+        else hideTip();
+      });
+      dom.addEventListener('pointerup', function (e) {
+        if (e.button !== 0 || !down) return;
+        down = false;
+        if (moved || performance.now() - t0 > 520) return;    // 拖动旋转 / 长按，不算点击
+        var info = pickAt(e.clientX, e.clientY);
+        if (info) openPick(info);
+        else { collapseAll(); hideTip(); }
+      });
+      dom.addEventListener('pointercancel', function () { down = false; });
+      dom.addEventListener('pointerleave', function () {
+        down = false; dom.style.cursor = ''; hoverKey = '__';
+      });
+    }
+
+    // 调试 / 无头渲染钩子：可在控制台或截图脚本里程序化展开（不影响正常交互）
+    window.__expand = {
+      floor: function (f) { openPick({ kind: 'floor', bld: 'office', f: f, key: 'office|' + f }); },
+      shell: function (b) { openPick({ kind: 'shell', bld: b, key: b }); },
+      collapse: function () { collapseAll(); hideTip(); },
+      // 立即到位（不走插值动画）：无头截图脚本用，避免虚拟时间下 rAF 推进不稳定
+      settle: function () {
+        for (var i = 0; i < LIFT_UNITS.length; i++) {
+          var u = LIFT_UNITS[i];
+          u.cur = u.target;
+          u.g.position.y = u.cur;
+        }
+        if (renderer) renderer.shadowMap.needsUpdate = true;
+      },
+      info: function () {
+        return {
+          pick: pickState,
+          shells: Object.keys(SHELLS),
+          floors: OFFICE ? OFFICE.floors : 0,
+          lifts: LIFT_UNITS.map(function (u) { return Math.round(u.cur * 100) / 100; }),
+          cam: camera ? [+camera.position.x.toFixed(3), +camera.position.y.toFixed(3), +camera.position.z.toFixed(3)] : null,
+          tgt: controls ? [+controls.target.x.toFixed(3), +controls.target.y.toFixed(3), +controls.target.z.toFixed(3)] : null,
+          rot: worldGroup ? +worldGroup.rotation.y.toFixed(6) : null,
+          meshes: (function () { var n = 0; scene.traverse(function (o) { if (o.isMesh) n++; }); return n; })()
+        };
+      }
+    };
 
     // withLight：是否挂真实点光源。远景处的灯只保留光晕/光锥/地面光斑（表现"灯亮着"），
     // 不挂点光源 —— 点光源数量直接进入所有材质的片元着色器循环，13 盏全挂会让移动端掉帧。
@@ -3911,9 +4535,14 @@ buildingGroup.add(g);
       if (b && b.classList) b.classList.toggle('active', autoOrbit);
     }
 
+    var _lastFrameT = 0;
     function animate(now) {
       requestAnimationFrame(animate);
+      var tt = (now == null) ? performance.now() : now;
+      var dt = _lastFrameT ? Math.min(0.1, (tt - _lastFrameT) / 1000) : 0.016;
+      _lastFrameT = tt;
       if (autoOrbit && camera && controls) orbitStep(now);
+      stepLifts(dt);                     // 第26轮：楼层/壳体抬升动画（静止时零开销）
       controls.update();
       updateFogScale();
       renderer.render(scene, camera);
@@ -4104,6 +4733,12 @@ buildingGroup.add(g);
     // 初始化
     initTheme();
     init3D();
+
+
+
+
+
+
 
 
 
