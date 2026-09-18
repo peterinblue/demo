@@ -2560,6 +2560,17 @@
       lot.receiveShadow = true;
       g.add(lot);
 
+      // 【修正】进车道：停车场原来是一块"孤零零的沥青"——场坪北边（z 10）离主干道
+      // 南边线（z 28.5）还有 18.5m，中间没有任何进车道，车下不了路、进不了车位区。
+      // 现沿场坪东端补一条 6m 宽的进车道，北端上主干道、南端与场内通道东口对齐，
+      // 车下路后直接西拐进通道。纹理取 4.8x3.2 一格，与场坪的沥青纹密度一致。
+      const DRV_W = 6, DRV_L = 13.6;
+      const drv = new THREE.Mesh(new THREE.PlaneGeometry(DRV_W, DRV_L), asphaltMat(1.25, 4.25));
+      drv.rotation.x = -Math.PI / 2;
+      drv.position.set(LOT_W / 2 + DRV_W / 2, LOT_Y, 4.15);   // 局部 z -2.65~10.95（世界 15.35~28.95）
+      drv.receiveShadow = true;
+      g.add(drv);
+
       // 车位分隔线（上下两排各 5 个车位，只到通道边，不再贯通整块场地）
       for (let i = 0; i <= BAYS; i++) {
         for (const s of [-1, 1]) {
@@ -2821,12 +2832,27 @@
 
       // 厂外进厂引道：大门外一小段铺装，让"车从哪进来"有着落
       // 注意：这段在围墙外，地面上不画任何标线（白线一律不出围墙）
+      const APRON_Y = Y_ROAD - 0.014;                        // 0.048
       const apron = new THREE.Mesh(
         new THREE.PlaneGeometry(DW * 2 + 3.2, 14), asphaltMat(7, 4));
       apron.rotation.x = -Math.PI / 2;
-      apron.position.set(0, Y_ROAD - 0.014, WALL.ZS + 7.2);   // z 54.2~68.2
+      apron.position.set(0, APRON_Y, WALL.ZS + 7.25);        // z 54.25~68.25
       apron.receiveShadow = true;
       buildingGroup.add(apron);
+
+      // 【修正】厂外进厂道路：上一轮只补了门外 14m 的一块引道，它在草地里戛然而止，
+      // 俯视看就是"草地中间孤零零铺了一块沥青"，仍看不出"车是从哪条路开进来的"。
+      // 现往南再接一条 13m 宽的道路，一直铺到远处树林带之前（z 68.2~170），
+      // 大门口因此真正"接在一条路上"。同样：围墙外一律不画任何标线。
+      // 标高比引道低 2mm，且两段严格首尾相接（z=68.25 处不多不少重叠一毫米都不留），
+      // 避免"共面 + 远距离深度精度不足"引起的 z-fighting 闪烁。
+      const ORD_Z0 = WALL.ZS + 14.25, ORD_Z1 = 170;          // z 68.25 ~ 170
+      const oroad = new THREE.Mesh(
+        new THREE.PlaneGeometry(13, ORD_Z1 - ORD_Z0), asphaltMat(4, 30));
+      oroad.rotation.x = -Math.PI / 2;
+      oroad.position.set(0, APRON_Y - 0.002, (ORD_Z0 + ORD_Z1) / 2);
+      oroad.receiveShadow = true;
+      buildingGroup.add(oroad);
 
       // ---------- 地面标线（全部零厚度面片，平贴路面） ----------
       function paint(w, d, x, z) {
@@ -2861,10 +2887,14 @@
 
       const GATE_GAP = [-DW, DW];                          // 大门引道开口
       const XING_GAP_X = [R2.xc - R2.hw, R2.xc + R2.hw];   // 西侧 T 字口（x 区间）
+      // 停车场进车道开口：停车场在 (50,18)、场坪宽 24 → 东端 x=62，进车道宽 6 → x 62~68。
+      // 【要点】凡是道路边线遇到出入口，必须断开——否则白线会横着画在入口上，
+      // 看上去就是"线画错了"。（边线断、中心虚线不断，符合让行规则）
+      const PARK_GAP = [62, 68];
 
-      // 主干道北侧边线：次干道汇入的 T 字口 + 大门引道处断开
+      // 主干道北侧边线：次干道汇入的 T 字口 + 大门引道处断开 + 停车场进车道处断开
       paintLine('x', R1.zc - (R1.hw - 0.45), R1.x0 + 0.6, R1.x1 - 0.6,
-        [XING_GAP_X, GATE_GAP], 0.16);
+        [XING_GAP_X, GATE_GAP, PARK_GAP], 0.16);
       // 主干道南侧边线：只在大门引道处断开（次干道止于北侧边线，不越到南半幅）
       paintLine('x', R1.zc + (R1.hw - 0.45), R1.x0 + 0.6, R1.x1 - 0.6,
         [GATE_GAP], 0.16);
@@ -2916,6 +2946,10 @@
           // 围墙（x±80 / z-62~54）外扩 6m 才允许种植
           const outsideWall = (Math.abs(tx) > 86) || (tz < -68) || (tz > 60);
           if (!outsideWall) continue;
+          // 厂外进厂道路（x±6.5，z 68~170）走廊内不种树。
+          // 走廊按 ±18m 留：远景树 scale 最大 1.95、冠半径可达 4.8m，
+          // 只留 ±12m 时树冠仍会探到路面上（本轮渲染里看到过路中的暗斑）
+          if (Math.abs(tx) < 18 && tz > 60) continue;
           addTree(buildingGroup, tx, tz, rnd(1.15, 1.95), true);
         }
       }
@@ -3150,6 +3184,9 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
 
 
 
