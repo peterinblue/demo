@@ -868,21 +868,21 @@
 
     <!-- 底部功能按钮 -->
     <div class="bottom-bar">
-      <div class="func-btn active" onclick="setView('all')">
+      <div class="func-btn active" onclick="setView('all', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>总览</span>
       </div>
-      <div class="func-btn" onclick="setView('pv')">
+      <div class="func-btn" onclick="setView('pv', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
         <span>光伏</span>
       </div>
-      <div class="func-btn" onclick="setView('charge')">
+      <div class="func-btn" onclick="setView('charge', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 11h2"/><path d="M10 11h2"/></svg>
         <span>充电</span>
       </div>
-      <div class="func-btn" onclick="setView('ac')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M6 8h12"/><path d="M6 16h12"/><path d="M8 8v8"/><path d="M16 8v8"/></svg>
-        <span>空调</span>
+      <div class="func-btn" onclick="setView('tank', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5.8" rx="7.3" ry="2.5"/><path d="M4.7 5.8v11.1c0 1.4 3.3 2.5 7.3 2.5s7.3-1.1 7.3-2.5V5.8"/><path d="M12 3.3V1.5"/></svg>
+        <span>储罐</span>
       </div>
       <div class="func-btn" onclick="resetCamera()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -3390,33 +3390,40 @@
     }
 
     // 视角切换
+    // charge：车间北墙外那排充电桩（6 桩 @ 世界 z=-26.45，x 31.6~48.4），从东北侧 3/4 近景看桩与充电中的车
+    // tank  ：西北储罐区（4 罐 @ (-44±6.5, -24±6.5)），从东北侧看全 4 罐 + 防火堤 + 管廊
     const viewPositions = {
       all: { pos: [72, 54, 72], target: [0, 16, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
-      charge: { pos: [42, 24, -60], target: [40, 1, -31] },
-      ac: { pos: [34, 34, 8], target: [34, 14, -14] }
+      charge: { pos: [50, 16, -54], target: [40, 1.3, -27] },
+      tank: { pos: [-8, 21, -46], target: [-44, 5.5, -24] }
     };
 
-    function setView(name) {
-      document.querySelectorAll('.func-btn').forEach(function (btn) { btn.classList.remove('active'); });
-      event.currentTarget.classList.add('active');
+    function setView(name, el) {
+      // el：由按钮传入的 this；老写法依赖全局 event，键盘/程序触发时会取不到
+      const btn = el || (typeof event !== 'undefined' && event && event.currentTarget);
+      document.querySelectorAll('.func-btn').forEach(function (b) { b.classList.remove('active'); });
+      if (btn && btn.classList) btn.classList.add('active');
       const v = viewPositions[name];
       if (!v) return;
       const startPos = camera.position.clone();
       const endPos = new THREE.Vector3(v.pos[0], v.pos[1], v.pos[2]);
       const startTarget = controls.target.clone();
       const endTarget = new THREE.Vector3(v.target[0], v.target[1], v.target[2]);
-      let t = 0;
-      function fly() {
-        t += 0.02;
-        if (t > 1) t = 1;
+      // 按真实时间推进（而不是"每帧走 2%"）：飞行时长固定 0.9s，
+      // 120Hz 屏与 60Hz 屏速度一致；帧率抖动时也不会忽快忽慢。
+      const DURATION = 900;
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      function fly(now) {
+        const ts = (now == null) ? t0 : now;
+        const t = Math.min(1, (ts - t0) / DURATION);
         const ease = 1 - Math.pow(1 - t, 3);
         camera.position.lerpVectors(startPos, endPos, ease);
         controls.target.lerpVectors(startTarget, endTarget, ease);
         controls.update();
         if (t < 1) requestAnimationFrame(fly);
       }
-      fly();
+      requestAnimationFrame(fly);
     }
 
     function resetCamera() {
@@ -3530,6 +3537,8 @@
     // 初始化
     initTheme();
     init3D();
+
+
 
 
 
