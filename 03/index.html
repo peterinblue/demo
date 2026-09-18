@@ -884,6 +884,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5.8" rx="7.3" ry="2.5"/><path d="M4.7 5.8v11.1c0 1.4 3.3 2.5 7.3 2.5s7.3-1.1 7.3-2.5V5.8"/><path d="M12 3.3V1.5"/></svg>
         <span>储罐</span>
       </div>
+      <div class="func-btn" onclick="setView('sub', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 4 14 11 14 10 22 19 10 12 10 13 2"/></svg>
+        <span>电站</span>
+      </div>
       <div class="func-btn" onclick="resetCamera()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         <span>复位</span>
@@ -1048,6 +1052,7 @@
     let scene, camera, renderer, controls, buildingGroup;
     let ground, groundPad, gridHelper, ambientLight, sunLight, hemiLight, skyMesh, worldGroup;
     let currentTheme = 'dark';
+    let themeManual = false;      // 用户手动点过切换按钮后，本次会话不再按时间自动跟随
 
     /* ---------- 昼夜三模式：白天 / 傍晚 / 晚间 ---------- */
     // 点击循环顺序：白天 → 傍晚 → 晚间 → 白天
@@ -1091,6 +1096,23 @@
       return glowTex;
     }
 
+    // 星点贴图：柔和圆点。原来用 1.9px 的硬点精灵，相机一动，点就落在不同像素上
+    // 忽明忽暗 —— 看起来像整个星空在闪。改成带柔和边缘的圆点贴图 + 稍大尺寸后，
+    // 每个星点覆盖多个像素、亮度是连续渐变，运动时不再跳变。
+    let starTex = null;
+    function getStarTex() {
+      if (starTex) return starTex;
+      const SZ = 64, o = canvas2d(SZ, SZ), ctx = o.ctx;
+      const g = ctx.createRadialGradient(SZ / 2, SZ / 2, 0, SZ / 2, SZ / 2, SZ / 2);
+      g.addColorStop(0.00, 'rgba(255,255,255,1.00)');
+      g.addColorStop(0.22, 'rgba(255,255,255,0.82)');
+      g.addColorStop(0.55, 'rgba(255,255,255,0.20)');
+      g.addColorStop(1.00, 'rgba(255,255,255,0.00)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, SZ, SZ);
+      starTex = finishTexture(o.c, 1, 1);
+      return starTex;
+    }
+
     // 灯泡光晕：面向相机的叠加光斑，让灯"发光"而不是只亮个小色块
     function nightGlow(parent, x, y, z, size, opacity) {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -1101,6 +1123,7 @@
       sp.position.set(x, y, z);
       sp.scale.set(size, size, 1);
       sp.visible = false;
+      sp.renderOrder = 5;          // 固定透明层排序，避免相机转动时叠加次序跳变（= 灯忽明忽暗）
       parent.add(sp);
       NIGHT_PROPS.push(sp);
       return sp;
@@ -1132,12 +1155,17 @@
         new THREE.MeshBasicMaterial({
           map: getGlowTex(), color: S('#ffdfae'), transparent: true,
           opacity: opacity == null ? 0.50 : opacity, toneMapped: false,
-          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+          // 【抗闪烁 ②】光斑是贴在地面上方的零厚度面片，与路面/标线只差几毫米，
+          // 远处深度精度不足时会与它们反复"谁在前"翻转 → 一块块闪。用 polygonOffset
+          // 把它在深度上稳定压到地面之前，就不再看运气了。
+          polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -12
         })
       );
       pool.rotation.x = -Math.PI / 2;
       pool.position.set(x, y, z);
       pool.visible = false;
+      pool.renderOrder = 3;
       parent.add(pool);
       NIGHT_PROPS.push(pool);
       return pool;
@@ -1279,9 +1307,22 @@
       // ---- 晚间版：底子近乎全黑，只有"开着的房间"是亮的 → 这张贴图同时当自发光贴图用 ----
       if (opt.mode === 'night') {
         ctx.fillStyle = opt.frame || '#0b131c'; ctx.fillRect(0, 0, W, H);
+        // 【楼灯·按层控制】litRatio = 亮的楼层占比（默认 0.68）。
+        // 先把行号打乱、再取前 nLit 行点亮 —— 而不是逐层各掷一次骰子：掷骰子会出现
+        // 连续五六层全黑（9 层的楼里很常见），看着像整栋没亮；打乱后取定数，亮几层说了算。
+        const litRatio = (opt.litRatio == null) ? 0.68 : opt.litRatio;
+        const order = [];
+        for (let r0 = 0; r0 < rows; r0++) order.push(r0);
+        for (let i0 = order.length - 1; i0 > 0; i0--) {
+          const j0 = Math.floor(Math.random() * (i0 + 1));
+          const t0 = order[i0]; order[i0] = order[j0]; order[j0] = t0;
+        }
+        const litRows = {};
+        const nLit = Math.max(1, Math.round(rows * litRatio));
+        for (let i0 = 0; i0 < nLit; i0++) litRows[order[i0]] = 1;
         for (let r = 0; r < rows; r++) {
           // 整层统一亮/暗：真实办公楼是"某几层成片亮着"，比逐窗随机会自然得多
-          const floorOn = Math.random() < 0.68;
+          const floorOn = !!litRows[r];
           for (let k = 0; k < cols; k++) {
             const x = k * cw, y = r * ch;
             const t = Math.random();
@@ -1471,7 +1512,10 @@
       TEX.facadeOffice = texFacade(12, 26, { lit: 0.28, frame: '#c4cdd7' }); // 办公楼层间
       // 晚间版（房间灯亮起，同时用作自发光贴图）
       TEX.facadeHallN = texFacade(16, 24, { mode: 'night', frame: '#0c141d' });
-      TEX.facadeOfficeN = texFacade(12, 26, { mode: 'night', frame: '#0a121b' });
+      // 【最高的那栋楼】晚间不必全亮：行数直接给成楼层数（9 行 = 9 层，一行就是一层），
+      // 亮的层数取一半（litRatio 0.5 → 5 层亮 4 层暗），符合"下班后只留一半办公区"的真实感。
+      // 原来 rows=26 与 9 层对不上，一行只覆盖 1/3 层，"半亮"根本表达不出来。
+      TEX.facadeOfficeN = texFacade(12, 9, { mode: 'night', frame: '#0a121b', litRatio: 0.5 });
     }
 
     /* ============ 2. 天空穹顶 + PMREM 环境反射 ============ */
@@ -1572,8 +1616,8 @@
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
       const pts = new THREE.Points(geo, new THREE.PointsMaterial({
-        size: 1.9, sizeAttenuation: false, vertexColors: true,
-        transparent: true, opacity: 0.95, depthWrite: false, fog: false, toneMapped: false
+        map: getStarTex(), size: 3.2, sizeAttenuation: false, vertexColors: true,
+        transparent: true, opacity: 0.90, depthWrite: false, fog: false, toneMapped: false
       }));
       pts.visible = false;
       pts.renderOrder = -1;
@@ -1638,11 +1682,11 @@
           '',
           '  // 程序化云层（fbm 噪声 + 太阳侧受光）',
           '  if (h > 0.012 && uCloud > 0.001) {',
-          '    vec2 uv = d.xz / (h + 0.15) * 0.90;',
+          '    vec2 uv = d.xz / (max(h, 0.075) + 0.15) * 0.90;',
           '    float w = fbm(uv * 1.00 + vec2(3.10));',
           '    float c = fbm(uv * 3.00 + vec2(w * 1.70));',
           '    c = smoothstep(0.32, 0.58, c);',
-          '    float fade = smoothstep(0.012, 0.26, h);',
+          '    float fade = smoothstep(0.055, 0.30, h);',   // 【抗闪烁 ③】地平线附近不再起云：该处 uv 被极度拉伸，高频噪声在相机运动时就是一片闪点
           '    float sd = max(dot(d, normalize(uSunDir)), 0.0);',
           '    vec3 cc = mix(uCloudColor * 0.86, uCloudColor * 1.20 + uSunColor * 0.30, pow(sd, 3.0));',
           '    col = mix(col, cc, c * fade * uCloud);',
@@ -1766,14 +1810,19 @@
       MAT.grass = grassMat(80, 80);      // 外围草地
       MAT.grassPatch = grassMat(6, 4);   // 绿化带草坪
       // 标线（白色）
+      // 【抗闪烁 ②】标线是贴在路面上方 8mm 的零厚度面片，远处（100m 量级）深度精度只有
+      // 几毫米，会与路面/地坪反复翻转 —— 表现为白线一段段闪。用一个固定负向 polygonOffset
+      // 把它稳定压到地面之前，就不再靠运气的深度比较了。
       MAT.marking = new THREE.MeshStandardMaterial({
-        color: C('#e8ecef'), roughness: 0.70, metalness: 0.02, envMapIntensity: 0.60
+        color: C('#e8ecef'), roughness: 0.70, metalness: 0.02, envMapIntensity: 0.60,
+        polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
       // 平贴地面的深灰石材收边（路侧绿带 / 树池压边）
       // 【关键】地面上的"线"必须是零厚度的面片：原来用 BoxGeometry 做路缘石，
       // 高出路面 0.34m，在俯视角度看就是一条"凸起的白线"，还带投影
       MAT.curbFlat = new THREE.MeshStandardMaterial({
-        color: C('#79818a'), roughness: 0.88, metalness: 0.02, envMapIntensity: 0.42
+        color: C('#79818a'), roughness: 0.88, metalness: 0.02, envMapIntensity: 0.42,
+        polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
       // 警示黄
       MAT.warn = new THREE.MeshStandardMaterial({
@@ -1861,7 +1910,8 @@
       });
       // 充电车位地坪涂装（深绿）
       MAT.chargeZone = new THREE.MeshStandardMaterial({
-        color: C('#2f7a5a'), roughness: 0.84, metalness: 0.02, envMapIntensity: 0.55
+        color: C('#2f7a5a'), roughness: 0.84, metalness: 0.02, envMapIntensity: 0.55,
+        polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
     }
 
@@ -1879,6 +1929,13 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // 【抗闪烁 ①】阴影贴图改为"按需更新"。园区每帧都在缓慢自转
+      // （worldGroup.rotation.y += 0.00035），若 shadowMap 逐帧重算，阴影采样点会在
+      // texel 之间来回跳变 —— 表现为整个画面到处"沙沙"闪（草地、铺装、墙面的阴影边缘
+      // 尤其明显）。改成只在初始化与切换主题（太阳方位变了）时更新一帧，边缘就绝对稳定，
+      // 顺带省掉每帧的 shadow pass。
+      renderer.shadowMap.autoUpdate = false;
+      renderer.shadowMap.needsUpdate = true;
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.0;
@@ -1977,6 +2034,7 @@
       addGateHouse(0, 50);                     // 南门岗（园区大门）
       addParkingLot(50, 18);                   // 东南停车场（移出主干道，避免与路面重叠）
       addGreenArea(-30, 48.6);                 // 主干道南侧路侧绿带（z 44.2~53，不再压马路）
+      addSubstation(69, -54);                  // 东北角小型配电站（箱式变电站，贴角布置）
       addPipeRack();                           // 工艺管廊
       addPerimeterWall();                      // 园区围墙
     }
@@ -2225,6 +2283,10 @@
 
       // 四面幕墙（贴图玻璃分格）
       const fMat = MAT.facadeOffice.clone();
+      // 【关键修正】clone 出来的材质不在 FACADE_MATS 里，applyTheme 只改原型，于是
+      // 这栋楼怎么都不亮（"最高的楼晚间楼层灯没亮"就是这个原因）。clone 的 userData
+      // 也不会跟着复制，所以这里要重新登记一次。
+      registerFacade(fMat, TEX.facadeOffice, TEX.facadeOfficeN);
       for (const s of [1, -1]) {
         const f1 = new THREE.Mesh(new THREE.BoxGeometry(w + 0.30, h - 1.2, 0.18), fMat);
         f1.position.set(0, h / 2, s * (d / 2 + 0.16));
@@ -2503,7 +2565,7 @@
 
         // 夜间：灯球光晕 + 门口地面光斑（让大门口在晚间成为最亮的地方）
         nightGlow(g, side * WALL.GATE, PH + 0.95, pz, 3.0, 0.95);
-        nightPool(g, side * WALL.GATE, 0.076, pz + 3.4, 6.2, 0.52);
+        nightPool(g, side * WALL.GATE, 0.090, pz + 3.4, 6.2, 0.52);
         registerNightLight(gl, 3.6, 0.45);
       }
 
@@ -3325,6 +3387,129 @@
       buildingGroup.add(g);
     }
 
+    /* ---- 小型配电站（箱式变电站）：园区东北角内侧 ----
+       只做"园区自己用"的规模：7.2 x 5.0 x 3.0 的金属箱体坐在混凝土平台上，
+       外面一圈 1.9m 高金属栅栏、南面留双开栅栏门；正面双开门，两侧与背面散热百叶，
+       顶部 3 只高压进线套管，门侧一块黄色警示牌；晚间门口一盏灯。 */
+    function addSubstation(x, z) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+
+      const BW = 7.2, BD = 5.0, BH = 3.0;   // 箱体宽 / 深 / 高
+      const PF = 0.45;                       // 平台外挑
+
+      // 混凝土基础平台
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(BW + PF * 2, 0.40, BD + PF * 2), MAT.concrete);
+      slab.position.y = 0.20;
+      slab.castShadow = true; slab.receiveShadow = true;
+      g.add(slab);
+
+      // 箱体（浅灰压型钢板，与厂房同族材质）
+      const bodyMat = MAT.wallPanel.clone();
+      bodyMat.map = tiled(TEX.metalWall, 2, 1);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), bodyMat);
+      body.position.y = 0.40 + BH / 2;
+      body.castShadow = true; body.receiveShadow = true;
+      g.add(body);
+
+      // 压顶 + 四角通风帽
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(BW + 0.34, 0.26, BD + 0.34), MAT.alu);
+      cap.position.y = 0.40 + BH + 0.13;
+      cap.castShadow = true;
+      g.add(cap);
+      for (const sx of [-1, 1]) {
+        for (const sz of [-1, 1]) {
+          const vent = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.30, 12), MAT.alu);
+          vent.position.set(sx * (BW / 2 - 0.85), 0.40 + BH + 0.40, sz * (BD / 2 - 0.80));
+          g.add(vent);
+        }
+      }
+
+      // 正面（朝园区 = +z）双开门 + 门楣
+      for (const sx of [-1, 1]) {
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.05, 2.20, 0.10), MAT.darkMetal);
+        leaf.position.set(sx * 0.56, 0.40 + 1.10, BD / 2 + 0.03);
+        leaf.castShadow = true;
+        g.add(leaf);
+      }
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(2.52, 0.18, 0.14), MAT.alu);
+      lintel.position.set(0, 0.40 + 2.34, BD / 2 + 0.05);
+      g.add(lintel);
+
+      // 散热百叶：做成一条条横向格栅（不是两块大深色"窗户"—— 那看着像开窗的库房）
+      for (const sx of [-1, 1]) {
+        for (let i = 0; i < 5; i++) {
+          const lv = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.15, 3.05), MAT.alu);
+          lv.position.set(sx * (BW / 2 + 0.045), 0.98 + i * 0.30, 0.55);
+          g.add(lv);
+        }
+      }
+      for (let i = 0; i < 5; i++) {
+        const lvB = new THREE.Mesh(new THREE.BoxGeometry(2.95, 0.15, 0.09), MAT.alu);
+        lvB.position.set(0, 0.98 + i * 0.30, -(BD / 2 + 0.045));
+        g.add(lvB);
+      }
+
+      // 顶部高压进线套管
+      for (const dx of [-0.9, 0, 0.9]) {
+        const bush = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.62, 10), MAT.alu);
+        bush.position.set(dx, 0.40 + BH + 0.55, -BD / 2 + 1.05);
+        g.add(bush);
+      }
+
+      // 黄色警示牌（正面门侧）
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.44, 0.06), MAT.warn);
+      sign.position.set(BW / 2 - 0.85, 0.40 + 1.85, BD / 2 + 0.06);
+      g.add(sign);
+
+      // ---- 金属栅栏围合（南侧留 2.6m 双开栅栏门） ----
+      const FW = BW + 3.6, FD = BD + 3.6, FH = 1.90, GATE_W = 2.6;
+      const postG = new THREE.BoxGeometry(0.13, FH, 0.13);
+      const railG = new THREE.BoxGeometry(1, 0.07, 0.05);
+      function fenceRun(x0, z0, x1, z1) {
+        const len = Math.hypot(x1 - x0, z1 - z0);
+        const n = Math.max(1, Math.round(len / 0.62));
+        for (let i = 0; i <= n; i++) {
+          const t = i / n;
+          const post = new THREE.Mesh(postG, MAT.fenceCap);
+          post.position.set(x0 + (x1 - x0) * t, FH / 2, z0 + (z1 - z0) * t);
+          post.castShadow = true;
+          g.add(post);
+        }
+        for (const yy of [FH - 0.16, 0.28]) {
+          const rail = new THREE.Mesh(railG, MAT.darkMetal);
+          rail.scale.x = len;
+          rail.position.set((x0 + x1) / 2, yy, (z0 + z1) / 2);
+          rail.rotation.y = Math.atan2(-(z1 - z0), x1 - x0);
+          g.add(rail);
+        }
+      }
+      fenceRun(-FW / 2, -FD / 2, -FW / 2, FD / 2);
+      fenceRun(FW / 2, -FD / 2, FW / 2, FD / 2);
+      fenceRun(-FW / 2, -FD / 2, FW / 2, -FD / 2);
+      fenceRun(-FW / 2, FD / 2, -GATE_W / 2, FD / 2);
+      fenceRun(GATE_W / 2, FD / 2, FW / 2, FD / 2);
+      for (const sx of [-1, 1]) {
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(GATE_W / 2 - 0.08, FH - 0.24, 0.06), MAT.darkMetal);
+        leaf.position.set(sx * (GATE_W / 4 + 0.02), (FH - 0.24) / 2, FD / 2);
+        leaf.castShadow = true;
+        g.add(leaf);
+      }
+
+      // ---- 夜间门灯（晚间自动点亮） ----
+      const dlamp = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.16, 0.22), MAT.lampGlass);
+      dlamp.position.set(0, 0.40 + 2.72, BD / 2 + 0.16);
+      g.add(dlamp);
+      nightGlow(g, 0, 0.40 + 2.72, BD / 2 + 0.30, 2.4, 0.90);
+      const subLight = new THREE.PointLight(S('#ffd9a0').getHex(), 0, 18, 2);
+      subLight.position.set(0, 0.40 + 2.55, BD / 2 + 0.95);
+      g.add(subLight);
+      registerNightLight(subLight, 2.4, 0);
+      nightPool(g, 0, 0.090, BD / 2 + 1.6, 3.2, 0.42);
+
+      buildingGroup.add(g);
+    }
+
     function addLampPost(parent, x, z, ry) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
@@ -3362,7 +3547,7 @@
       const HX = 2.3, HY = 8.44;
       nightGlow(g, HX, HY, 0, 3.5, 1.00);                 // 灯泡光晕
       nightCone(g, HX, HY - 0.05, 0, 3.30, 0.10, 0.072);  // 空气散射光锥
-      nightPool(g, HX, 0.076, 0, 5.6, 0.62);              // 地面光斑
+      nightPool(g, HX, 0.090, 0, 5.6, 0.62);              // 地面光斑（0.09：与路面/标线拉开 2cm，配合 polygonOffset 不闪）
       const lampLight = new THREE.PointLight(S('#ffd9a0').getHex(), 0, 34, 2);
       lampLight.position.set(HX, HY - 0.30, 0);
       g.add(lampLight);
@@ -3393,10 +3578,15 @@
     // charge：车间北墙外那排充电桩（6 桩 @ 世界 z=-26.45，x 31.6~48.4），从东北侧 3/4 近景看桩与充电中的车
     // tank  ：西北储罐区（4 罐 @ (-44±6.5, -24±6.5)），从东北侧看全 4 罐 + 防火堤 + 管廊
     const viewPositions = {
-      all: { pos: [72, 54, 72], target: [0, 16, 0] },
+      all: { pos: [72, 54, 72], target: [0, 8, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
-      charge: { pos: [50, 16, -54], target: [40, 1.3, -27] },
-      tank: { pos: [-8, 21, -46], target: [-44, 5.5, -24] }
+      // charge：车间北墙外那排 6 个充电车位（桩在车位靠墙一侧、z=-26.45）。机位放在
+      //   车位排正北略高处：正对整排车位，5 辆车与 6 根白桩都看得清，桩不再被车挡掉。
+      charge: { pos: [40, 15, -41], target: [40, 1.0, -28.5] },
+      tank: { pos: [-8, 21, -46], target: [-44, 5.5, -24] },
+      // sub：东北角小型配电站（66,-52），从西南侧看正面（栅栏门 / 双开门 / 警示牌）
+      //   机位放低放远一点，让正面（双开门 / 警示牌 / 栅栏门）看得清，而不是只看屋顶
+      sub: { pos: [46, 12, -34], target: [69, 1.9, -54] }
     };
 
     function setView(name, el) {
@@ -3471,6 +3661,9 @@
       }
       if (ambientLight) ambientLight.intensity = L.ambI;
 
+      // 光照明暗变了 → 让阴影贴图重算一帧（配合 shadowMap.autoUpdate = false）
+      if (renderer && renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+
       if (ground) ground.material.color.copy(C(L.ground));
       if (groundPad) groundPad.material.color.copy(C(L.pad));
       if (gridHelper) {
@@ -3511,32 +3704,51 @@
       if (span) span.textContent = THEME_LABEL[currentTheme] || '傍晚';
     }
 
-    function toggleTheme() {
-      // 循环：白天 → 傍晚 → 晚间 → 白天
-      const i = THEME_ORDER.indexOf(currentTheme);
-      currentTheme = THEME_ORDER[(i + 1) % THEME_ORDER.length];
+    /* ---------- 按本机时间自动判定该用哪套光 ----------
+       06:00–17:00 白天 ｜ 17:00–19:00 傍晚 ｜ 19:00–次日 06:00 晚间
+       · 每次打开页面，先按当前钟点自动落到对应模式（不再依赖上次的手动选择）；
+       · 页面长时间开着时每分钟复查一次，跨过时间点会自己切（比如 17:00 自动转傍晚）；
+       · 一旦用户手动点过切换按钮，本次会话就听用户的，不再被时间抢走。 */
+    function autoThemeByClock() {
+      const d = new Date();
+      const h = d.getHours() + d.getMinutes() / 60;
+      if (h >= 6 && h < 17) return 'light';     // 白天
+      if (h >= 17 && h < 19) return 'dark';     // 傍晚
+      return 'black';                           // 晚间
+    }
+
+    function setTheme(t, manual) {
+      if (THEME_ORDER.indexOf(t) < 0) t = 'dark';
+      currentTheme = t;
+      if (manual) themeManual = true;
       document.body.classList.remove('light', 'black');
-      if (currentTheme === 'light') document.body.classList.add('light');
-      else if (currentTheme === 'black') document.body.classList.add('black');
-      applyTheme(currentTheme);
-      try { localStorage.setItem('energy-theme', currentTheme); } catch (e) {}
+      if (t === 'light') document.body.classList.add('light');
+      else if (t === 'black') document.body.classList.add('black');
+      applyTheme(t);
       updateThemeBtn();
     }
 
+    function toggleTheme() {
+      // 手动循环：白天 → 傍晚 → 晚间 → 白天（手动之后不再自动跟随时间）
+      const i = THEME_ORDER.indexOf(currentTheme);
+      setTheme(THEME_ORDER[(i + 1) % THEME_ORDER.length], true);
+    }
+
     function initTheme() {
-      let saved = 'dark';
-      try { saved = localStorage.getItem('energy-theme') || 'dark'; } catch (e) {}
-      if (THEME_ORDER.indexOf(saved) < 0) saved = 'dark';
-      currentTheme = saved;
-      document.body.classList.remove('light', 'black');
-      if (saved === 'light') document.body.classList.add('light');
-      else if (saved === 'black') document.body.classList.add('black');
-      updateThemeBtn();
+      setTheme(autoThemeByClock(), false);
+      setInterval(function () {
+        if (themeManual) return;
+        const t = autoThemeByClock();
+        if (t !== currentTheme) setTheme(t, false);
+      }, 60000);
     }
 
     // 初始化
     initTheme();
     init3D();
+
+
+
 
 
 
