@@ -1066,6 +1066,9 @@
     const NIGHT_LIGHTS = [];    // 强度随昼夜切换的灯光（路灯 / 门口灯球）
     const FACADE_MATS = [];     // 幕墙材质（晚间换"亮灯"贴图并把窗格变成自发光）
     let starsMesh = null;
+    // 渲染采样倍率下限（抗闪烁超采样）：放在模块级，init3D 与 onWindowResize 共用同一个值，
+    // 避免两处各写一份、改了一处漏另一处（拖到另一块屏后画质悄悄掉档）。
+    const SUPERSAMPLE_MIN = 1.75;
     let glowTex = null;
     function isNight(key) { return (key || currentTheme) === 'black'; }
     const container = $('scene-container');
@@ -1990,8 +1993,6 @@
       // 表现为画面上一片细密的沙沙闪。dpr=1 的普通显示器等于只有 1 个采样/像素，最明显；
       // 提到 1.5 倍后每个屏幕像素有 2.25 个渲染采样再缩小，闪烁量明显下降。
       // dpr≥2 的高分屏本来就够，不额外加负担。
-      // 注意：窗口 resize 时另有同步设置（在 onWindowResize 里），改这里要一起改
-      const SUPERSAMPLE_MIN = 1.75;
       renderer.setPixelRatio(Math.min(Math.max(window.devicePixelRatio, SUPERSAMPLE_MIN), 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -3763,7 +3764,7 @@ buildingGroup.add(g);
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
       // 窗口拖到另一块屏（dpr 变了）时同步重设采样倍率，否则超采样策略会失配
-      renderer.setPixelRatio(Math.min(Math.max(window.devicePixelRatio, 1.5), 2));
+      renderer.setPixelRatio(Math.min(Math.max(window.devicePixelRatio, SUPERSAMPLE_MIN), 2));
     }
 
     /* ---------- "自转"改成"相机绕园区公转" ----------
@@ -4010,6 +4011,7 @@ buildingGroup.add(g);
     // 初始化
     initTheme();
     init3D();
+
 
 
 
