@@ -1511,11 +1511,13 @@
       TEX.facadeHall = texFacade(16, 24, { lit: 0.20, frame: '#aab5c1' });  // 主厂房幕墙
       TEX.facadeOffice = texFacade(12, 26, { lit: 0.28, frame: '#c4cdd7' }); // 办公楼层间
       // 晚间版（房间灯亮起，同时用作自发光贴图）
-      TEX.facadeHallN = texFacade(16, 24, { mode: 'night', frame: '#0c141d' });
+      // 【第 17 轮】夜间亮灯数量降到三分之一：厂房高侧窗那一条玻璃带原来一律按默认 0.68 点亮，
+      // 夜里就是一条横在建筑上部的亮带（"灯都集中在上半部分"的主要来源之一）。
+      TEX.facadeHallN = texFacade(16, 24, { mode: 'night', frame: '#0c141d', litRatio: 0.33 });
       // 【最高的那栋楼】晚间不必全亮：行数直接给成楼层数（9 行 = 9 层，一行就是一层），
       // 亮的层数取一半（litRatio 0.5 → 5 层亮 4 层暗），符合"下班后只留一半办公区"的真实感。
       // 原来 rows=26 与 9 层对不上，一行只覆盖 1/3 层，"半亮"根本表达不出来。
-      TEX.facadeOfficeN = texFacade(12, 9, { mode: 'night', frame: '#0a121b', litRatio: 0.5 });
+      TEX.facadeOfficeN = texFacade(12, 9, { mode: 'night', frame: '#0a121b', litRatio: 0.33 });
     }
 
     /* ============ 2. 天空穹顶 + PMREM 环境反射 ============ */
@@ -1944,10 +1946,30 @@
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.06;
-      controls.minDistance = 30;
-      controls.maxDistance = 170;
+      // 【第 17 轮】缩放放开：原来 min 30 / max 170 —— 拉到 170 时园区仍占满整屏（"不能自由缩小、
+      // 还是太大"），贴近也进不去。改成 14~300：可以贴到单体跟前（充电桩/配电站），
+      // 也可以一路拉到看全园区＋周边环境。
+      controls.minDistance = 14;
+      controls.maxDistance = 300;
+      controls.zoomSpeed = 0.85;
       controls.maxPolarAngle = Math.PI / 2 - 0.04;
       controls.target.set(0, 16, 0);
+      // 【第 17 轮】鼠标中键 = 上下左右平移画布（原来中键是推拉镜头，用户要的是拖动画布）。
+      // screenSpacePanning=true 让平移沿屏幕方向走（而不是贴着地面平移），"上下左右拖动"更符合直觉。
+      // 左键旋转、右键平移都保留。
+      controls.screenSpacePanning = true;
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.PAN,
+        RIGHT: THREE.MOUSE.PAN
+      };
+      // 中键在浏览器里有"自动滚屏"的默认行为（弹出滚动圈并吃掉拖动），这里拦掉。
+      renderer.domElement.addEventListener('mousedown', function (e) {
+        if (e.button === 1) e.preventDefault();
+      });
+      renderer.domElement.addEventListener('auxclick', function (e) {
+        if (e.button === 1) e.preventDefault();
+      });
 
       initTextures();
       initMaterials();
@@ -1961,16 +1983,24 @@
       sunLight = new THREE.DirectionalLight(S(THEME_LOOK.dark.sunHex).getHex(), 2.35);
       sunLight.position.set(sd[0] * 160, sd[1] * 160, sd[2] * 160);
       sunLight.castShadow = true;
-      sunLight.shadow.mapSize.width = 2048;
-      sunLight.shadow.mapSize.height = 2048;
-      sunLight.shadow.camera.near = 10;
-      sunLight.shadow.camera.far = 560;
-      sunLight.shadow.camera.left = -130;
-      sunLight.shadow.camera.right = 130;
-      sunLight.shadow.camera.top = 130;
-      sunLight.shadow.camera.bottom = -130;
-      sunLight.shadow.bias = -0.0004;
-      sunLight.shadow.normalBias = 0.035;
+      sunLight.shadow.mapSize.width = 3072;
+      sunLight.shadow.mapSize.height = 3072;
+      // 【第 17 轮·阴影重做 ①】原写法只改了正交相机的 left/right/top/bottom，却从未调用
+      // updateProjectionMatrix() —— three 的 DirectionalLightShadow 是 new OrthographicCamera(-5,5,5,-5,0.5,500)，
+      // 不重算投影矩阵，它就一直是构造时的默认值 ±5！结果：阴影贴图只覆盖原点周围 10×10m，
+      // 主厂房以外的建筑（办公楼、车间、储罐、配电站）**全都没有影子** —— 这就是"阴影都不对"的根因。
+      // 正确范围要能把 160×116m 的园区（斜投影后约 ±100m）全罩住。
+      sunLight.shadow.camera.near = 30;
+      sunLight.shadow.camera.far = 470;
+      sunLight.shadow.camera.left = -118;
+      sunLight.shadow.camera.right = 118;
+      sunLight.shadow.camera.top = 118;
+      sunLight.shadow.camera.bottom = -118;
+      sunLight.shadow.camera.updateProjectionMatrix();   // ← 少了这一句，前面五行参数全是摆设
+      // 3072 贴图 / 236m 跨度 ≈ 0.077m 一个 texel（原来 2048/260m = 0.127m），阴影边缘更干净；
+      // normalBias 从 0.035 收到 0.02：0.035 会把细长构件（灯杆、栏杆、树干的影子）整根推没。
+      sunLight.shadow.bias = -0.00030;
+      sunLight.shadow.normalBias = 0.02;
       scene.add(sunLight);
 
       hemiLight = new THREE.HemisphereLight(S(THEME_LOOK.dark.hemiSky).getHex(), S(THEME_LOOK.dark.hemiGround).getHex(), 0.74);
@@ -1985,6 +2015,14 @@
       // 于是"建筑在转、地面不转"，铺装缝和网格与建筑彻底错位。
       worldGroup = new THREE.Group();
       scene.add(worldGroup);
+      // 【第 17 轮·阴影重做 ②】太阳光（连同它的 target）一起挂到 worldGroup 下。
+      // 原来光源挂在 scene 上、园区在转 —— 光源不动、物体在转，而 shadowMap 又是冻结的
+      // （autoUpdate=false），页面开一会儿影子就整体错位（转 30° 后影子还停在原方位）。
+      // 把光源挂进来之后，"光源 ↔ 园区"的相对方位恒定不变：
+      //   · 光源空间下的阴影贴图内容完全不随自转改变 → 冻结的那一帧永远正确；
+      //   · 天空里的太阳盘也跟着一起转，光照方向与天空始终自洽。
+      worldGroup.add(sunLight);
+      worldGroup.add(sunLight.target);
 
       // ---- 地面：外围草地 + 园区铺装 ----
       const groundGeo = new THREE.PlaneGeometry(600, 600);
@@ -3327,11 +3365,25 @@
       // （原「环绕灌木」球阵已按要求移除，避免铺装面上散布绿色球体）
 
       // 路灯（位置逐根核过：不落在建筑体、罐体、路面、绿带里）
-      addLampPost(buildingGroup, -15, 46, 0);          // 大门引道两侧（灯臂伸向引道）
-      addLampPost(buildingGroup, 15, 46, Math.PI);
+      // 【第 17 轮】原来只有 5 根、且全部挤在大门引道与园区西侧，晚间亮着的灯集中在一处、
+      // 画面上半部分扎眼、下半部分死黑。现按"东/南/西/北各面都有"补到 13 根，
+      // 新增位置对照布局表逐一避让（主厂房 x-23~23/z-21~9、办公楼 x-49~-27/z10~26、
+      // 车间 x26~54/z-26~-6、储罐区 x-61~-27/z-40~-8、充电站 x28~52/z-36~-27、
+      // 停车场 x38~62/z10~26、主干道 z28.5~43.5、次干道 x-76~-64、配电站围栏 x62.4~75.6/z-60.6~-47.4）。
+      addLampPost(buildingGroup, -15, 46, 0);          // 大门引道西（灯臂伸向引道）
+      addLampPost(buildingGroup, 15, 46, Math.PI);     // 大门引道东
       addLampPost(buildingGroup, -52.5, 20, -Math.PI / 2);
       addLampPost(buildingGroup, -61.5, -20, -Math.PI / 2);   // 原 -64 正好压在次干道边线上
       addLampPost(buildingGroup, 56, 2, Math.PI / 2);
+      // —— 新增（东、南、北面各补）——
+      addLampPost(buildingGroup, -56, 46, Math.PI / 2);                  // 主干道南侧西段
+      addLampPost(buildingGroup, 56, 46, Math.PI / 2);                   // 主干道南侧东段
+      addLampPost(buildingGroup, 0, 21, Math.PI / 2);                    // 主厂房南广场（正对入口）
+      addLampPost(buildingGroup, 46, -40, -Math.PI / 2);                 // 车间北侧 · 充电车位
+      addLampPost(buildingGroup, 66, 16, Math.PI);                       // 停车场东侧
+      addLampPost(buildingGroup, -25.5, -14, Math.PI, false);            // 储罐区东侧（远景，不挂实光）
+      addLampPost(buildingGroup, 58, -46, -Math.PI / 2, false);          // 东北角 · 配电站前（远景）
+      addLampPost(buildingGroup, 74, -34, Math.PI, false);               // 园区东侧（远景）
     }
 
     /* ---- 园区围墙（混凝土板 + 立柱 + 压顶，南侧留大门洞口） ---- */
@@ -3510,7 +3562,10 @@
       buildingGroup.add(g);
     }
 
-    function addLampPost(parent, x, z, ry) {
+    // withLight：是否挂真实点光源。远景处的灯只保留光晕/光锥/地面光斑（表现"灯亮着"），
+    // 不挂点光源 —— 点光源数量直接进入所有材质的片元着色器循环，13 盏全挂会让移动端掉帧。
+    function addLampPost(parent, x, z, ry, withLight) {
+      const useLight = (withLight !== false);
       const g = new THREE.Group();
       g.position.set(x, 0, z);
       g.rotation.y = ry;
@@ -3548,15 +3603,30 @@
       nightGlow(g, HX, HY, 0, 3.5, 1.00);                 // 灯泡光晕
       nightCone(g, HX, HY - 0.05, 0, 3.30, 0.10, 0.072);  // 空气散射光锥
       nightPool(g, HX, 0.090, 0, 5.6, 0.62);              // 地面光斑（0.09：与路面/标线拉开 2cm，配合 polygonOffset 不闪）
-      const lampLight = new THREE.PointLight(S('#ffd9a0').getHex(), 0, 34, 2);
-      lampLight.position.set(HX, HY - 0.30, 0);
-      g.add(lampLight);
-      registerNightLight(lampLight, 3.4, 0);              // 白天熄灭
+      if (useLight) {
+        const lampLight = new THREE.PointLight(S('#ffd9a0').getHex(), 0, 32, 2);
+        lampLight.position.set(HX, HY - 0.30, 0);
+        g.add(lampLight);
+        registerNightLight(lampLight, 3.2, 0);            // 白天熄灭
+      }
 
       parent.add(g);
     }
 
     /* ============ 6. 主循环 / 视角 / 主题 ============ */
+    /* ---------- 雾随观察距离等比缩放 ----------
+       雾是按"默认机位（距注视点约 107m）"配的固定 near/far。现在能拉到 300m 看全景，
+       固定雾会把整个园区糊白；贴近到 14m 时又希望纵深不变。按距离/107 等比放缩两端即可。 */
+    const FOG_REF = 107;
+    let fogCfg = { near: 160, far: 520 };
+    function updateFogScale() {
+      if (!scene || !scene.fog || !camera || !controls) return;
+      const d = camera.position.distanceTo(controls.target);
+      const k = Math.min(3.4, Math.max(1, d / FOG_REF));
+      scene.fog.near = fogCfg.near * k;
+      scene.fog.far = fogCfg.far * k;
+    }
+
     function onWindowResize() {
       if (!camera || !renderer) return;
       camera.aspect = container.clientWidth / container.clientHeight;
@@ -3564,32 +3634,61 @@
       renderer.setSize(container.clientWidth, container.clientHeight);
     }
 
+    /* ---------- "自转"改成"相机绕园区公转" ----------
+       原来是把 worldGroup 绕 Y 转（园区的建筑、地面、连太阳光一起转）。问题是世界在动，
+       而 shadowMap 用 autoUpdate=false 冻结（为了消除 texel 抖动的闪烁），两者必然打架；
+       物体转走、影子还留在原方位，"阴影不对""按钮定位不对"都由此而来。
+
+       现在改成世界完全静止、相机（连同注视点）一起绕原点反向旋转 dθ —— 数学上等价于
+       整个场景相对相机转 +dθ，观感与原来的自转一模一样，但是：
+         · 太阳、天空、物体、阴影贴图全部恒定 → 阴影永远正确、不再错位；
+         · 按钮定位用的是世界坐标，永远对准目标；
+         · 冻结阴影贴图的前提（世界静止）成立，闪烁也不会回来。
+       用户一交互（拖动 / 滚轮 / 点功能按钮）就暂停公转，点「总览」恢复。 */
+    const ORBIT_STEP = 0.00035;    // 与原自转角速度一致（约 5 分钟一圈）
+    let autoOrbit = true;
+    function orbitStep() {
+      const a = -ORBIT_STEP;
+      const c = Math.cos(a), sn = Math.sin(a);
+      const rot = function (v) { const x = v.x * c + v.z * sn; v.z = -v.x * sn + v.z * c; v.x = x; };
+      rot(camera.position);
+      rot(controls.target);
+    }
+    // OrbitControls 每次 update 都是从 camera.position 反推球坐标的，这里直接改 position 安全。
+    function stopOrbit() { autoOrbit = false; }
+
     function animate() {
       requestAnimationFrame(animate);
+      if (autoOrbit && camera && controls) orbitStep();
       controls.update();
-      // 自转：转的是世界容器（含地面/铺装/网格/全部建筑），保证地面与建筑同步
-      if (worldGroup) {
-        worldGroup.rotation.y += 0.00035;
-      }
+      updateFogScale();
       renderer.render(scene, camera);
     }
 
     // 视角切换
     // charge：车间北墙外那排充电桩（6 桩 @ 世界 z=-26.45，x 31.6~48.4），从东北侧 3/4 近景看桩与充电中的车
     // tank  ：西北储罐区（4 罐 @ (-44±6.5, -24±6.5)），从东北侧看全 4 罐 + 防火堤 + 管廊
+    /* ---------- 按钮机位（全部按目标物真实世界坐标重新核过）----------
+       charge 车间北墙外那排充电车位：6 根立柱式充电桩 @ x 31.63~48.38（步距 3.35）、z=-26.45，
+              车位进深 5.6（车尾朝北，车身中心 z≈-30.85）。原来机位 (40,15,-41) 压得太低，
+              车把桩下半段挡掉、桩只剩一排小方块。现在抬到 17m、后退到 z=-45（俯角约 47°），
+              6 桩 + 6 个车位 + 5 辆充电中的车一屏看清，桩的屏幕与绿灯带也露出来。
+       tank   西北储罐区：4 座拱顶罐 @ (-44±6.5, -24±6.5)，罐体 y0.7~10.7、拱顶到 12.3，
+              防火堤 x-58.6~-29.4 / z-39.6~-8.4。原机位 (-8,21,-46) 太贴、罐身被裁、前景空。
+              现在拉到 (-6,30,-52) 俯角约 47°，4 罐完整入画且防火堤边界清楚。
+       sub    东北角小型配电站 @ (69,-54)，正面（双开门 / 警示牌 / 栅栏门）朝 +z（南）。
+              原机位 (46,12,-34) 距离 35m，7.2×5.0×3.0 的箱体在画面里只有一小块。
+              现在收到 (63,7,-41)（距离约 14m、俯角约 22°），正对西南面 + 正面。 */
     const viewPositions = {
       all: { pos: [72, 54, 72], target: [0, 8, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
-      // charge：车间北墙外那排 6 个充电车位（桩在车位靠墙一侧、z=-26.45）。机位放在
-      //   车位排正北略高处：正对整排车位，5 辆车与 6 根白桩都看得清，桩不再被车挡掉。
-      charge: { pos: [40, 15, -41], target: [40, 1.0, -28.5] },
-      tank: { pos: [-8, 21, -46], target: [-44, 5.5, -24] },
-      // sub：东北角小型配电站（66,-52），从西南侧看正面（栅栏门 / 双开门 / 警示牌）
-      //   机位放低放远一点，让正面（双开门 / 警示牌 / 栅栏门）看得清，而不是只看屋顶
-      sub: { pos: [46, 12, -34], target: [69, 1.9, -54] }
+      charge: { pos: [40, 17, -45], target: [40, 0.7, -28.6] },
+      tank: { pos: [-6, 30, -52], target: [-44, 4, -24] },
+      sub: { pos: [63, 7, -41], target: [69, 1.7, -54] }
     };
 
     function setView(name, el) {
+      stopOrbit();                       // 定位到具体设施后停止公转，否则看着看着目标又转走了
       // el：由按钮传入的 this；老写法依赖全局 event，键盘/程序触发时会取不到
       const btn = el || (typeof event !== 'undefined' && event && event.currentTarget);
       document.querySelectorAll('.func-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -3617,6 +3716,7 @@
     }
 
     function resetCamera() {
+      autoOrbit = true;                  // 回到总览 = 重新开始缓慢环视
       const v = viewPositions.all;
       camera.position.set(v.pos[0], v.pos[1], v.pos[2]);
       controls.target.set(v.target[0], v.target[1], v.target[2]);
@@ -3633,6 +3733,7 @@
 
       if (scene) {
         scene.fog = new THREE.Fog(S(L.fogHex).getHex(), L.fogNear, L.fogFar);
+        fogCfg = { near: L.fogNear, far: L.fogFar };
         scene.environment = getEnvMap(key);
       }
       if (renderer) renderer.toneMappingExposure = L.exposure;
@@ -3746,6 +3847,7 @@
     // 初始化
     initTheme();
     init3D();
+
 
 
 
