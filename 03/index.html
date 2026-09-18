@@ -890,7 +890,7 @@
       </div>
       <div class="func-btn" id="themeBtn" onclick="toggleTheme()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        <span>蓝色</span>
+        <span>傍晚</span>
       </div>
     </div>
   </div>
@@ -1048,6 +1048,17 @@
     let scene, camera, renderer, controls, buildingGroup;
     let ground, groundPad, gridHelper, ambientLight, sunLight, hemiLight, skyMesh, worldGroup;
     let currentTheme = 'dark';
+
+    /* ---------- 昼夜三模式：白天 / 傍晚 / 晚间 ---------- */
+    // 点击循环顺序：白天 → 傍晚 → 晚间 → 白天
+    const THEME_ORDER = ['light', 'dark', 'black'];
+    const THEME_LABEL = { light: '白天', dark: '傍晚', black: '晚间' };
+    const NIGHT_PROPS = [];     // 只在晚间可见的灯具部件（灯泡光晕 / 光锥 / 地面光斑 / 星空）
+    const NIGHT_LIGHTS = [];    // 强度随昼夜切换的灯光（路灯 / 门口灯球）
+    const FACADE_MATS = [];     // 幕墙材质（晚间换"亮灯"贴图并把窗格变成自发光）
+    let starsMesh = null;
+    let glowTex = null;
+    function isNight(key) { return (key || currentTheme) === 'black'; }
     const container = $('scene-container');
     const ENV_CACHE = {};
 
@@ -1056,6 +1067,97 @@
     function S(hex) { return new THREE.Color(hex); }                        // sRGB 直出（天空 / 自发光）
     function C(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }  // 材质基色（线性空间）
     function rnd(a, b) { return a + Math.random() * (b - a); }
+
+    /* ---------- 夜景系统：幕墙登记 / 光晕贴图 / 灯具构件 ---------- */
+    function registerFacade(mat, dayTex, nightTex) {
+      mat.userData.dayMap = dayTex;
+      mat.userData.nightMap = nightTex;
+      FACADE_MATS.push(mat);
+      return mat;
+    }
+
+    // 灯泡光晕 / 地面光斑共用：径向渐变贴图（叠加混合用，中心暖白、边缘透明）
+    function getGlowTex() {
+      if (glowTex) return glowTex;
+      const SZ = 128, o = canvas2d(SZ, SZ), ctx = o.ctx;
+      const g = ctx.createRadialGradient(SZ / 2, SZ / 2, 0, SZ / 2, SZ / 2, SZ / 2);
+      g.addColorStop(0.00, 'rgba(255,244,220,1.00)');
+      g.addColorStop(0.20, 'rgba(255,228,172,0.58)');
+      g.addColorStop(0.48, 'rgba(255,210,142,0.18)');
+      g.addColorStop(0.76, 'rgba(255,198,126,0.05)');
+      g.addColorStop(1.00, 'rgba(255,192,122,0.00)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, SZ, SZ);
+      glowTex = finishTexture(o.c, 1, 1);
+      return glowTex;
+    }
+
+    // 灯泡光晕：面向相机的叠加光斑，让灯"发光"而不是只亮个小色块
+    function nightGlow(parent, x, y, z, size, opacity) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: getGlowTex(), color: S('#ffe8c4'), transparent: true,
+        opacity: opacity == null ? 0.88 : opacity, toneMapped: false,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      sp.position.set(x, y, z);
+      sp.scale.set(size, size, 1);
+      sp.visible = false;
+      parent.add(sp);
+      NIGHT_PROPS.push(sp);
+      return sp;
+    }
+
+    // 光锥：半透明锥体，模拟光束在空气里的散射（顶部为灯头、向下张开到地面）
+    function nightCone(parent, x, yTop, z, rBottom, yBottom, opacity) {
+      const h = Math.max(0.5, yTop - yBottom);
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(rBottom, h, 24, 1, true),
+        new THREE.MeshBasicMaterial({
+          color: S('#ffd9a2'), transparent: true,
+          opacity: opacity == null ? 0.055 : opacity, toneMapped: false,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+          side: THREE.DoubleSide, fog: false
+        })
+      );
+      cone.position.set(x, yBottom + h / 2, z);
+      cone.visible = false;
+      parent.add(cone);
+      NIGHT_PROPS.push(cone);
+      return cone;
+    }
+
+    // 地面光斑：贴在路面上的叠加圆面，是夜间最直观的"灯亮了"证据
+    function nightPool(parent, x, y, z, radius, opacity) {
+      const pool = new THREE.Mesh(
+        new THREE.PlaneGeometry(radius * 2, radius * 2),
+        new THREE.MeshBasicMaterial({
+          map: getGlowTex(), color: S('#ffdfae'), transparent: true,
+          opacity: opacity == null ? 0.50 : opacity, toneMapped: false,
+          blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+        })
+      );
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(x, y, z);
+      pool.visible = false;
+      parent.add(pool);
+      NIGHT_PROPS.push(pool);
+      return pool;
+    }
+
+    const NIGHT_DIM = [];       // 晚间需要压暗的材质（植被 / 光伏等，白天颜色原样恢复）
+    function registerNightDim(mat, k) {
+      if (!mat) return mat;
+      mat.userData.dayColor = mat.color.clone();
+      NIGHT_DIM.push({ mat: mat, k: k });
+      return mat;
+    }
+
+    // 登记一盏可昼夜切换的灯（dayI 默认沿用当前强度）
+    function registerNightLight(light, nightI, dayI) {
+      light.userData.nightI = nightI;
+      light.userData.dayI = (dayI == null) ? light.intensity : dayI;
+      NIGHT_LIGHTS.push(light);
+      return light;
+    }
 
     /* ============ 1. 程序化 PBR 纹理（canvas 生成，无外部依赖） ============ */
     const TEX = {};
@@ -1173,6 +1275,41 @@
       const cw = 34, ch = 42;
       const W = cols * cw, H = rows * ch;
       const o = canvas2d(W, H), ctx = o.ctx;
+
+      // ---- 晚间版：底子近乎全黑，只有"开着的房间"是亮的 → 这张贴图同时当自发光贴图用 ----
+      if (opt.mode === 'night') {
+        ctx.fillStyle = opt.frame || '#0b131c'; ctx.fillRect(0, 0, W, H);
+        for (let r = 0; r < rows; r++) {
+          // 整层统一亮/暗：真实办公楼是"某几层成片亮着"，比逐窗随机会自然得多
+          const floorOn = Math.random() < 0.68;
+          for (let k = 0; k < cols; k++) {
+            const x = k * cw, y = r * ch;
+            const t = Math.random();
+            let col, glow = 0;
+            if (floorOn && t < 0.82) {
+              col = t < 0.58 ? 'rgba(255,206,138,0.98)' : 'rgba(214,232,255,0.90)'; // 暖白工位灯 / 冷白走道灯
+              glow = 1;
+            } else if (t < 0.10) {
+              col = 'rgba(96,124,164,0.30)';                                        // 熄灯但幕墙反一点环境光
+            } else {
+              col = 'rgba(8,14,22,1)';
+            }
+            ctx.fillStyle = col;
+            ctx.fillRect(x + 2, y + 3, cw - 4, ch - 6);
+            if (glow) {
+              // 窗内亮度不均：靠近窗台更亮，天花一侧偏暗，避免"一片死亮"
+              const g = ctx.createLinearGradient(x, y + 3, x, y + ch - 3);
+              g.addColorStop(0.00, 'rgba(255,255,255,0.34)');
+              g.addColorStop(0.55, 'rgba(255,255,255,0.05)');
+              g.addColorStop(1.00, 'rgba(0,0,0,0.30)');
+              ctx.fillStyle = g;
+              ctx.fillRect(x + 2, y + 3, cw - 4, ch - 6);
+            }
+          }
+        }
+        return finishTexture(o.c, 1, 1);
+      }
+
       ctx.fillStyle = opt.frame || '#b6c0cb'; ctx.fillRect(0, 0, W, H);
       const lit = opt.lit == null ? 0.18 : opt.lit;
       for (let r = 0; r < rows; r++) {
@@ -1332,28 +1469,34 @@
       TEX.steel = texSteel();
       TEX.facadeHall = texFacade(16, 24, { lit: 0.20, frame: '#aab5c1' });  // 主厂房幕墙
       TEX.facadeOffice = texFacade(12, 26, { lit: 0.28, frame: '#c4cdd7' }); // 办公楼层间
+      // 晚间版（房间灯亮起，同时用作自发光贴图）
+      TEX.facadeHallN = texFacade(16, 24, { mode: 'night', frame: '#0c141d' });
+      TEX.facadeOfficeN = texFacade(12, 26, { mode: 'night', frame: '#0a121b' });
     }
 
     /* ============ 2. 天空穹顶 + PMREM 环境反射 ============ */
     const THEME_LOOK = {
+      // 傍晚（原"蓝色"）：蓝色时刻，天顶深蓝、地平线转暖，太阳压低
       dark: {
-        zenith: '#0a2547', mid: '#24619c', horizon: '#a8c8e0', bottom: '#3a5268',
-        sunHex: '#ffeec8', sunDir: [0.70, 0.50, -0.70],
-        fogHex: '#b2d0e4', fogNear: 150, fogFar: 500,
-        hemiSky: '#a2c8ee', hemiGround: '#38495a', hemiI: 0.42,
-        sunI: 3.15, ambI: 0.06, exposure: 0.90,
+        zenith: '#0a2547', mid: '#2a6298', horizon: '#d6c3a6', bottom: '#3d4a58',
+        sunHex: '#ffdcaa', sunDir: [0.70, 0.44, -0.70],
+        fogHex: '#c2c8cc', fogNear: 150, fogFar: 500,
+        hemiSky: '#a2c0e0', hemiGround: '#3a4450', hemiI: 0.42,
+        sunI: 2.85, ambI: 0.06, exposure: 0.92,
         cloud: 0.92, cloudColor: '#ffffff',
         ground: '#8e9a86', pad: '#aab2b9', grid1: '#8fc0e4', grid2: '#3d6b96', gridOp: 0.09
       },
+      // 晚间（原"黑色"）：真正入夜 —— 天光压到最低，照明改由路灯 / 楼体房间灯承担
       black: {
-        zenith: '#01040a', mid: '#061426', horizon: '#0f2438', bottom: '#04090f',
-        sunHex: '#cfe0ff', sunDir: [0.66, 0.56, -0.66],
-        fogHex: '#0f2438', fogNear: 115, fogFar: 400,
-        hemiSky: '#24456b', hemiGround: '#060c14', hemiI: 0.34,
-        sunI: 1.30, ambI: 0.06, exposure: 1.04,
-        cloud: 0.62, cloudColor: '#33455e',
-        ground: '#3a4753', pad: '#434f5c', grid1: '#5fd0ff', grid2: '#1b3a5c', gridOp: 0.13
+        zenith: '#01030a', mid: '#071527', horizon: '#17324c', bottom: '#04080e',
+        sunHex: '#b9cdea', sunDir: [0.58, 0.62, -0.58],           // 月光（高角度、冷白）
+        fogHex: '#08141f', fogNear: 88, fogFar: 330,
+        hemiSky: '#1c3a5e', hemiGround: '#04070c', hemiI: 0.12,
+        sunI: 0.30, ambI: 0.025, exposure: 1.18,
+        cloud: 0.30, cloudColor: '#16243a',
+        ground: '#1b241f', pad: '#242c34', grid1: '#5fd0ff', grid2: '#1b3a5c', gridOp: 0.13
       },
+      // 白天（原"白色"）：正午白光
       light: {
         zenith: '#2b6ab8', mid: '#88b9e2', horizon: '#e6f0fa', bottom: '#9dabb7',
         sunHex: '#fffaec', sunDir: [0.66, 0.52, -0.55],
@@ -1406,6 +1549,39 @@
     }
 
     // 写实天空穹顶（渐变 + 太阳盘 + 光晕）
+    /* ---- 星空（仅晚间显示）：点精灵铺在天穹内侧，不随园区自转 ---- */
+    function createStars() {
+      const N = 900, pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+      const R = 380;
+      for (let i = 0; i < N; i++) {
+        // 只在地平线以上撒点，并按仰角做密度加权（靠近天顶更密）
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.pow(Math.random(), 0.7);           // 0=地平 1=天顶
+        const el = v * Math.PI * 0.5;
+        pos[i * 3] = Math.cos(u) * Math.cos(el) * R;
+        pos[i * 3 + 1] = Math.sin(el) * R;
+        pos[i * 3 + 2] = Math.sin(u) * Math.cos(el) * R;
+        // 亮度随机 + 少量偏蓝/偏暖的星
+        const b = rnd(0.45, 1.0);
+        const tint = Math.random();
+        col[i * 3] = b * (tint < 0.18 ? 1.00 : 0.90);
+        col[i * 3 + 1] = b * 0.94;
+        col[i * 3 + 2] = b * (tint < 0.18 ? 0.82 : 1.00);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const pts = new THREE.Points(geo, new THREE.PointsMaterial({
+        size: 1.9, sizeAttenuation: false, vertexColors: true,
+        transparent: true, opacity: 0.95, depthWrite: false, fog: false, toneMapped: false
+      }));
+      pts.visible = false;
+      pts.renderOrder = -1;
+      scene.add(pts);
+      NIGHT_PROPS.push(pts);
+      return pts;
+    }
+
     function createSkyDome() {
       const geo = new THREE.SphereGeometry(420, 48, 32);
       const mat = new THREE.ShaderMaterial({
@@ -1575,11 +1751,15 @@
         map: TEX.facadeOffice, color: C('#ffffff'),
         roughness: 0.09, metalness: 0.52, envMapIntensity: 1.65
       });
+      // 幕墙进入昼夜系统：晚间换成"亮灯"贴图并让窗格自发光（＝大楼房间灯打开）
+      registerFacade(MAT.facadeHall, TEX.facadeHall, TEX.facadeHallN);
+      registerFacade(MAT.facadeOffice, TEX.facadeOffice, TEX.facadeOfficeN);
       // 光伏组件（中等粗糙度，浅蓝深色，避免过深过黑）
       MAT.solar = new THREE.MeshStandardMaterial({
         map: TEX.solar, color: C('#ffffff'),
         roughness: 0.26, metalness: 0.38, envMapIntensity: 1.00
       });
+      registerNightDim(MAT.solar, 0.42);   // 晚间光伏板不再反天光，压暗
       // 地面材质按铺贴次数缓存，避免创建重复材质
       MAT.asphalt2 = asphaltMat(5, 5);   // 停车场
       MAT.paving = pavingMat(50, 50);    // 园区铺装
@@ -1618,6 +1798,11 @@
       MAT.bush = new THREE.MeshStandardMaterial({
         color: C('#547f45'), roughness: 0.93, metalness: 0.00, envMapIntensity: 0.38
       });
+      // 植被 / 光伏：晚间必须压暗。否则月光与半球光一照，夜里树还是白天那种亮绿，
+      // 一眼就"假"，路灯的照明对比也显不出来。
+      MAT.leafVariants.forEach(function (m) { registerNightDim(m, 0.20); });
+      registerNightDim(MAT.bush, 0.20);
+      registerNightDim(MAT.grassPatch, 0.26);
       // 车漆（带清漆层，反射环境）
       function carPaint(hex) {
         return new THREE.MeshPhysicalMaterial({
@@ -1712,6 +1897,7 @@
 
       // ---- 天空穹顶 ----
       skyMesh = createSkyDome();
+      starsMesh = createStars();
 
       // ---- 光照：太阳主光 + 半球环境光 + 补光 ----
       const sd = THEME_LOOK.dark.sunDir;
@@ -2179,24 +2365,44 @@
         base.receiveShadow = true; base.castShadow = true;
         g.add(base);
 
-        // 罐体
-        const tank = new THREE.Mesh(new THREE.CylinderGeometry(3.9, 3.9, 10, 40, 1, true), MAT.steel);
+        // 罐体（承压筒体，底 0.7、顶 10.7）
+        const SHELL_R = 3.9, SHELL_TOP = 10.7;
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(SHELL_R, SHELL_R, 10, 40, 1, true), MAT.steel);
         tank.position.set(tx, 5.7, tz);
         tank.castShadow = true; tank.receiveShadow = true;
         g.add(tank);
 
-        // 罐顶（球冠）
-        const dome = new THREE.Mesh(
-          new THREE.SphereGeometry(3.9, 40, 16, 0, Math.PI * 2, 0, Math.PI * 0.30),
-          MAT.steel
-        );
-        dome.position.set(tx, 10.7, tz);
+        // 罐顶（拱顶）【修正】原来用 thetaLength=0.30π 的球冠，基圆半径只有 3.155m
+        // （小于罐体 3.9m），球心又落在 y=10.7，导致拱顶底口悬在罐体上沿以上 2.29m —— 盖子是"飘"的。
+        // 现改为半球沿 Y 压扁：底圆半径 = 罐体半径 3.9，底口正好坐在罐体上沿 y=10.7 上。
+        const DOME_H = 1.58;                                   // 拱顶矢高（约 0.2 倍罐径，接近真实拱顶罐）
+        const domeGeo = new THREE.SphereGeometry(SHELL_R, 44, 20, 0, Math.PI * 2, 0, Math.PI / 2);
+        domeGeo.scale(1, DOME_H / SHELL_R, 1);
+        const dome = new THREE.Mesh(domeGeo, MAT.steel);
+        dome.position.set(tx, SHELL_TOP, tz);
         dome.castShadow = true;
         g.add(dome);
 
-        // 顶部平台 + 护栏
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(3.95, 0.10, 8, 40), MAT.alu);
-        ring.position.set(tx, 10.5, tz);
+        // 罐顶与筒体的对接焊缝环（把"盖"和"罐"在视觉上焊成一体，不留悬空缝）
+        const seam = new THREE.Mesh(
+          new THREE.CylinderGeometry(SHELL_R + 0.07, SHELL_R + 0.07, 0.30, 44, 1, true), MAT.alu);
+        seam.position.set(tx, SHELL_TOP - 0.10, tz);
+        seam.castShadow = true;
+        g.add(seam);
+
+        // 罐顶中心通气孔（拱顶罐的呼吸阀）
+        const vent = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.72, 14), MAT.alu);
+        vent.position.set(tx, SHELL_TOP + DOME_H + 0.24, tz);
+        vent.castShadow = true;
+        g.add(vent);
+        const ventCap = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.16, 14), MAT.steel);
+        ventCap.position.set(tx, SHELL_TOP + DOME_H + 0.66, tz);
+        ventCap.castShadow = true;
+        g.add(ventCap);
+
+        // 顶部加强环（贴在筒体上沿下方，不再是浮在空中的"圆环"）
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(SHELL_R + 0.05, 0.10, 8, 44), MAT.alu);
+        ring.position.set(tx, SHELL_TOP - 0.42, tz);
         ring.rotation.x = Math.PI / 2;
         g.add(ring);
 
@@ -2294,6 +2500,11 @@
         const gl = new THREE.PointLight(S('#ffd9a0').getHex(), 0.9, 22, 2);
         gl.position.set(side * WALL.GATE, PH + 0.85, pz);
         g.add(gl);
+
+        // 夜间：灯球光晕 + 门口地面光斑（让大门口在晚间成为最亮的地方）
+        nightGlow(g, side * WALL.GATE, PH + 0.95, pz, 3.0, 0.95);
+        nightPool(g, side * WALL.GATE, 0.076, pz + 3.4, 6.2, 0.52);
+        registerNightLight(gl, 3.6, 0.45);
       }
 
       // 双向道闸：闸机立柱 + 左右两条短杆（各 5.0m）
@@ -3145,6 +3356,18 @@
       lens.rotation.z = -0.10;
       g.add(lens);
 
+      // ---- 夜间照明（晚间模式自动点亮）----
+      // 灯头局部位置：灯具整体绕 Y 旋转 ry，故光晕/光锥/光斑全部用局部坐标挂在同一 group 下，
+      // 世界自转时自动跟随，不需要另外算世界坐标。
+      const HX = 2.3, HY = 8.44;
+      nightGlow(g, HX, HY, 0, 3.5, 1.00);                 // 灯泡光晕
+      nightCone(g, HX, HY - 0.05, 0, 3.30, 0.10, 0.072);  // 空气散射光锥
+      nightPool(g, HX, 0.076, 0, 5.6, 0.62);              // 地面光斑
+      const lampLight = new THREE.PointLight(S('#ffd9a0').getHex(), 0, 34, 2);
+      lampLight.position.set(HX, HY - 0.30, 0);
+      g.add(lampLight);
+      registerNightLight(lampLight, 3.4, 0);              // 白天熄灭
+
       parent.add(g);
     }
 
@@ -3205,10 +3428,11 @@
       document.querySelector('.func-btn').classList.add('active');
     }
 
-    // ===================== 主题切换（写实光照联动） =====================
+    // ===================== 主题切换（写实光照联动 + 夜间照明） =====================
     function applyTheme(theme) {
-      const key = ['dark', 'black', 'light'].indexOf(theme) >= 0 ? theme : 'dark';
+      const key = THEME_ORDER.indexOf(theme) >= 0 ? theme : 'dark';
       const L = THEME_LOOK[key];
+      const night = (key === 'black');     // 晚间模式
 
       if (scene) {
         scene.fog = new THREE.Fog(S(L.fogHex).getHex(), L.fogNear, L.fogFar);
@@ -3248,17 +3472,42 @@
         gridHelper.material.color.setHex(S(L.grid1).getHex());
         gridHelper.material.opacity = L.gridOp;
       }
+
+      /* ---------- 夜间照明总开关 ---------- */
+      // ① 只在晚间出现的灯具构件：灯泡光晕 / 光锥 / 地面光斑 / 星空
+      NIGHT_PROPS.forEach(function (o) { o.visible = night; });
+      // ② 路灯、门口灯球：晚间提亮（白天路灯全灭）
+      NIGHT_LIGHTS.forEach(function (l) { l.intensity = night ? l.userData.nightI : l.userData.dayI; });
+      // ③ 灯具玻璃罩自发光：晚间明显加强，配合 ACES 曝光形成"过曝灯泡"的发光感
+      if (MAT.lampGlass) MAT.lampGlass.emissiveIntensity = night ? 3.8 : 1.6;
+      // ④ 大楼房间灯：晚间换成"亮灯"幕墙贴图，并把窗格作为自发光贴图点亮
+      FACADE_MATS.forEach(function (m) {
+        const wantMap = night ? m.userData.nightMap : m.userData.dayMap;
+        const wantEmi = night ? m.userData.nightMap : null;
+        let dirty = false;
+        if (m.map !== wantMap) { m.map = wantMap; dirty = true; }
+        if (m.emissiveMap !== wantEmi) { m.emissiveMap = wantEmi; dirty = true; }
+        if (m.emissive) m.emissive.set(night ? 0xffffff : 0x000000);
+        m.emissiveIntensity = night ? 1.30 : 0;
+        if (dirty) m.needsUpdate = true;
+      });
+      // ⑤ 植被 / 光伏等：晚间压暗（白天原样恢复）——否则夜里树还是亮绿的，"夜色"立不住
+      NIGHT_DIM.forEach(function (d) {
+        d.mat.color.copy(d.mat.userData.dayColor).multiplyScalar(night ? d.k : 1);
+      });
     }
 
     function updateThemeBtn() {
       const btn = document.getElementById('themeBtn');
       if (!btn) return;
       const span = btn.querySelector('span');
-      if (span) span.textContent = currentTheme === 'light' ? '白色' : currentTheme === 'black' ? '黑色' : '蓝色';
+      if (span) span.textContent = THEME_LABEL[currentTheme] || '傍晚';
     }
 
     function toggleTheme() {
-      currentTheme = currentTheme === 'dark' ? 'black' : currentTheme === 'black' ? 'light' : 'dark';
+      // 循环：白天 → 傍晚 → 晚间 → 白天
+      const i = THEME_ORDER.indexOf(currentTheme);
+      currentTheme = THEME_ORDER[(i + 1) % THEME_ORDER.length];
       document.body.classList.remove('light', 'black');
       if (currentTheme === 'light') document.body.classList.add('light');
       else if (currentTheme === 'black') document.body.classList.add('black');
@@ -3270,7 +3519,7 @@
     function initTheme() {
       let saved = 'dark';
       try { saved = localStorage.getItem('energy-theme') || 'dark'; } catch (e) {}
-      if (['dark', 'black', 'light'].indexOf(saved) < 0) saved = 'dark';
+      if (THEME_ORDER.indexOf(saved) < 0) saved = 'dark';
       currentTheme = saved;
       document.body.classList.remove('light', 'black');
       if (saved === 'light') document.body.classList.add('light');
@@ -3281,6 +3530,8 @@
     // 初始化
     initTheme();
     init3D();
+
+
 
 
 
