@@ -1716,17 +1716,29 @@
     const MAT = {};
 
     // 地面类材质工厂（同参数复用）
-    function groundMatFactory(cacheKey, tex, rx, ry, rough, metal, envI) {
+    // 【第19轮】第 8 个参数 po = 深度层次（polygonOffsetUnits）。正值＝把该面往后推，
+    // 负值＝往前拉。园区地面是一摞"零厚度面片"，全靠标高差区分先后；拉远后标高差
+    // 不够用就会成片闪。按层给固定偏置后，层次由 polygonOffset 保证，与距离无关。
+    //   +4 最底层大面（草地 / 园区铺装）   -2 沥青面   -4 覆面 / 人行道   -6 标线涂装
+    function groundMatFactory(cacheKey, tex, rx, ry, rough, metal, envI, po) {
       if (MAT[cacheKey]) return MAT[cacheKey];
-      MAT[cacheKey] = new THREE.MeshStandardMaterial({
+      const m = new THREE.MeshStandardMaterial({
         map: tiled(tex, rx, ry), color: C('#ffffff'),
         roughness: rough, metalness: metal, envMapIntensity: envI
       });
-      return MAT[cacheKey];
+      if (po) {
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = po > 0 ? 1.5 : -1.5;
+        m.polygonOffsetUnits = po;
+      }
+      MAT[cacheKey] = m;
+      return m;
     }
-    function asphaltMat(rx, ry) { return groundMatFactory('asphalt_' + rx + '_' + ry, TEX.asphalt, rx, ry, 0.94, 0.03, 0.45); }
-    function pavingMat(rx, ry) { return groundMatFactory('paving_' + rx + '_' + ry, TEX.paving, rx, ry, 0.68, 0.06, 0.80); }
-    function grassMat(rx, ry) { return groundMatFactory('grass_' + rx + '_' + ry, TEX.grass, rx, ry, 0.96, 0.00, 0.42); }
+    // 默认层次：沥青面 −2（压在最底层大面之上）、铺装/草地 −4（只有非"园区铺装"的
+    // 铺装才会走默认值，例如罐区铺装 0.060 与人行道 0.066）
+    function asphaltMat(rx, ry, po) { return groundMatFactory('asphalt_' + rx + '_' + ry, TEX.asphalt, rx, ry, 0.94, 0.03, 0.45, po == null ? -2 : po); }
+    function pavingMat(rx, ry, po) { return groundMatFactory('paving_' + rx + '_' + ry, TEX.paving, rx, ry, 0.68, 0.06, 0.80, po == null ? -4 : po); }
+    function grassMat(rx, ry, po) { return groundMatFactory('grass_' + rx + '_' + ry, TEX.grass, rx, ry, 0.96, 0.00, 0.42, po == null ? -4 : po); }
     // 围墙墙面材质（按墙段长度决定横向铺贴次数，贴图 = 4m 一段）
     function fenceMat(len) {
       const rx = Math.max(1, Math.round(len / 4));
@@ -1811,10 +1823,13 @@
       });
       registerNightDim(MAT.solar, 0.42);   // 晚间光伏板不再反天光，压暗
       // 地面材质按铺贴次数缓存，避免创建重复材质
-      MAT.asphalt2 = asphaltMat(5, 5);   // 停车场
-      MAT.paving = pavingMat(50, 50);    // 园区铺装
-      MAT.grass = grassMat(80, 80);      // 外围草地
-      MAT.grassPatch = grassMat(6, 4);   // 绿化带草坪
+      MAT.asphalt2 = asphaltMat(5, 5);   // 停车场场坪（0.052，压铺装 12mm）→ 层次 −2
+      // 园区铺装与外围草地是"最底层大面"：它们下方什么都没有，上方压着停车场场坪、
+      // 充电地坪、各级道路、绿带草坪、车位线…… 与其逐个给上层加偏置，不如把这两张
+      // 最底层大面统一往后推（+4），此后任何压在它们上面的面都稳定在前，一劳永逸。
+      MAT.paving = pavingMat(50, 50, 4);    // 园区铺装（0.040）→ 层次 +4
+      MAT.grass = grassMat(80, 80, 4);      // 外围草地（0.000）→ 层次 +4
+      MAT.grassPatch = grassMat(6, 4);   // 绿化带草坪（0.058）→ 层次 −4
       // 标线（白色）
       // 【抗闪烁 ②】标线是贴在路面上方 8mm 的零厚度面片，远处（100m 量级）深度精度只有
       // 几毫米，会与路面/地坪反复翻转 —— 表现为白线一段段闪。用一个固定负向 polygonOffset
@@ -1926,7 +1941,14 @@
       scene = new THREE.Scene();
       scene.background = null;
 
-      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1200);
+      // 【第19轮·根治拉远闪】near 0.1 → 1.5。
+      // 深度缓冲精度公式 Δz(z) ≈ z²·(1/near − 1/far)/2²⁴：near=0.1 时
+      // z=150m 只能分辨 13.4mm、z=300m 分辨 53.6mm —— 而地面各层高差只有
+      // 8~22mm（铺装 .040 / 场坪 .052 / 车位线 .060 / 主路 .062），拉远后必然
+      // 互相翻转（z-fighting），表现为灰色马路与停车场成片闪烁。
+      // 提到 1.5 后 z=300m 分辨 3.6mm、z=350m 分辨 4.9mm，比最小高差还小一半。
+      // 相机受 minDistance=14 约束，不可能贴到 1.5m 内，取景完全不受影响。
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1.5, 1200);
       camera.position.set(72, 54, 72);
 
       // ---- 渲染器：线性工作流 + ACES 电影级色调映射 ----
@@ -3175,8 +3197,11 @@
       // 【修正】原来只铺到 x±75，距围墙（x±80）还差 4.8m，俯视看就是"半截路悬在铺装中间"。
       // 现两端延到 x±79.6（墙内表面 79.83），道路通到东西厂界，端头被围墙收住
       const R1 = { zc: 36, hw: 7.5, x0: -79.6, x1: 79.6 };
+      // 主干道层次给 −3（其余沥青面是 −2）：它是全场最高的路面（0.062），
+      // 而停车场进车道（0.052）与大门引道（0.054）都跟它有 0.25~0.45m 的搭接重叠。
+      // 两者只差 8~10mm，拉远后同样会翻；给主干道更靠前的一档，重叠带永远显示主干道。
       const road1 = new THREE.Mesh(
-        new THREE.PlaneGeometry(R1.x1 - R1.x0, R1.hw * 2), asphaltMat(28, 3));
+        new THREE.PlaneGeometry(R1.x1 - R1.x0, R1.hw * 2), asphaltMat(28, 3, -3));
       road1.rotation.x = -Math.PI / 2;
       road1.position.set((R1.x0 + R1.x1) / 2, Y_ROAD, R1.zc);
       road1.receiveShadow = true;
@@ -3651,7 +3676,10 @@
          · 按钮定位用的是世界坐标，永远对准目标；
          · 冻结阴影贴图的前提（世界静止）成立，闪烁也不会回来。
        用户一交互（拖动 / 滚轮 / 点功能按钮）就暂停公转，点「总览」恢复。 */
-    const ORBIT_STEP = 0.00035;    // 与原自转角速度一致（约 5 分钟一圈）
+    // 【第19轮·环视提速】0.09 rad/s ≈ 70 秒一圈（原 0.00035/帧 @60Hz = 299 秒一圈，
+    // 快了约 4.3 倍）。改按真实时间推进而非"每帧固定步长"：后者在 120Hz 屏上会快一倍、
+    // 帧率抖动时还会忽快忽慢。
+    const ORBIT_RATE = 0.09;       // 弧度/秒
     // 【闪烁治理】默认不公转：相机一静止，帧间像素差实测为 0（零闪烁）。
     // 需要动感时点底部「环视」按钮开启。
     let autoOrbit = false;
@@ -3661,8 +3689,12 @@
          · updateFogScale() 每帧据此改写 scene.fog.near/far → 整幅画面明暗、远景浓度一直在变；
          · 注视点本身也在绕小圈跑 → 建筑在画面里缓慢平移 + 忽远忽近。
        改成只转相机、注视点钉死，距离严格恒定（探针可验），看着才是"绕园区环视"。 */
-    function orbitStep() {
-      const a = -ORBIT_STEP;
+    let orbitLast = 0;                // 上一帧时间戳（暂停/开启后重新计时，避免跳帧大跳）
+    function orbitStep(now) {
+      now = now || (window.performance && performance.now ? performance.now() : Date.now());
+      const dt = orbitLast ? Math.min(0.1, (now - orbitLast) / 1000) : 0.016;
+      orbitLast = now;
+      const a = -ORBIT_RATE * dt;     // 负号＝与原来的自转方向一致
       const c = Math.cos(a), sn = Math.sin(a);
       const t = controls.target;
       const dx = camera.position.x - t.x, dz = camera.position.z - t.z;
@@ -3672,19 +3704,21 @@
     // OrbitControls 每次 update 都是从 camera.position 反推球坐标的，这里直接改 position 安全。
     function stopOrbit() {
       autoOrbit = false;
+      orbitLast = 0;                  // 下次开启时重新起算，不会因为间隔很久而"猛跳一下"
       const b = document.getElementById('orbitBtn');
       if (b) b.classList.remove('active');
     }
     // 「环视」按钮：开/关自动公转（默认关——相机静止时帧间像素差为 0，没有任何抖动）
     function toggleOrbit(el) {
       autoOrbit = !autoOrbit;
+      orbitLast = 0;
       const b = el || document.getElementById('orbitBtn');
       if (b && b.classList) b.classList.toggle('active', autoOrbit);
     }
 
-    function animate() {
+    function animate(now) {
       requestAnimationFrame(animate);
-      if (autoOrbit && camera && controls) orbitStep();
+      if (autoOrbit && camera && controls) orbitStep(now);
       controls.update();
       updateFogScale();
       renderer.render(scene, camera);
@@ -3872,6 +3906,7 @@
     // 初始化
     initTheme();
     init3D();
+
 
 
 
