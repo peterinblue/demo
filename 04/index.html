@@ -1941,8 +1941,11 @@
         });
       }
       MAT.carBody = [carPaint('#dce3ea'), carPaint('#37414d'), carPaint('#9aa6b2'), carPaint('#5c6b7a')];
+      // 【第27轮】座舱玻璃：原色 #16202c 与深色车漆（carBody[1] #37414d）几乎同色，
+      // 车顶一盖、座舱就"化"进车身里，车型轮廓全糊掉。改成蓝调高反射玻璃，
+      // 不论车身是白、深灰还是蓝灰都能一眼分出"哪块是玻璃"。
       MAT.carGlass = new THREE.MeshStandardMaterial({
-        color: C('#16202c'), roughness: 0.06, metalness: 0.55, envMapIntensity: 1.80
+        color: C('#33485e'), roughness: 0.045, metalness: 0.80, envMapIntensity: 2.30
       });
       MAT.tire = new THREE.MeshStandardMaterial({
         color: C('#1b1e22'), roughness: 0.92, metalness: 0.02, envMapIntensity: 0.30
@@ -1994,6 +1997,25 @@
         color: C('#2f7a5a'), roughness: 0.84, metalness: 0.02, envMapIntensity: 0.55,
         polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
+
+      /* 【第27轮】"正在充电"的发光件：桩头面盖 + 状态灯带。
+         为什么要单开材质：MAT.chargerTop / MAT.chargeLed 是全场共用的实例
+         （大门闸机顶盖、翼闸通行灯也用同一个），直接改它们的 emissive 会让
+         门口闸机跟着一起闪。这里按 3 个相位各建一份 —— 多根桩共享同相位实例，
+         全场只有 6 份材质；闪烁时每帧只写 3 组 emissiveIntensity 标量，
+         不增加 draw call、不产生光照、不影响阴影，移动端零负担。 */
+      MAT.chargeCapGlow = [];
+      MAT.chargeLedGlow = [];
+      for (let _ci = 0; _ci < 3; _ci++) {
+        MAT.chargeCapGlow.push(new THREE.MeshStandardMaterial({
+          color: C('#252a31'), roughness: 0.44, metalness: 0.45, envMapIntensity: 0.95,
+          emissive: S('#3ce68f'), emissiveIntensity: 0.0
+        }));
+        MAT.chargeLedGlow.push(new THREE.MeshStandardMaterial({
+          color: C('#39d98a'), emissive: S('#2fd07f'), emissiveIntensity: 2.2,
+          roughness: 0.30, metalness: 0.05, envMapIntensity: 0.60
+        }));
+      }
 
       /* ---- 第26轮·剖切展示：建筑内部材质（固定色，不参与昼夜主题切换） ----
          内部件的颜色刻意与外壳拉开（浅灰楼板 / 木地板 / 白隔墙 / 深色家具），
@@ -2527,6 +2549,15 @@
       const floorH = 3.4;
       const h = floors * floorH;
 
+      /* 【第27轮】"楼层抽屉"参数：被点中的那一层沿 **-x（西侧）** 抽出并放大。
+         为什么只能是西侧 —— 办公楼在 (-38,18)，footprint x[-49,-27] / z[10,26]：
+           · 东面 x=-27 到主厂房西墙 x=-23 只有 4m，抽出必穿厂房；
+           · 南面 z=26 到主干道北边线 z=28.5 只有 2.5m；
+           · 北面 z=10 到主厂房南墙 z=9 只有 1m；
+           · 西面到围墙内面 x≈-79.8 有 29m 净空 —— 抽出 9.6m 后最远点 x≈-61.7，还余 18m。
+         放大 1.28 倍后抽屉 span x[-61.7,-33.5] / z[7.8,28.2]，仍在净空内（南边缘离马路 0.26m）。 */
+      const DRAWER_OUT = 9.6, DRAWER_S = 0.28;
+
       const fMat = MAT.facadeOffice.clone();
       // 【关键修正】clone 出来的材质不在 FACADE_MATS 里，applyTheme 只改原型，于是
       // 这栋楼怎么都不亮（"最高的楼晚间楼层灯没亮"就是这个原因）。clone 的 userData
@@ -2582,7 +2613,18 @@
 
         tagPick(fl, { kind: 'floor', bld: 'office', f: f, key: 'office|' + f });
         const u = regLift(fl);
-        units.push({ u: u, f: f, plan: plan, built: false });
+
+        // 【第27轮】"抽屉"补间：抽出（-x 平移）+ 放大（整体缩放），平面图与腰线随层一起走。
+        // k=0 时 position.x=0、scale=1 —— 与改造前逐像素完全一致：
+        // 补间只在 k 变化时才写物体，未展开状态一个浮点都不碰。
+        const dr = regTween(function (k) {
+          fl.position.x = -DRAWER_OUT * k;
+          const s = 1 + DRAWER_S * k;
+          fl.scale.set(s, s, s);
+          if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
+        });
+        dr.target = 0;
+        units.push({ u: u, f: f, plan: plan, built: false, dr: dr });
         g.add(fl);
       }
 
@@ -2965,85 +3007,266 @@
       buildingGroup.add(g);
     }
 
-    /* ---- 车辆模型（停车场 / 充电站共用） ---- */
+    /* ---- 车辆模型（停车场 / 充电站共用） ----
+       【第27轮】改造前全场只有一种"方盒轿车"：停车场 7 辆 + 充电站 5 辆同一个轮廓，
+       俯视看过去像复制粘贴。本轮扩成 6 种车型 ——
+         hatch  两厢小车    L4.05  高1.76
+         sedan  三厢轿车    L4.60  高1.91
+         suv    城市 SUV    L4.85  高2.23（车顶行李架）
+         mpv    商务车      L5.10  高2.17（一厢式 + 行李架）
+         pickup 皮卡        L5.35  高2.14（驾驶室 + 敞开货斗）
+         van    厢式面包车  L5.00  高2.21（通体货厢 + 环窗带）
+       车长 / 车高 / 轮径 / 轴距都按真实车型比例给，停车场与充电站按车型混排。
 
-    // 车轮：轮胎 + 铝轮毂
-    function makeWheel() {
+       ★ 随机纪律（必须遵守）：本段**不新增任何 rnd() 调用**。车身姿态的小抖动继续沿用
+         原来的 rnd(-0.00x, 0.00x)，调用次数与改造前逐一对齐。否则业务 PRNG srnd() 的序列
+         会整体平移，全园 71 棵树 / 灌木 / 草叶噪点跟着重排，跨版本像素对比又会被噪声淹没
+         （第26轮刚为这件事把业务随机从 Math.random 解耦出来）。 */
+
+    // 4 边柱体转 45° 后 = 正方形截面；半径为 1 时的半边长 = cos45°
+    var CABIN_K = 0.7071;
+
+    // 车轮（轮径可配：SUV/皮卡大轮、两厢小车小轮）
+    function makeWheel(r) {
+      const R = r || 0.36;
       const w = new THREE.Group();
-      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.26, 20), MAT.tire);
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.26, 20), MAT.tire);
       tire.rotation.z = Math.PI / 2;
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.28, 16), MAT.alu);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.58, R * 0.58, 0.28, 16), MAT.alu);
       hub.rotation.z = Math.PI / 2;
       tire.castShadow = true;
       w.add(tire, hub);
       return w;
     }
 
-    // 轿车：底部包围 + 车身 + 引擎盖 + 玻璃舱 + 车顶 + 灯组 + 四轮
-    function makeCar(bodyMat) {
-      const car = new THREE.Group();
+    // 棱台座舱：4 边 CylinderGeometry 转 45° = 矩形棱台（比方盒子更接近真实车身）。
+    // rb / rt = 底 / 顶相对半径；sx / sz 把正方形截面调成"车宽 × 舱长"。
+    function makeCabin(rb, rt, h, sx, sz) {
+      const geo = new THREE.CylinderGeometry(rt, rb, h, 4);
+      geo.rotateY(Math.PI / 4);
+      const m = new THREE.Mesh(geo, MAT.carGlass);
+      m.scale.set(sx, 1, sz);
+      m.castShadow = true;
+      return m;
+    }
 
-      const skirt = new THREE.Mesh(new THREE.BoxGeometry(2.10, 0.30, 4.30), MAT.carTrim);
-      skirt.position.y = 0.44;
+    /* 通用件：底部包围 + 四轮 + 前后灯组 + 后视镜 + 充电口盖。
+       o = { L 车长, W 车宽, R 轮径, axleZ 轴距半长, trackX 轮距半宽, skirtH 包围高,
+             lightY 灯高, lightH 灯厚, portY 充电口高, portZ 充电口纵向位置,
+             mirrorY / mirrorZ 后视镜（省略则不装） }
+       并把充电口坐标写进 v.userData.port —— 充电枪线缆落点由它反算，
+       换车型时枪口自动跟着走，不会插进空气里。 */
+    function carCommon(v, o) {
+      const halfL = o.L / 2, halfW = o.W / 2;
+
+      const skirt = new THREE.Mesh(new THREE.BoxGeometry(o.W + 0.04, o.skirtH, o.L - 0.10), MAT.carTrim);
+      skirt.position.y = o.R + o.skirtH * 0.34;
       skirt.castShadow = true;
-      car.add(skirt);
+      v.add(skirt);
 
-      const body = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.88, 4.40), bodyMat);
-      body.position.y = 0.86;
-      body.castShadow = true; body.receiveShadow = true;
-      car.add(body);
+      for (const wx of [-1, 1]) {
+        for (const wz of [-1, 1]) {
+          const wheel = makeWheel(o.R);
+          wheel.position.set(wx * o.trackX, o.R, wz * o.axleZ);
+          v.add(wheel);
+        }
+      }
 
-      const hood = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.34, 1.18), bodyMat);
-      hood.position.set(0, 1.26, -1.55);
-      hood.castShadow = true;
-      car.add(hood);
-
-      // 座舱：上窄下宽的棱台（4 段 CylinderGeometry 转 45°），比方盒子更接近真实车身
-      const cabinGeo = new THREE.CylinderGeometry(1.14, 1.33, 0.70, 4);
-      cabinGeo.rotateY(Math.PI / 4);
-      const cabin = new THREE.Mesh(cabinGeo, MAT.carGlass);
-      cabin.scale.set(1, 1, 1.18);
-      cabin.position.set(0, 1.50, 0.14);
-      cabin.castShadow = true;
-      car.add(cabin);
-
-      const roofTop = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.10, 1.52), bodyMat);
-      roofTop.position.set(0, 1.86, 0.14);
-      roofTop.castShadow = true;
-      car.add(roofTop);
-
-      // 前大灯 / 尾灯（略外凸，避免与车身共面）
       for (const s of [1, -1]) {
-        const hl = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.16, 0.10), MAT.headLight);
-        hl.position.set(s * 0.60, 0.94, -2.24);
-        car.add(hl);
-        const tl = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.16, 0.10), MAT.tailLight);
-        tl.position.set(s * 0.62, 0.94, 2.24);
-        car.add(tl);
+        const hl = new THREE.Mesh(new THREE.BoxGeometry(o.W * 0.24, o.lightH, 0.10), MAT.headLight);
+        hl.position.set(s * halfW * 0.60, o.lightY, -halfL + 0.03);
+        v.add(hl);
+        const tl = new THREE.Mesh(new THREE.BoxGeometry(o.W * 0.22, o.lightH, 0.10), MAT.tailLight);
+        tl.position.set(s * halfW * 0.62, o.lightY, halfL - 0.03);
+        v.add(tl);
+      }
+
+      // 后视镜：最省成本、又最能"一眼分辨车型"的细节（两个小方块）
+      if (o.mirrorY) {
+        for (const s of [1, -1]) {
+          const mir = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.10, 0.16), MAT.carTrim);
+          mir.position.set(s * (halfW + 0.06), o.mirrorY, o.mirrorZ);
+          mir.castShadow = true;
+          v.add(mir);
+        }
       }
 
       // 充电口盖（车尾左侧车身，供充电站接枪）
       const port = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.30, 0.06), MAT.carTrim);
-      port.position.set(-1.04, 0.98, 1.55);
-      car.add(port);
+      port.position.set(-(halfW - 0.02), o.portY, o.portZ);
+      v.add(port);
+      v.userData.port = new THREE.Vector3(-(halfW - 0.02), o.portY, o.portZ);
+      return v;
+    }
 
-      for (const wx of [-1, 1]) {
-        for (const wz of [-1, 1]) {
-          const wheel = makeWheel();
-          wheel.position.set(wx * 0.98, 0.36, wz * 1.45);
-          car.add(wheel);
+    /* 通用乘用车装配：把"底盘 → 车身 → 引擎盖 → 座舱 → 车顶"这条链按 spec 摆出来。
+       所有纵向标高都从轮径 R 与腰线推出来，不写死绝对高度 ——
+       换比例（比如把轿车拉成厢货）不会出现"座舱悬空 / 沉进车身"。 */
+    function makeCarType(s, bodyMat) {
+      const v = new THREE.Group();
+      const L = s.L, W = s.W, y0 = s.R;
+      const beltY = s.bodyY + s.bodyH / 2;                    // 腰线（相对轮心面）
+      const portZ = L / 2 - (s.portBack === undefined ? 0.45 : s.portBack);
+
+      carCommon(v, {
+        L: L, W: W, R: s.R, axleZ: s.axleZ, trackX: s.trackX, skirtH: s.skirtH,
+        lightY: y0 + s.lightY, lightH: s.lightH, portY: y0 + s.portY, portZ: portZ,
+        mirrorY: s.mirrorY ? y0 + s.mirrorY : 0, mirrorZ: s.mirrorZ
+      });
+
+      // 主车身
+      const body = new THREE.Mesh(new THREE.BoxGeometry(W, s.bodyH, s.bodyL), bodyMat);
+      body.position.set(0, y0 + s.bodyY, s.bodyZ || 0);
+      body.castShadow = true; body.receiveShadow = true;
+      v.add(body);
+
+      // 引擎盖：顶面比腰线高 6cm，做出机盖肩线（否则车头就是一块砖）
+      if (s.hood) {
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(W - 0.12, s.hood.h, s.hood.l), bodyMat);
+        hood.position.set(0, y0 + beltY + 0.06 - s.hood.h / 2, s.hood.z);
+        hood.castShadow = true;
+        v.add(hood);
+      }
+      // 行李厢盖 / 尾门（三厢车尾）
+      if (s.boot) {
+        const boot = new THREE.Mesh(new THREE.BoxGeometry(W - 0.12, s.boot.h, s.boot.l), bodyMat);
+        boot.position.set(0, y0 + beltY + 0.04 - s.boot.h / 2, s.boot.z);
+        boot.castShadow = true;
+        v.add(boot);
+      }
+
+      // 敞开货斗（皮卡）：矮一档的后箱 + 两侧斗壁 + 尾门 + 深色斗底
+      if (s.bed) {
+        const bodyBotY = s.bodyY - s.bodyH / 2;
+        const bedTopY = beltY - (s.bed.drop === undefined ? 0.34 : s.bed.drop);
+        const baseH = Math.max(0.20, bedTopY - bodyBotY);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(W, baseH, s.bed.l), bodyMat);
+        base.position.set(0, y0 + bodyBotY + baseH / 2, s.bed.z);
+        base.castShadow = true; base.receiveShadow = true;
+        v.add(base);
+
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(W - 0.26, 0.08, s.bed.l - 0.20), MAT.carTrim);
+        deck.position.set(0, y0 + bedTopY + 0.04, s.bed.z);
+        v.add(deck);
+        for (const sx of [-1, 1]) {
+          const wall = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.30, s.bed.l), bodyMat);
+          wall.position.set(sx * (W / 2 - 0.09), y0 + bedTopY + 0.19, s.bed.z);
+          wall.castShadow = true;
+          v.add(wall);
+        }
+        const gate = new THREE.Mesh(new THREE.BoxGeometry(W - 0.16, 0.34, 0.14), bodyMat);
+        gate.position.set(0, y0 + bedTopY + 0.21, s.bed.z + s.bed.l / 2 - 0.07);
+        gate.castShadow = true;
+        v.add(gate);
+      }
+
+      // 座舱（棱台玻璃）：底边坐进车身 0.18m，避免玻璃与车身侧面共面闪烁
+      if (s.cabin) {
+        const cabY = beltY - 0.18 + s.cabin.h / 2;
+        const cabin = makeCabin(1.0, s.cabin.top, s.cabin.h, W * 0.94 * CABIN_K, s.cabin.l * CABIN_K);
+        cabin.position.set(0, y0 + cabY, s.cabin.z);
+        v.add(cabin);
+
+        const roofY = cabY + s.cabin.h / 2 + 0.05;
+        const roofW = W * 0.94 * s.cabin.top - 0.07;
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.10, s.roof.l), bodyMat);
+        roof.position.set(0, y0 + roofY, s.cabin.z);
+        roof.castShadow = true;
+        v.add(roof);
+
+        if (s.rails) {                       // 车顶行李架：SUV / MPV 的辨识特征
+          for (const sx of [-1, 1]) {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.08, s.roof.l - 0.24), MAT.carTrim);
+            rail.position.set(sx * roofW * 0.40, y0 + roofY + 0.09, s.cabin.z);
+            rail.castShadow = true;
+            v.add(rail);
+          }
         }
       }
 
-      return car;
+      // 环窗带（厢式面包车 / 厢货）：一圈玻璃带比"棱台座舱"更像厢体车
+      if (s.band) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, s.band.h, s.band.l), MAT.carGlass);
+        band.position.set(0, y0 + s.band.y, s.band.z);
+        v.add(band);
+      }
+      return v;
+    }
+
+    /* 车型参数表。坐标约定沿用改造前：车头朝 -z、车尾朝 +z。
+       y 均为"路面之上的绝对高度"；portBack = 充电口距车尾的距离。 */
+    var VEH = {
+      // 两厢小车：最短最矮、小轮
+      hatch: { L: 4.05, W: 1.94, R: 0.33, axleZ: 1.28, trackX: 0.93, skirtH: 0.26,
+               bodyL: 3.90, bodyH: 0.80, bodyY: 0.47,
+               hood: { h: 0.26, l: 0.84, z: -1.42 }, boot: { h: 0.22, l: 0.26, z: 1.70 },
+               cabin: { l: 2.35, h: 0.64, z: 0.20, top: 0.80 }, roof: { l: 1.62 },
+               lightY: 0.50, lightH: 0.15, portY: 0.56, portBack: 0.42,
+               mirrorY: 0.99, mirrorZ: -0.72 },
+
+      // 三厢轿车：基准车型（体积与改造前那款基本一致，只是补了行李厢与后视镜）
+      sedan: { L: 4.60, W: 2.05, R: 0.35, axleZ: 1.45, trackX: 0.98, skirtH: 0.30,
+               bodyL: 4.40, bodyH: 0.86, bodyY: 0.49,
+               hood: { h: 0.30, l: 1.16, z: -1.62 }, boot: { h: 0.26, l: 1.00, z: 1.64 },
+               cabin: { l: 2.55, h: 0.72, z: 0.10, top: 0.86 }, roof: { l: 1.54 },
+               lightY: 0.60, lightH: 0.16, portY: 0.64, portBack: 0.62,
+               mirrorY: 1.16, mirrorZ: -0.78 },
+
+      // 城市 SUV：高车身 + 大轮 + 行李架
+      suv:   { L: 4.85, W: 2.14, R: 0.43, axleZ: 1.50, trackX: 1.02, skirtH: 0.38,
+               bodyL: 4.70, bodyH: 1.04, bodyY: 0.56,
+               hood: { h: 0.30, l: 1.02, z: -1.78 }, boot: { h: 0.26, l: 0.46, z: 2.02 },
+               cabin: { l: 2.62, h: 0.80, z: 0.28, top: 0.88 }, roof: { l: 1.94 }, rails: true,
+               lightY: 0.80, lightH: 0.19, portY: 0.86, portBack: 0.72,
+               mirrorY: 1.34, mirrorZ: -0.96 },
+
+      // MPV 商务车：一厢式，舱长
+      mpv:   { L: 5.10, W: 2.10, R: 0.38, axleZ: 1.60, trackX: 1.00, skirtH: 0.30,
+               bodyL: 4.95, bodyH: 1.14, bodyY: 0.52,
+               hood: { h: 0.28, l: 0.92, z: -2.00 }, boot: { h: 0.26, l: 0.38, z: 2.24 },
+               cabin: { l: 3.28, h: 0.78, z: 0.32, top: 0.90 }, roof: { l: 2.72 }, rails: true,
+               lightY: 0.78, lightH: 0.18, portY: 0.84, portBack: 0.76,
+               mirrorY: 1.34, mirrorZ: -1.12 },
+
+      // 皮卡：驾驶室 + 敞开货斗，最大轮径
+      pickup: { L: 5.35, W: 2.10, R: 0.45, axleZ: 1.72, trackX: 1.02, skirtH: 0.40,
+                bodyL: 2.95, bodyZ: -1.20, bodyH: 0.96, bodyY: 0.60,
+                hood: { h: 0.28, l: 1.08, z: -2.06 },
+                bed: { l: 2.20, z: 1.50, drop: 0.36 },
+                cabin: { l: 1.85, h: 0.74, z: -0.66, top: 0.84 }, roof: { l: 1.40 },
+                lightY: 0.78, lightH: 0.19, portY: 0.82, portBack: 0.50,
+                mirrorY: 1.30, mirrorZ: -1.52 },
+
+      // 厢式面包车：通体货厢 + 环窗带，最高
+      van:   { L: 5.00, W: 2.06, R: 0.37, axleZ: 1.55, trackX: 0.98, skirtH: 0.28,
+               bodyL: 4.85, bodyH: 1.78, bodyY: 0.95,
+               hood: { h: 0.26, l: 0.62, z: -2.16 },
+               band: { h: 0.52, l: 3.10, z: -0.55 },
+               lightY: 0.72, lightH: 0.18, portY: 0.80, portBack: 0.62,
+               mirrorY: 1.42, mirrorZ: -1.62 }
+    };
+
+    // 车型分发（未知型号退回三厢轿车）
+    function makeVehicle(kind, bodyMat) {
+      return makeCarType(VEH[kind] || VEH.sedan, bodyMat);
     }
 
     /* ---- 电动汽车充电站 ---- */
 
     // 立柱式充电桩：混凝土基座 + 立柱 + 桩头 + 屏幕 + 状态灯 + 挂枪
-    function addCharger(parent, x, z) {
+    // 【第27轮】新增 charging / phase：正在充电的桩，桩头面盖与状态灯带走**独立发光材质**
+    // （3 个相位错开呼吸闪烁，见 stepChargeGlow）；空位桩沿用原来的深色件，外观与改造前一致。
+    function addCharger(parent, x, z, charging, phase) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
+
+      const ph = (phase || 0) % 3;
+      const capMat = charging ? MAT.chargeCapGlow[ph] : MAT.chargerTop;
+      const ledMat = charging ? MAT.chargeLedGlow[ph] : MAT.chargeLed;
+      if (charging && !CHARGE_GLOW[ph]) {
+        // 按相位登记一次；sparse 数组，stepChargeGlow 里跳过空位
+        CHARGE_GLOW[ph] = { cap: MAT.chargeCapGlow[ph], led: MAT.chargeLedGlow[ph], ph: ph * 2.0944 };
+      }
 
       const base = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.18, 0.86), MAT.concrete);
       base.position.y = 0.09;
@@ -3060,10 +3283,18 @@
       body.castShadow = true; body.receiveShadow = true;
       g.add(body);
 
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.08, 0.46), MAT.chargerTop);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.08, 0.46), capMat);
       cap.position.y = 1.64;
       cap.castShadow = true;
       g.add(cap);
+
+      // 面盖上的内嵌发光板：让"正在充电"的呼吸闪烁在远景机位也读得出来。
+      // 只有充电中的桩才有这块板 —— 空位桩的几何与改造前逐像素一致。
+      if (charging) {
+        const capLit = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.03, 0.34), capMat);
+        capLit.position.y = 1.685;
+        g.add(capLit);
+      }
 
       // 屏幕（内嵌 0.03，不与壳面共面）
       const screen = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.28, 0.05), MAT.chargerScreen);
@@ -3071,7 +3302,7 @@
       g.add(screen);
 
       // 状态灯带（绿 = 正在充电）
-      const led = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.07, 0.05), MAT.chargeLed);
+      const led = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.07, 0.05), ledMat);
       led.position.set(0, 1.50, 0.212);
       g.add(led);
 
@@ -3155,28 +3386,32 @@
       }
 
       // 充电桩 + 充电中的车辆（第 5 位留空）
+      // 【第27轮】车型写死成一串（而不是纯随机）：充电站是"充电/近景"机位的主景，
+      // 必须保证在场的 5 辆车覆盖 SUV / 轿车 / 厢式 / MPV / 皮卡 五种轮廓，一眼看出车型齐全。
       const CHARGING = [true, true, true, true, false, true];
+      const CHARGE_KINDS = ['suv', 'sedan', 'van', 'mpv', 'hatch', 'pickup'];
       const carColors = [MAT.carBody[0], MAT.carBody[1], MAT.carBody[2], MAT.carBody[3]];
 
       for (let i = 0; i < SLOTS; i++) {
         const cx = -W / 2 + PITCH * (i + 0.5);
-        addCharger(g, cx, PILE_Z);
+        addCharger(g, cx, PILE_Z, CHARGING[i], i);
 
         if (!CHARGING[i]) continue;
 
         // 车倒车入位（车头朝 +z 外侧，车尾靠充电桩）
-        const car = makeCar(carColors[i % carColors.length]);
+        const car = makeVehicle(CHARGE_KINDS[i % CHARGE_KINDS.length], carColors[i % carColors.length]);
         car.position.set(cx, PAD_Y, 0.15);
         car.rotation.y = Math.PI;
-        car.rotation.z = rnd(-0.005, 0.005);
+        car.rotation.z = rnd(-0.005, 0.005);     // ← rnd 调用数与改造前一致（随机纪律）
         g.add(car);
 
-        // 线缆：桩侧挂枪 → 车尾左侧充电口
-        addChargeCable(
-          g,
-          new THREE.Vector3(cx + 0.34, 1.04, PILE_Z + 0.08),
-          new THREE.Vector3(cx + 1.05, 0.98, 0.15 - 1.55)
-        );
+        // 线缆：桩侧挂枪 → 车尾左侧充电口。
+        // 落点从车辆自报的 userData.port 反算（车长不同、接口位置就不同），
+        // 不再写死 1.05 / 1.55 —— 否则换成皮卡、厢货车之后枪会插进空气里。
+        g.updateMatrixWorld(true);
+        const portW = car.localToWorld(car.userData.port.clone());
+        g.worldToLocal(portW);
+        addChargeCable(g, new THREE.Vector3(cx + 0.34, 1.04, PILE_Z + 0.08), portW);
       }
 
       buildingGroup.add(g);
@@ -3234,21 +3469,25 @@
         g.add(bar);
       }
 
-      // 车辆（复用 makeCar）：北排 4 辆、南排 3 辆，车头朝里（车尾朝通道）
+      // 车辆：北排 4 辆、南排 3 辆，车头朝里（车尾朝通道）。
+      // 【第27轮】车型按"北排 SUV/两厢/皮卡/轿车 + 南排 MPV/两厢/轿车"混排：
+      // 写死序列而不是随机抽，保证总览机位一眼就能看到车型是有差异的（随机抽可能 7 辆同款）。
       const carColors = [MAT.carBody[0], MAT.carBody[1], MAT.carBody[2], MAT.carBody[3]];
+      const LOT_KINDS_N = ['suv', 'hatch', 'pickup', 'sedan'];
+      const LOT_KINDS_S = ['mpv', 'hatch', 'sedan'];
       const zBay = AISLE / 2 + BAY_D / 2;
       for (let i = 0; i < 4; i++) {
-        const car = makeCar(carColors[i % carColors.length]);
+        const car = makeVehicle(LOT_KINDS_N[i], carColors[i % carColors.length]);
         car.position.set(BAY_X0 + BAY_W * (i + 0.5), LOT_Y, -zBay);
         car.rotation.y = 0;
-        car.rotation.z = rnd(-0.006, 0.006);
+        car.rotation.z = rnd(-0.006, 0.006);     // ← rnd 调用数与改造前一致（随机纪律）
         g.add(car);
       }
       for (let i = 0; i < 3; i++) {
-        const car = makeCar(carColors[(i + 1) % carColors.length]);
+        const car = makeVehicle(LOT_KINDS_S[i], carColors[(i + 1) % carColors.length]);
         car.position.set(BAY_X0 + BAY_W * (i + 1.5), LOT_Y, zBay);
         car.rotation.y = Math.PI;
-        car.rotation.z = rnd(-0.006, 0.006);
+        car.rotation.z = rnd(-0.006, 0.006);     // ← 同上
         g.add(car);
       }
 
@@ -4070,6 +4309,13 @@
 
       // ⑦ 楼层号标牌（贴地小色块，俯视时帮助辨认）
       ibox(plan, 1.25, 0.04, 0.62, -HW + 1.4, 0.165, HD - 0.9, MAT.warn);
+
+      /* 【第27轮】抽屉抽出后，这一层就是画面主体：让室内家具 / 隔墙投下阴影
+         （ibox 默认 castShadow=false，平铺在地板上会显得像一张贴纸）。
+         跳过楼板本身（y≤0.2）—— 楼板与下层箱体顶面同标高，给它开投影会在边缘压出
+         一圈阴影瑕疵。同一时刻只有一层平面可见，且 shadowMap 是按需刷新，
+         静止时不重算 → 开销可控。 */
+      plan.traverse(function (o) { if (o.isMesh && o.position.y > 0.2) o.castShadow = true; });
     }
 
     /* ---------- 主厂房室内平面（46 × 30：柱网 + 加工中心带 + 装配线 + 物流区）---------- */
@@ -4207,6 +4453,9 @@
        ========================================================================== */
     var PICK_ROOTS = [];       // 参与射线拾取的根 group（只含可交互建筑）
     var LIFT_UNITS = [];       // 可抬升单元 {g, baseY, cur, target}
+    var TWEENS = [];           // 通用补间单元 {k, target, apply}（第27轮：楼层抽屉抽出+放大）
+    var CHARGE_GLOW = [];      // 充电桩发光材质，按相位稀疏登记 {cap, led, ph}
+    var CHARGE_T = 0;          // 闪烁相位累计时间（秒）
     var OFFICE = null;         // 办公楼配置
     var SHELLS = {};           // 厂房 / 车间的壳体配置
     var pickState = null;      // 当前展开状态 {key}
@@ -4219,6 +4468,44 @@
       return u;
     }
     function setLift(u, dy) { if (u) u.target = u.baseY + dy; }
+
+    /* ---- 【第27轮】通用补间：k 从 0（收）到 1（展），apply(k) 负责把 k 写到物体上 ----
+       为什么不复用 regLift：regLift 只管"沿 y 抬升一个标量"，而"抽屉"要同时改
+       position.x 与 scale —— 硬塞进那个简单模型只会把它搞脏。 */
+    function regTween(apply) {
+      var t = { k: 0, target: 0, apply: apply };
+      TWEENS.push(t);
+      return t;
+    }
+    function stepTweens(dt) {
+      var moving = false;
+      for (var i = 0; i < TWEENS.length; i++) {
+        var t = TWEENS[i];
+        if (t.k === t.target) continue;
+        t.k += (t.target - t.k) * Math.min(1, dt * 4.6);   // 略慢于升降，抽屉"抽出来"的手感更足
+        if (Math.abs(t.target - t.k) < 0.0012) t.k = t.target;
+        t.apply(t.k);
+        moving = true;
+      }
+      if (moving && renderer) renderer.shadowMap.needsUpdate = true;   // 抽/放大过程中阴影必须跟着重算
+    }
+
+    /* ---- 充电桩面盖呼吸闪烁 ----
+       emissiveIntensity 是纯自发光参数：不产生光照、不影响阴影，所以这里每帧改材质
+       **不需要**刷新 shadowMap —— 静止场景的阴影开销为零（这是"能闪"和"不卡"兼得的关键）。
+       波形取 sin 的平方：峰值短促、谷值停留久，比纯正弦更像真实充电指示灯。 */
+    function stepChargeGlow(dt) {
+      if (!CHARGE_GLOW.length) return;
+      CHARGE_T += dt;
+      for (var i = 0; i < CHARGE_GLOW.length; i++) {
+        var c = CHARGE_GLOW[i];
+        if (!c) continue;
+        var w = 0.5 + 0.5 * Math.sin(CHARGE_T * 3.1 + c.ph);
+        var e = 0.12 + 2.30 * w * w;
+        c.cap.emissiveIntensity = e * 0.85;
+        c.led.emissiveIntensity = 1.10 + e * 0.60;
+      }
+    }
 
     // 抬升动画：每帧向目标插值；只要还有单元在动就请求一次阴影重算
     function stepLifts(dt) {
@@ -4289,7 +4576,7 @@
     function hideTip() { showTip(''); }
 
     function hintOf(info) {
-      if (info.kind === 'floor') return '点击查看 ' + (info.f + 1) + ' 层平面图';
+      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层抽出放大）';
       var sh = SHELLS[info.bld];
       return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + '，查看室内平面';
     }
@@ -4297,8 +4584,12 @@
     function collapseAll() {
       if (OFFICE) {
         for (var i = 0; i < OFFICE.units.length; i++) {
-          setLift(OFFICE.units[i].u, 0);
-          OFFICE.units[i].plan.visible = false;
+          var iu = OFFICE.units[i];
+          setLift(iu.u, 0);
+          // 【第27轮】平面图不再在这里瞬间隐藏 —— 改由抽屉补间在 k 回到 0 那一刻隐藏，
+          // 否则"抽回去"的动画跑到一半，平面图会先凭空消失。
+          if (iu.dr) iu.dr.target = 0;
+          else iu.plan.visible = false;
         }
         setLift(OFFICE.top, 0);
       }
@@ -4323,7 +4614,8 @@
         for (var i = 0; i < OFFICE.units.length; i++) {
           var it = OFFICE.units[i];
           setLift(it.u, it.f > info.f ? LIFT_OFFICE : 0);
-          it.plan.visible = (it.f === info.f);
+          // 被点中的这层抽屉拉到 1（抽出+放大），其余拉回 0 —— 全部走同一套插值动画
+          if (it.dr) it.dr.target = (it.f === info.f) ? 1 : 0;
         }
         setLift(OFFICE.top, LIFT_OFFICE);               // 顶部机房/女儿墙/光伏随之上移
         var cur = OFFICE.units[info.f];
@@ -4331,7 +4623,7 @@
           if (!cur.built) { buildOfficePlan(cur.plan, OFFICE.w, OFFICE.d, info.f); cur.built = true; }
           cur.plan.visible = true;
         }
-        showTip((info.f + 1) + 'F 平面图　·　点击其它楼层切换 / 再次点击或点空白收起', true);
+        showTip((info.f + 1) + 'F　·　上层已升起，本层已抽出并放大　·　再次点击或点空白收回', true);
       } else {
         var sh = SHELLS[info.bld];
         if (!sh) return;
@@ -4394,6 +4686,11 @@
           u.cur = u.target;
           u.g.position.y = u.cur;
         }
+        for (var j = 0; j < TWEENS.length; j++) {      // 第27轮：抽屉补间也立即到位
+          var tw = TWEENS[j];
+          tw.k = tw.target;
+          tw.apply(tw.k);
+        }
         if (renderer) renderer.shadowMap.needsUpdate = true;
       },
       info: function () {
@@ -4405,6 +4702,10 @@
           cam: camera ? [+camera.position.x.toFixed(3), +camera.position.y.toFixed(3), +camera.position.z.toFixed(3)] : null,
           tgt: controls ? [+controls.target.x.toFixed(3), +controls.target.y.toFixed(3), +controls.target.z.toFixed(3)] : null,
           rot: worldGroup ? +worldGroup.rotation.y.toFixed(6) : null,
+          drawer: TWEENS.map(function (t) { return Math.round(t.k * 1000) / 1000; }),
+          glow: CHARGE_GLOW.map(function (c) {
+            return c ? +c.cap.emissiveIntensity.toFixed(3) : null;
+          }),
           meshes: (function () { var n = 0; scene.traverse(function (o) { if (o.isMesh) n++; }); return n; })()
         };
       }
@@ -4543,6 +4844,8 @@
       _lastFrameT = tt;
       if (autoOrbit && camera && controls) orbitStep(now);
       stepLifts(dt);                     // 第26轮：楼层/壳体抬升动画（静止时零开销）
+      stepTweens(dt);                    // 第27轮：楼层"抽屉"抽出 + 放大（带阴影重算）
+      stepChargeGlow(dt);                // 第27轮：充电桩面盖 / 灯带呼吸闪烁
       controls.update();
       updateFogScale();
       renderer.render(scene, camera);
@@ -4733,6 +5036,8 @@
     // 初始化
     initTheme();
     init3D();
+
+
 
 
 
