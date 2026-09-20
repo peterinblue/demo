@@ -2042,6 +2042,16 @@
       MAT.inMachine = new THREE.MeshStandardMaterial({ color: C('#96a0a8'), roughness: 0.52, metalness: 0.40 });
       MAT.inMachineDark = new THREE.MeshStandardMaterial({ color: C('#49525a'), roughness: 0.55, metalness: 0.36 });
       MAT.inRack = new THREE.MeshStandardMaterial({ color: C('#c4c9cd'), roughness: 0.58, metalness: 0.30 });
+    /* 【第28轮】逐层平面新增用色（同样不参与昼夜主题，只服务"俯视读图"）*/
+    MAT.inSofa = new THREE.MeshStandardMaterial({ color: C('#5a6b7d'), roughness: 0.88, metalness: 0.0 });
+    MAT.inPlant = new THREE.MeshStandardMaterial({ color: C('#3f6d45'), roughness: 0.86, metalness: 0.0 });
+    MAT.inPot = new THREE.MeshStandardMaterial({ color: C('#8f8b84'), roughness: 0.72, metalness: 0.04 });
+    MAT.inWood = new THREE.MeshStandardMaterial({ color: C('#c39a63'), roughness: 0.62, metalness: 0.02 });
+    MAT.inWet = new THREE.MeshStandardMaterial({ color: C('#cfd8dc'), roughness: 0.36, metalness: 0.06 });
+    MAT.inRug = new THREE.MeshStandardMaterial({ color: C('#8e9aa8'), roughness: 0.94, metalness: 0.0 });
+    MAT.inTray = new THREE.MeshStandardMaterial({ color: C('#c9a227'), roughness: 0.46, metalness: 0.42 });
+    MAT.inWhite = new THREE.MeshStandardMaterial({ color: C('#f0f2f3'), roughness: 0.42, metalness: 0.05 });
+    MAT.inGlassP = new THREE.MeshStandardMaterial({ color: C('#bcd6e2'), roughness: 0.20, metalness: 0.10 });
     }
 
     /* ============ 4. 园区建筑群 ============ */
@@ -2529,7 +2539,10 @@
       buildHallPlan(plan, w, d);
       g.add(plan);
 
-      SHELLS.hall = { unit: regLift(shell), plan: plan, lift: h * 0.95, label: '主厂房', built: true };
+      // 【第28轮】抬升量 0.95h → 1.15h（主厂房 13.8m）：壳体升起后要往屏幕右侧（+x/-z）移开 31m，
+      // 移开后其西北角会悬在生产车间上空，抬到 13.8m 才不压车间屋面（车间 9m + 屋面光伏）
+      SHELLS.hall = { unit: regLift(shell), plan: plan, lift: h * 1.15, label: '主厂房', built: true };
+      regShellDrift(SHELLS.hall, 2, -31);
       tagPick(g, { kind: 'shell', bld: 'hall', key: 'hall' });
       PICK_ROOTS.push(g);
 
@@ -2549,14 +2562,22 @@
       const floorH = 3.4;
       const h = floors * floorH;
 
-      /* 【第27轮】"楼层抽屉"参数：被点中的那一层沿 **-x（西侧）** 抽出并放大。
-         为什么只能是西侧 —— 办公楼在 (-38,18)，footprint x[-49,-27] / z[10,26]：
-           · 东面 x=-27 到主厂房西墙 x=-23 只有 4m，抽出必穿厂房；
-           · 南面 z=26 到主干道北边线 z=28.5 只有 2.5m；
-           · 北面 z=10 到主厂房南墙 z=9 只有 1m；
-           · 西面到围墙内面 x≈-79.8 有 29m 净空 —— 抽出 9.6m 后最远点 x≈-61.7，还余 18m。
-         放大 1.28 倍后抽屉 span x[-61.7,-33.5] / z[7.8,28.2]，仍在净空内（南边缘离马路 0.26m）。 */
-      const DRAWER_OUT = 9.6, DRAWER_S = 0.28;
+      /* 【第28轮】"楼层抽屉" v2 —— 抽出方向改为 **+x（大楼右侧）**，抽出距离与放大倍数重排：
+         ① 放大 2 倍（上一版 1.28 倍）→ 楼板 footprint 由 22.75×16.75 变 45.5×33.5m。
+            园区里放不下这么大一块平地（办公楼以东唯一的大空区是 x[-27,38]×z[9,28.5]，
+            63×19.5，进深只有 19.5m < 33.5m），所以抽出后**抬到展示标高悬停**
+            （DRAWER_CLEAR=16.5m，高于主厂房 13.8m 的屋面）——既不插进任何建筑，也不压马路。
+         ② 抽出距离 38m：放大后楼板西缘落在局部 x=15.25（世界 x=-22.75），
+            距塔楼东立面（世界 x=-27）还有 4.25m 净距 —— 这一层与整栋楼彻底脱开、互不遮挡。
+         ③ 三段式时序（本轮最容易踩的坑，不能省）：
+              第1段 k 0→0.52   平移（此时缩放仍=1，楼板 22.75×16.75，与主厂房 z≤9 还留 0.6m 净距）
+              第2段 k 0.40→0.74 抬到展示标高（已经在厂房屋面之上）
+              第3段 k 0.56→1.00 放大到 2 倍（已在 16.5m 高空，放大到 33.5m 进深也不会插进厂房）
+            若三段同时进行，1F/2F 会在还没抬起来时就被放大成 33.5m 进深、直接穿过主厂房南墙。 */
+      const DRAWER_OUT = 38, DRAWER_S = 1.0, DRAWER_CLEAR = 22;
+      function ss(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
+      const OFFICE_FLOORS = ['大堂·门厅', '开敞办公', '标准办公', '部门办公', '会议中心',
+                             '研发实验室', '数据中心', '休闲办公', '高管层'];
 
       const fMat = MAT.facadeOffice.clone();
       // 【关键修正】clone 出来的材质不在 FACADE_MATS 里，applyTheme 只改原型，于是
@@ -2565,15 +2586,22 @@
       registerFacade(fMat, TEX.facadeOffice, TEX.facadeOfficeN);
 
       const units = [];
+
+      /* 两级分组（第28轮）：
+           fl —— 抬升单元，只由 regLift 写 position.y（"被点中的楼层以上的各层升起"）
+           dg —— 抽屉单元，只由 regTween 写 position.x / position.y / scale（抽出 + 抬高 + 放大）
+         两者各写各自的属性、互不覆盖；上一版把抽屉的 y 也写在 fl 上，会和抬升互相打架。 */
       for (let f = 0; f < floors; f++) {
         const fl = new THREE.Group();
         fl.position.y = f * floorH;
+        const dg = new THREE.Group();
+        fl.add(dg);
 
         // 层实体（混凝土）
         const core = new THREE.Mesh(new THREE.BoxGeometry(w, floorH, d), MAT.concrete);
         core.position.y = floorH / 2;
         core.castShadow = true; core.receiveShadow = true;
-        fl.add(core);
+        dg.add(core);
 
         // 四面幕墙（该层，贴图玻璃分格）—— 与原"通高一片"逐像素等价：
         // 原版是一片 BoxGeometry(w+0.30, h-1.2, 0.18)、中心 y=h/2 → 竖直覆盖 [0.6, 30.0]，
@@ -2589,10 +2617,10 @@
           for (const s of [1, -1]) {
             const f1 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(w + 0.30, fyh, 0.18), v0, v1), fMat);
             f1.position.set(0, fcy, s * (d / 2 + 0.16));
-            fl.add(f1);
+            dg.add(f1);
             const f2 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(0.18, fyh, d + 0.30), v0, v1), fMat);
             f2.position.set(s * (w / 2 + 0.16), fcy, 0);
-            fl.add(f2);
+            dg.add(f2);
           }
         }
 
@@ -2602,29 +2630,33 @@
           const band = new THREE.Mesh(new THREE.BoxGeometry(w + 0.75, 0.44, d + 0.75), MAT.alu);
           band.position.y = 0;
           band.castShadow = true;
-          fl.add(band);
+          dg.add(band);
         }
 
-        // 该层平面图（站在本层顶面上；懒生成 + 默认隐藏）
+        // 该层平面图（站在抽屉组顶面上；懒生成 + 默认隐藏）
         const plan = new THREE.Group();
         plan.position.y = floorH;
         plan.visible = false;
-        fl.add(plan);
+        dg.add(plan);
 
         tagPick(fl, { kind: 'floor', bld: 'office', f: f, key: 'office|' + f });
         const u = regLift(fl);
 
-        // 【第27轮】"抽屉"补间：抽出（-x 平移）+ 放大（整体缩放），平面图与腰线随层一起走。
-        // k=0 时 position.x=0、scale=1 —— 与改造前逐像素完全一致：
-        // 补间只在 k 变化时才写物体，未展开状态一个浮点都不碰。
+        // 【第28轮】抽屉补间：向右抽出 → 抬到展示标高 → 放大 2 倍（三段式，见上方参数区注释）
         const dr = regTween(function (k) {
-          fl.position.x = -DRAWER_OUT * k;
-          const s = 1 + DRAWER_S * k;
-          fl.scale.set(s, s, s);
+          var xk = ss(k / 0.52);
+          var yk = ss((k - 0.40) / 0.34);
+          var sk = ss((k - 0.56) / 0.44);
+          var dy = DRAWER_CLEAR - f * floorH;
+          dg.position.x = DRAWER_OUT * xk;
+          dg.position.y = (dy > 0 ? dy : 0) * yk;
+          var sc = 1 + DRAWER_S * sk;
+          dg.scale.set(sc, sc, sc);
           if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
         });
         dr.target = 0;
-        units.push({ u: u, f: f, plan: plan, built: false, dr: dr });
+        units.push({ u: u, f: f, plan: plan, dg: dg, built: false, dr: dr,
+                     name: OFFICE_FLOORS[f % OFFICE_FLOORS.length] });
         g.add(fl);
       }
 
@@ -2752,6 +2784,7 @@
       g.add(plan);
 
       SHELLS.shop = { unit: regLift(shell), plan: plan, lift: h * 0.95, label: '生产车间', built: true };
+      regShellDrift(SHELLS.shop, 12, -21);   // 第28轮：向东 12m + 向北 21m —— 俯视下壳体与车间平面完全不重叠
       tagPick(g, { kind: 'shell', bld: 'shop', key: 'shop' });
       PICK_ROOTS.push(g);
 
@@ -4183,6 +4216,7 @@
       g.add(plan);
 
       SHELLS.sub = { unit: regLift(shell), plan: plan, lift: BH + 1.6, label: '配电间', built: true };
+      regShellDrift(SHELLS.sub, 3.5, -5.6, 3.0);   // 第28轮：箱盖向东北让开（场地东北角，量取小，不越围墙）
       tagPick(g, { kind: 'shell', bld: 'sub', key: 'sub' });
       PICK_ROOTS.push(g);
 
@@ -4198,6 +4232,18 @@
     function ibox(parent, w, h, d, x, y, z, mat) {
       var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       m.position.set(x, y, z);
+      m.castShadow = false;
+      m.receiveShadow = true;
+      parent.add(m);
+      return m;
+    }
+
+    /* 【第28轮】可绕 Y 旋转的构件（工位岛/斜置会议桌/回转沙发都靠它）——
+       旋转对"轴对齐长方体"是安全的：不产生剪切，包围盒只是变大一点，阴影照常。 */
+    function iboxR(parent, w, h, d, x, y, z, mat, ry) {
+      var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      m.position.set(x, y, z);
+      if (ry) m.rotation.y = ry;
       m.castShadow = false;
       m.receiveShadow = true;
       parent.add(m);
@@ -4233,92 +4279,351 @@
       }
     }
 
-    /* ---------- 办公楼标准层平面（w22 × d16：中间走廊 + 两侧房间 + 会议室 + 楼梯间）---------- */
+    /* ---------- 办公楼逐层平面：**9 层 9 种布局**（第28轮重写） ----------
+       1F 大堂·门厅 ｜ 2F 开敞办公 ｜ 3F 标准办公 ｜ 4F 部门办公 ｜ 5F 会议中心
+       6F 研发实验室 ｜ 7F 数据中心 ｜ 8F 休闲办公 ｜ 9F 高管层
+       全部构件走 part()：先在"家具局部坐标"里摆，再整体绕 Y 旋转 ry 落到平面坐标 ——
+       于是工位岛（两排背靠背）、转向的会议长桌、回转的接待沙发、斜放的实验台都能写，
+       不必像上一版那样只能画"一条走廊 + 两侧房间"。
+       颜色一律用 MAT.inXxx 固定色（不参与昼夜主题）：剖切面打开后"读图清楚"是第一位的。 */
     function buildOfficePlan(plan, w, d, fi) {
-      var W = w - 1.0, D = d - 1.0;
-      var HW = W / 2, HD = D / 2;
-      var WH = 0.86, T = 0.16, COR = 1.35;
-      var i, k;
+      var W = w - 1.0, D = d - 1.0, HW = W / 2, HD = D / 2;   // 21 × 15
+      var WH = 0.86, T = 0.16;
+      var f = ((fi | 0) % 9 + 9) % 9;
+      var i, k, j;
 
-      // ① 楼板面层 + 走廊地面
-      ibox(plan, W, 0.14, D, 0, 0.07, 0, MAT.inFloorGray);
-      ibox(plan, W - 0.4, 0.03, COR * 2, 0, 0.155, 0, MAT.inCorridor);
-
-      // ② 走廊两侧纵墙（沿 x 贯通，按房间位置留门洞；门洞区间＝距墙起点(-HW)的距离）
-      var dnorth = [[2.125, 3.125], [7.375, 8.375], [11.0, 12.0], [17.0, 18.0]];
-      var dsouth = [[2.125, 3.125], [7.375, 8.375], [12.625, 13.625], [17.875, 18.875]];
-      iwall(plan, -HW, COR, HW, COR, WH, T, dnorth, MAT.inWall);
-      iwall(plan, -HW, -COR, HW, -COR, WH, T, dsouth, MAT.inWall);
-
-      // ③ 房间横向隔墙（沿 z，中部留 1.0 门洞）
-      var dx = [[3.075, 4.075]];
-      iwall(plan, -5.25, COR, -5.25, HD, WH, T, dx, MAT.inWall);
-      iwall(plan, 0, COR, 0, HD, WH, T, dx, MAT.inWall);
-      iwall(plan, -5.25, -HD, -5.25, -COR, WH, T, dx, MAT.inWall);
-      iwall(plan, 0, -HD, 0, -COR, WH, T, dx, MAT.inWall);
-      iwall(plan, 5.25, -HD, 5.25, -COR, WH, T, dx, MAT.inWall);
-
-      // ④ 标准办公室：2 工位（桌 + 椅）+ 靠幕墙矮柜
-      function room(xa, xb, dir) {
-        var cx = (xa + xb) / 2;
-        var zIn = dir > 0 ? COR : -COR;
-        var zOut = dir > 0 ? HD : -HD;
-        var half = Math.min(1.45, (xb - xa) * 0.24);
-        for (var s = -1; s <= 1; s += 2) {
-          var tx = cx + s * half;
-          var tz = zIn + dir * 2.35;
-          ibox(plan, 1.46, 0.07, 0.74, tx, 0.75, tz, MAT.inDeskTop);
-          ibox(plan, 1.24, 0.68, 0.60, tx, 0.40, tz, MAT.inDeskLeg);
-          var cz = tz - dir * 0.76;
-          ibox(plan, 0.46, 0.10, 0.46, tx, 0.47, cz, MAT.inChair);
-          ibox(plan, 0.44, 0.46, 0.07, tx, 0.70, cz - dir * 0.21, MAT.inChair);
-        }
-        ibox(plan, Math.min(2.1, (xb - xa) * 0.44), 0.60, 0.42,
-             cx, 0.30, zOut - dir * 0.55, MAT.inRack);
+      /* ---------- 构件工厂（局部坐标 → 旋转 → 落位） ---------- */
+      function rot2(x, z, ry) { var c = Math.cos(ry), s = Math.sin(ry); return [x * c + z * s, -x * s + z * c]; }
+      function part(px, pz, ry, lw, lh, ld, lx, ly, lz, mat) {
+        var r = rot2(lx, lz, ry);
+        iboxR(plan, lw, lh, ld, px + r[0], ly, pz + r[1], mat, ry);
       }
-      room(-HW, -5.25, 1);
-      room(-5.25, 0, 1);
-      room(-5.25, 0, -1);
-      room(0, 5.25, -1);
-      room(5.25, HW, -1);
-
-      // ⑤ 会议室（北侧最东 10.5m 开间）：长桌 + 8 椅 + 2 内柱 + 会议屏
-      var mx = 5.25, mz = (COR + HD) / 2;
-      ibox(plan, 4.6, 0.08, 1.5, mx, 0.75, mz, MAT.inDeskTop);
-      ibox(plan, 4.2, 0.68, 1.2, mx, 0.39, mz, MAT.inDeskLeg);
-      for (i = 0; i < 4; i++) {
-        var px = mx - 1.75 + i * 1.17;
+      function chair(px, pz, ry, lx, lz, mat, tall) {      // 椅子：面向 +z（椅背在 -z 侧）
+        part(px, pz, ry, 0.46, 0.10, 0.46, lx, 0.47, lz, mat || MAT.inChair);
+        part(px, pz, ry, 0.44, tall ? 0.78 : 0.46, 0.08, lx, tall ? 0.92 : 0.70, lz - 0.24, mat || MAT.inChair);
+      }
+      function deskRow(px, pz, ry, n, matTop) {            // n 联工位（人坐 -z 侧，屏幕在 +z 侧）
+        var span = 1.62 * n;
+        part(px, pz, ry, span, 0.07, 0.72, 0, 0.75, 0, matTop || MAT.inDeskTop);
+        part(px, pz, ry, span - 0.26, 0.66, 0.56, 0, 0.40, 0, MAT.inDeskLeg);
+        for (i = 0; i < n; i++) {
+          var lx = -span / 2 + 0.81 + i * 1.62;
+          part(px, pz, ry, 0.56, 0.34, 0.05, lx, 0.94, 0.26, MAT.inScreen);
+          chair(px, pz, ry, lx, -0.86);
+        }
+      }
+      function deskOne(px, pz, ry) {                       // 主管单间：大桌 + 高背椅 + 客椅 + 书柜
+        part(px, pz, ry, 1.90, 0.08, 0.92, 0, 0.75, 0, MAT.inDeskTop);
+        part(px, pz, ry, 1.60, 0.66, 0.72, 0, 0.40, 0, MAT.inDeskLeg);
+        part(px, pz, ry, 0.66, 0.42, 0.05, 0, 0.97, 0.34, MAT.inScreen);
+        part(px, pz, ry, 0.62, 0.72, 0.58, 1.45, 0.36, 0.10, MAT.inRack);
+        chair(px, pz, ry, 0, -0.88, MAT.inChair, true);
+        chair(px, pz, ry, -0.10, 1.55, MAT.inChairBlue);   // 对面客椅
+        chair(px, pz, ry, 1.10, 1.55, MAT.inChairBlue);
+      }
+      function island(px, pz, n) {                         // 工位岛：两排背靠背，屏幕夹在中缝
+        deskRow(px, pz - 0.38, 0, n);
+        deskRow(px, pz + 0.38, Math.PI, n);
+      }
+      function meetTable(px, pz, ry, n, lw, ld) {          // 会议长桌：两侧各 n 把椅子
+        lw = lw || Math.max(3.2, n * 1.30); ld = ld || 1.50;
+        part(px, pz, ry, lw, 0.08, ld, 0, 0.75, 0, MAT.inDeskTop);
+        part(px, pz, ry, lw - 0.50, 0.68, ld - 0.28, 0, 0.39, 0, MAT.inDeskLeg);
+        for (i = 0; i < n; i++) {
+          var lx = -lw / 2 + (lw / n) * (i + 0.5);
+          chair(px, pz, ry, lx, -(ld / 2 + 0.54), MAT.inChairBlue);
+          chair(px, pz, ry + Math.PI, lx, -(ld / 2 + 0.54), MAT.inChairBlue);
+        }
+      }
+      function cabRow(px, pz, ry, n, gap, lw, ld, lh, mat) {  // 柜 / 书架成排（>1.3m 带一圈腰线）
+        for (i = 0; i < n; i++) {
+          var lx = -((n - 1) * gap) / 2 + i * gap;
+          part(px, pz, ry, lw, lh, ld, lx, lh / 2, 0, mat || MAT.inRack);
+          if (lh > 1.3) part(px, pz, ry, lw + 0.06, 0.07, ld + 0.04, lx, lh * 0.52, 0, MAT.inMachineDark);
+        }
+      }
+      function sofaSet(px, pz, ry) {                       // 三座沙发 + 两扶手椅 + 茶几（面向 +z）
+        part(px, pz, ry, 2.20, 0.34, 0.84, 0, 0.20, 0, MAT.inSofa);
+        part(px, pz, ry, 2.20, 0.46, 0.20, 0, 0.46, -0.32, MAT.inSofa);
+        part(px, pz, ry, 0.20, 0.32, 0.84, -1.00, 0.38, 0, MAT.inSofa);
+        part(px, pz, ry, 0.20, 0.32, 0.84, 1.00, 0.38, 0, MAT.inSofa);
+        part(px, pz, ry, 1.10, 0.07, 0.62, 0, 0.43, 1.28, MAT.inWood);
+        part(px, pz, ry, 1.00, 0.36, 0.52, 0, 0.23, 1.28, MAT.inDeskLeg);
         for (k = -1; k <= 1; k += 2) {
-          ibox(plan, 0.44, 0.10, 0.44, px, 0.47, mz + k * 1.18, MAT.inChairBlue);
-          ibox(plan, 0.44, 0.44, 0.07, px, 0.70, mz + k * 1.40, MAT.inChairBlue);
+          part(px, pz, ry, 0.80, 0.32, 0.76, k * 2.30, 0.20, 0.66, MAT.inChairBlue);
+          part(px, pz, ry, 0.80, 0.40, 0.16, k * 2.30, 0.45, 0.32, MAT.inChairBlue);
         }
       }
-      ibox(plan, 0.42, WH, 0.42, mx + 3.4, WH / 2, mz + 2.3, MAT.inCol);
-      ibox(plan, 0.42, WH, 0.42, mx - 3.9, WH / 2, mz - 2.3, MAT.inCol);
-      ibox(plan, 0.09, 0.82, 1.8, mx + 5.02, 1.02, mz, MAT.inScreen);
-
-      // ⑥ 楼梯间（南侧最西）：上行梯段 + 休息平台 + 扶手 + 洁具间隔断
-      var sx = -HW + 1.15, sz = -HD + 0.75;
-      for (i = 0; i < 8; i++) {
-        var hh = 0.16 * (i + 1);
-        ibox(plan, 1.5, hh, 0.30, sx, hh / 2, sz + i * 0.30 + 0.15, MAT.inSlab);
+      function leaves(px, pz, ry, n, gap) {                // 绿植带
+        for (i = 0; i < n; i++) {
+          var lx = -((n - 1) * gap) / 2 + i * gap;
+          part(px, pz, ry, 0.50, 0.40, 0.50, lx, 0.20, 0, MAT.inPot);
+          part(px, pz, ry, 0.92, 0.80, 0.92, lx, 0.86, 0, MAT.inPlant);
+        }
       }
-      ibox(plan, 1.7, 0.16, 1.30, sx, 1.42, sz + 3.15, MAT.inSlab);
-      ibox(plan, 0.07, 0.62, 2.9, sx + 0.80, 0.61, sz + 1.35, MAT.alu);
-      ibox(plan, T, WH, 2.0, sx + 1.95, WH / 2, -HD + 1.45, MAT.inWall);
+      function plantAt(px, pz) {
+        part(px, pz, 0, 0.52, 0.40, 0.52, 0, 0.20, 0, MAT.inPot);
+        part(px, pz, 0, 0.96, 0.82, 0.96, 0, 0.88, 0, MAT.inPlant);
+      }
+      function wcRow(px, pz, ry, n) {                      // 卫生间：隔断 + 洁具 + 台盆
+        part(px, pz, ry, n * 1.05 + 0.10, WH, T, 0, WH / 2, -0.62, MAT.inWall);
+        for (i = 0; i < n; i++) {
+          var lx = -((n - 1) * 1.05) / 2 + i * 1.05;
+          part(px, pz, ry, 0.06, WH, 1.20, lx + 0.52, WH / 2, 0, MAT.inWall);
+          part(px, pz, ry, 0.44, 0.42, 0.64, lx, 0.21, -0.08, MAT.inWhite);
+        }
+        part(px, pz, ry, n * 1.05, 0.12, 0.86, 0, 0.62, 0.62, MAT.inWet);
+      }
+      function elevBank(px, pz, ry, n) {                   // 电梯厅：n 部电梯（井道 + 门套 + 层站灯）
+        for (i = 0; i < n; i++) {
+          var lx = -((n - 1) * 2.15) / 2 + i * 2.15;
+          part(px, pz, ry, 1.95, WH, 1.50, lx, WH / 2, -0.60, MAT.inWall);
+          part(px, pz, ry, 0.12, WH, 1.40, lx - 0.93, WH / 2, -0.55, MAT.inCabPanel);
+          part(px, pz, ry, 0.12, WH, 1.40, lx + 0.93, WH / 2, -0.55, MAT.inCabPanel);
+          part(px, pz, ry, 1.00, 0.07, 0.10, lx, 0.92, 0.18, MAT.inLed);
+        }
+      }
+      function stairRun(px, pz, ry) {                      // 楼梯：8 级 + 休息平台 + 扶手
+        for (i = 0; i < 8; i++) {
+          var hh = 0.15 * (i + 1);
+          part(px, pz, ry, 1.50, hh, 0.30, 0, hh / 2, -1.05 + i * 0.30, MAT.inSlab);
+        }
+        part(px, pz, ry, 1.72, 0.16, 1.30, 0, 1.32, 1.62, MAT.inSlab);
+        part(px, pz, ry, 0.07, 0.60, 3.20, -0.80, 0.60, 0.15, MAT.alu);
+      }
+      function rackRow(px, pz, ry, n, gap) {               // 机房机柜排（面板 + 指示灯条）
+        for (i = 0; i < n; i++) {
+          var lx = -((n - 1) * gap) / 2 + i * gap;
+          part(px, pz, ry, 0.62, 1.90, 1.02, lx, 0.95, 0, MAT.inCabPanel);
+          part(px, pz, ry, 0.54, 0.12, 0.94, lx, 1.58, 0, MAT.inLed);
+        }
+      }
+      function barCounter(px, pz, ry, lw) {                // 吧台 + 咖啡机 + 冰箱 + 高脚凳
+        part(px, pz, ry, lw, 1.05, 0.62, 0, 0.52, 0, MAT.inCabinet);
+        part(px, pz, ry, lw + 0.26, 0.08, 0.80, 0, 1.10, 0.05, MAT.inWood);
+        part(px, pz, ry, 0.90, 0.92, 0.66, lw / 2 - 0.75, 0.46, -0.78, MAT.inMachine);
+        part(px, pz, ry, 0.62, 1.60, 0.60, -lw / 2 + 0.60, 0.80, -0.80, MAT.inMachineDark);
+        for (i = 0; i < 3; i++)
+          part(px, pz, ry, 0.36, 0.64, 0.36, -lw / 2 + 0.90 + i * 1.15, 0.32, 0.86, MAT.inDeskLeg);
+      }
+      function labBench(px, pz, ry, lw) {                  // 实验台：台面 + 试剂架 + 试剂柜 + 圆凳
+        part(px, pz, ry, lw, 0.08, 1.30, 0, 0.86, 0, MAT.inWhite);
+        part(px, pz, ry, lw - 0.30, 0.78, 1.10, 0, 0.43, 0, MAT.inCabinet);
+        part(px, pz, ry, lw - 0.60, 0.30, 0.34, 0, 1.34, 0.32, MAT.inRack);
+        part(px, pz, ry, 0.22, 0.34, 0.16, -lw / 2 + 0.75, 1.20, 0.32, MAT.inLed);
+        for (i = 0; i < Math.floor(lw / 1.15); i++)
+          part(px, pz, ry, 0.38, 0.62, 0.38, -lw / 2 + 0.72 + i * 1.15, 0.31, -0.98, MAT.inDeskLeg);
+      }
+      function fumeHood(px, pz, ry, lw) {                  // 通风柜
+        part(px, pz, ry, lw, 1.95, 0.95, 0, 0.98, 0, MAT.inMachine);
+        part(px, pz, ry, lw - 0.30, 0.62, 0.06, 0, 1.52, 0.50, MAT.inScreen);
+        part(px, pz, ry, lw - 0.20, 0.10, 0.90, 0, 1.98, 0, MAT.inMachineDark);
+      }
+      function pingpong(px, pz, ry) {                      // 乒乓球台（含球网与四腿）
+        part(px, pz, ry, 2.74, 0.06, 1.53, 0, 0.76, 0, MAT.inChairBlue);
+        part(px, pz, ry, 0.06, 0.18, 1.62, 0, 0.86, 0, MAT.inWhite);
+        for (k = -1; k <= 1; k += 2) {
+          for (j = -1; j <= 1; j += 2) part(px, pz, ry, 0.10, 0.76, 0.10, k * 1.20, 0.38, j * 0.62, MAT.inDeskLeg);
+        }
+      }
+      function monitorWall(px, pz, ry, n) {                // 监控大屏墙
+        part(px, pz, ry, n * 1.36, 0.10, 0.24, 0, 1.02, 0, MAT.inCabPanel);
+        for (i = 0; i < n; i++)
+          part(px, pz, ry, 1.26, 0.80, 0.08, -((n - 1) * 1.36) / 2 + i * 1.36, 1.56, 0.05, MAT.inScreen);
+      }
 
-      // ⑦ 楼层号标牌（贴地小色块，俯视时帮助辨认）
-      ibox(plan, 1.25, 0.04, 0.62, -HW + 1.4, 0.165, HD - 0.9, MAT.warn);
+      /* ---------- ① 1F 大堂·门厅：接待前台 + 洽谈茶座 + 电梯厅 + 楼梯 + 卫生间 ---------- */
+      function fLobby() {
+        ibox(plan, 11.6, 0.03, 8.8, 2.0, 0.155, 1.5, MAT.inCorridor);       // 大堂磨石地
+        ibox(plan, 4.6, 0.03, 3.8, -6.6, 0.155, -5.0, MAT.inCorridor);      // 电梯厅地面
+        part(-1.6, -2.4, 0, 5.4, 1.06, 0.66, 0, 0.53, 0, MAT.inCabinet);    // 前台（L 形）
+        part(-1.6, -2.4, 0, 5.7, 0.09, 0.92, 0, 1.13, 0, MAT.inDeskTop);
+        part(-4.8, -3.6, 0, 2.0, 1.06, 0.66, 1.3, 0.53, 0, MAT.inCabinet);
+        part(-4.8, -3.6, 0, 2.3, 0.09, 0.92, 1.3, 1.13, 0, MAT.inDeskTop);
+        part(-1.6, -5.3, 0, 5.2, 1.75, 0.12, 0, 1.48, 0, MAT.inScreen);     // 形象墙
+        part(2.4, -5.0, 0, 1.5, 0.14, 0.10, 0, 1.20, 0, MAT.inLed);         // 门楣导视
+        sofaSet(6.9, 0.8, -Math.PI / 2);                                    // 接待茶座 ×2
+        sofaSet(6.9, -4.2, -Math.PI / 2);
+        elevBank(-6.6, -6.1, 0, 3);
+        stairRun(-9.3, 4.7, 0);
+        wcRow(-0.6, 6.5, 0, 3);
+        leaves(-9.7, -1.4, Math.PI / 2, 3, 2.0);
+        plantAt(-3.2, 6.6); plantAt(9.6, 6.2);
+      }
 
-      /* 【第27轮】抽屉抽出后，这一层就是画面主体：让室内家具 / 隔墙投下阴影
+      /* ---------- ② 2F 开敞办公：4 组工位岛 + 2 间玻璃小会议 + 打印区 + 茶水角 ---------- */
+      function fOpenPlan() {
+        ibox(plan, W - 1.2, 0.03, 2.4, 0, 0.155, 0, MAT.inCorridor);        // 中央主通道
+        island(-5.6, -3.4, 3); island(-5.6, 3.4, 3);
+        island(3.2, -3.4, 3); island(3.2, 3.4, 3);
+        for (i = 0; i < 2; i++) {                                           // 玻璃小会议室
+          var zz = -4.6 + i * 4.0;
+          iwall(plan, 7.0, zz - 1.7, 7.0, zz + 1.7, 1.40, T, [[1.05, 2.05]], MAT.inGlassP);
+          iwall(plan, 7.0, zz - 1.7, HW, zz - 1.7, 1.40, T, [], MAT.inGlassP);
+          iwall(plan, 7.0, zz + 1.7, HW, zz + 1.7, 1.40, T, [], MAT.inGlassP);
+          meetTable(8.9, zz, Math.PI / 2, 2, 2.6, 1.05);
+        }
+        cabRow(-9.7, -5.4, Math.PI / 2, 4, 1.55, 0.95, 0.60, 1.60, MAT.inRack);  // 打印/文件区
+        part(-8.9, 2.6, 0, 1.10, 1.00, 0.76, 0, 0.50, 0, MAT.inMachine);    // 复印机
+        part(-8.9, 4.4, 0, 1.50, 1.85, 0.62, 0, 0.93, 0, MAT.inCabinet);    // 档案柜
+        barCounter(5.4, 6.3, Math.PI, 3.2);                                 // 茶水角
+        leaves(0.4, 6.6, 0, 5, 2.4);
+        plantAt(-2.4, -6.6); plantAt(9.7, 6.5);
+      }
+
+      /* ---------- ③ 3F 标准办公：一条中走廊 + 两侧办公室 + 端头会议室 + 楼梯间 ---------- */
+      function fStandard() {
+        var COR = 1.35;
+        ibox(plan, W, 0.03, COR * 2, 0, 0.155, 0, MAT.inCorridor);
+        iwall(plan, -HW, COR, HW, COR, WH, T,
+              [[2.125, 3.125], [7.375, 8.375], [11.0, 12.0], [17.0, 18.0]], MAT.inWall);
+        iwall(plan, -HW, -COR, HW, -COR, WH, T,
+              [[2.125, 3.125], [7.375, 8.375], [12.625, 13.625], [17.875, 18.875]], MAT.inWall);
+        var dxg = [[3.075, 4.075]];
+        iwall(plan, -5.25, COR, -5.25, HD, WH, T, dxg, MAT.inWall);
+        iwall(plan, 0, COR, 0, HD, WH, T, dxg, MAT.inWall);
+        iwall(plan, -5.25, -HD, -5.25, -COR, WH, T, dxg, MAT.inWall);
+        iwall(plan, 0, -HD, 0, -COR, WH, T, dxg, MAT.inWall);
+        iwall(plan, 5.25, -HD, 5.25, -COR, WH, T, dxg, MAT.inWall);
+        function room(xa, xb, dir) {                                        // 2 工位标准间
+          var cx = (xa + xb) / 2;
+          var zIn = dir > 0 ? COR : -COR;
+          deskRow(cx, zIn + dir * 2.05, dir > 0 ? 0 : Math.PI, 2);
+          part(cx, zIn + dir * 4.05, 0, Math.min(2.6, (xb - xa) * 0.55), 0.62, 0.42, 0, 0.31, 0, MAT.inRack);
+        }
+        room(-HW, -5.25, 1); room(-5.25, 0, 1); room(-5.25, 0, -1); room(0, 5.25, -1); room(5.25, HW, -1);
+        meetTable(7.9, (COR + HD) / 2, 0, 3, 4.6, 1.40);                    // 端头会议室
+        part(10.2, (COR + HD) / 2, 0, 0.09, 0.82, 1.80, 0, 1.02, 0, MAT.inScreen);
+        stairRun(-HW + 1.45, -HD + 1.70, 0);                                // 西南楼梯间
+        iwall(plan, -HW + 3.10, -HD, -HW + 3.10, -COR, WH, T, [[1.4, 2.4]], MAT.inWall);
+      }
+
+      /* ---------- ④ 4F 部门办公：大办公室 + 主任室 + 档案室 + 打印间 + 茶水间 ---------- */
+      function fDept() {
+        ibox(plan, W, 0.03, 3.0, 0, 0.155, 0, MAT.inCorridor);              // 走廊
+        iwall(plan, -HW, 1.5, HW, 1.5, 1.5, T, [[3.2, 4.2], [9.8, 10.8], [16.0, 17.0]], MAT.inWall);
+        iwall(plan, -HW, -1.5, HW, -1.5, 1.5, T, [[3.2, 4.2], [9.8, 10.8], [16.0, 17.0]], MAT.inWall);
+        iwall(plan, -1.4, 1.5, -1.4, HD, 1.5, T, [], MAT.inWall);           // 北：大办公室
+        iwall(plan, 4.6, 1.5, 4.6, HD, 1.5, T, [], MAT.inWall);             // 北：主任室 / 档案室
+        deskRow(-6.4, 3.9, Math.PI, 3); deskRow(-6.4, 6.4, 0, 3);           // 6 工位
+        deskOne(1.4, 4.6, Math.PI);
+        cabRow(6.2, 6.7, 0, 3, 1.35, 1.15, 0.55, 2.10, MAT.inRack);         // 档案柜 ×5
+        cabRow(8.8, 3.0, Math.PI / 2, 2, 1.35, 1.15, 0.55, 2.10, MAT.inRack);
+        iwall(plan, -3.0, -HD, -3.0, -1.5, 1.5, T, [], MAT.inWall);         // 南：三分隔
+        iwall(plan, 3.0, -HD, 3.0, -1.5, 1.5, T, [], MAT.inWall);
+        part(-8.6, -5.0, 0, 1.15, 1.00, 0.78, 0, 0.50, 0, MAT.inMachine);   // 打印/复印间
+        part(-6.6, -5.0, 0, 1.15, 1.00, 0.78, 0, 0.50, 0, MAT.inMachine);
+        cabRow(-8.4, -2.6, 0, 3, 1.20, 1.00, 0.55, 1.70, MAT.inRack);
+        barCounter(-1.0, -4.4, Math.PI, 2.8);                               // 茶水间
+        sofaSet(7.4, -4.6, 0);                                              // 接待/值班
+        part(7.4, -1.9, 0, 2.2, 0.74, 0.80, 0, 0.37, 0, MAT.inDeskTop);
+        leaves(1.0, -6.6, 0, 3, 2.0);
+      }
+
+      /* ---------- ⑤ 5F 会议中心：大会议室(14 座) + 2 间中会议室 + 前厅 ---------- */
+      function fMeeting() {
+        ibox(plan, W, 0.03, 2.2, 0, 0.155, 0.6, MAT.inCorridor);            // 前厅
+        iwall(plan, -HW, 1.7, HW, 1.7, 1.5, T, [[1.6, 2.6], [9.4, 10.4]], MAT.inWall);
+        meetTable(0, 4.8, 0, 7, 7.8, 1.90);                                 // 大会议室
+        part(9.9, 4.8, 0, 0.10, 1.30, 3.10, 0, 1.55, 0, MAT.inScreen);
+        part(-9.9, 4.8, 0, 0.60, 1.05, 1.20, 0, 0.53, 0, MAT.inWood);       // 讲台
+        part(-8.4, 4.8, 0, 0.30, 1.10, 0.42, 0, 0.55, 0, MAT.inMachineDark);
+        iwall(plan, -2.0, -HD, -2.0, 1.7, 1.5, T, [[3.0, 4.0]], MAT.inWall);
+        iwall(plan, 2.0, -HD, 2.0, 1.7, 1.5, T, [[3.0, 4.0]], MAT.inWall);
+        meetTable(-6.4, -4.3, Math.PI / 2, 2, 4.4, 1.40);                   // 两间中会议室
+        meetTable(6.4, -4.3, Math.PI / 2, 2, 4.4, 1.40);
+        elevBank(0, -3.4, 0, 2);                                            // 前厅电梯厅
+        part(0, -6.6, 0, 1.30, 0.74, 0.70, 0, 0.37, 0, MAT.inWood);         // 前厅小几
+        chair(0, -5.4, 0, 0, 0, MAT.inChairBlue);
+        leaves(-1.2, -6.9, 0, 3, 1.15);
+      }
+
+      /* ---------- ⑥ 6F 研发实验室：3 条实验岛 + 3 台通风柜 + 洁净间 + 试剂柜 ---------- */
+      function fLab() {
+        labBench(-5.8, -3.6, 0, 6.0);                                       // 实验岛 ×3
+        labBench(-5.8, 3.4, 0, 6.0);
+        labBench(6.6, -3.0, Math.PI / 2, 5.0);
+        for (i = 0; i < 3; i++) fumeHood(-8.6 + i * 2.6, 6.6, 0, 2.3);      // 通风柜 ×3
+        iwall(plan, 2.2, 1.2, 2.2, HD, 1.5, T, [[2.6, 3.6]], MAT.inGlassP); // 洁净间（玻璃隔断）
+        iwall(plan, 2.2, 1.2, HW, 1.2, 1.5, T, [], MAT.inGlassP);
+        labBench(6.6, 4.4, Math.PI, 5.0);                                   // 洁净工作台
+        cabRow(-9.8, -0.4, Math.PI / 2, 4, 1.60, 1.05, 0.60, 1.90, MAT.inCabinet);  // 试剂柜
+        part(-9.2, -6.4, 0, 0.86, 1.05, 0.70, 0, 0.53, 0, MAT.warn);        // 危化品柜
+        part(1.6, -6.4, 0, 1.30, 1.00, 0.80, 0, 0.50, 0, MAT.inMachine);    // 离心机 / 设备
+        part(4.4, -6.4, 0, 1.30, 1.00, 0.80, 0, 0.50, 0, MAT.inMachine);
+        leaves(7.6, -6.8, 0, 3, 2.0);
+      }
+
+      /* ---------- ⑦ 7F 数据中心：4 排机柜 + 桥架 + 监控大屏墙 + 值守台 + UPS 间 ---------- */
+      function fDataCenter() {
+        for (i = 0; i < 4; i++) rackRow(-4.5 + i * 3.0, 3.7, Math.PI / 2, 6, 1.32);   // 机柜 ×24
+        for (i = 0; i < 3; i++) ibox(plan, 0.28, 0.10, 7.0, -3.0 + i * 3.0, 2.55, 3.7, MAT.inTray);  // 桥架
+        iwall(plan, -HW, 0.6, HW, 0.6, 1.5, T, [[3.0, 4.0], [17.0, 18.0]], MAT.inGlassP);           // 监控中心
+        monitorWall(0, -7.0, 0, 6);
+        deskRow(-3.0, -4.6, Math.PI, 3); deskRow(3.0, -4.6, Math.PI, 3);    // 值守台 ×2
+        iwall(plan, -6.4, -HD, -6.4, 0.6, 1.5, T, [[4.4, 5.4]], MAT.inWall); // UPS / 电池间
+        cabRow(-8.6, -3.2, Math.PI / 2, 3, 1.55, 1.10, 0.75, 1.95, MAT.inCabPanel);
+        part(-8.2, -6.2, 0, 1.60, 1.28, 0.92, 0, 0.64, 0, MAT.inMachine);   // 精密空调
+        leaves(9.6, -6.6, 0, 2, 1.6);
+      }
+
+      /* ---------- ⑧ 8F 休闲办公：工位岛 + 咖啡吧 + 沙发区 + 乒乓球 + 图书角 ---------- */
+      function fLounge() {
+        island(-6.0, -3.4, 3); island(-6.0, 2.8, 3);                        // 开敞办公
+        iwall(plan, -1.8, -HD, -1.8, HD, 1.5, T, [[2.4, 3.4], [11.0, 12.0]], MAT.inGlassP);
+        ibox(plan, 11.6, 0.03, 13.4, 4.9, 0.155, 0, MAT.inRug);             // 休闲区地毯
+        barCounter(8.4, -5.6, 0, 4.4);                                      // 咖啡吧
+        sofaSet(3.0, 1.4, Math.PI / 2); sofaSet(3.0, 5.2, Math.PI / 2);     // 沙发区 ×2
+        pingpong(7.4, 1.4, 0);                                              // 乒乓球台
+        cabRow(9.9, 4.6, Math.PI / 2, 3, 1.45, 1.00, 0.50, 1.85, MAT.inWood);  // 图书角
+        leaves(2.4, -6.9, 0, 3, 1.5);
+        plantAt(-9.7, 6.6); plantAt(-9.7, -6.8);
+      }
+
+      /* ---------- ⑨ 9F 高管层：总经理室 + 两位副总 + 洽谈室 + 秘书台 + 电梯厅 ---------- */
+      function fExec() {
+        iwall(plan, 2.4, 1.6, 2.4, HD, 1.5, T, [[2.6, 3.6]], MAT.inWall);   // 总经理办公室
+        iwall(plan, 2.4, 1.6, HW, 1.6, 1.5, T, [], MAT.inWall);
+        deskOne(7.8, 5.2, 0);
+        part(4.3, 3.0, Math.PI / 2, 0.10, 0.86, 1.60, 0, 1.05, 0, MAT.inScreen);
+        cabRow(7.8, 7.0, 0, 3, 1.25, 1.20, 0.50, 2.05, MAT.inWood);
+        iwall(plan, -3.6, 1.6, -3.6, HD, 1.5, T, [[2.4, 3.4]], MAT.inWall); // 副总 ×2
+        iwall(plan, -HW, 1.6, -3.6, 1.6, 1.5, T, [], MAT.inWall);
+        iwall(plan, -HW, 4.6, -3.6, 4.6, 1.5, T, [], MAT.inWall);
+        deskOne(-7.6, 3.0, Math.PI); deskOne(-7.6, 6.2, Math.PI);
+        iwall(plan, 2.4, -HD, 2.4, -1.4, 1.5, T, [[3.0, 4.0]], MAT.inWall); // 洽谈室
+        iwall(plan, 2.4, -1.4, HW, -1.4, 1.5, T, [], MAT.inWall);
+        meetTable(7.2, -4.4, 0, 3, 3.8, 1.40);
+        part(0.6, -2.4, 0, 2.40, 0.74, 0.90, 0, 0.37, 0, MAT.inDeskTop);    // 秘书台
+        chair(0.6, -1.30, 0, 0, 0, MAT.inChair);
+        elevBank(-1.6, -6.1, 0, 2);
+        sofaSet(-7.2, -4.6, Math.PI / 2);                                   // 高管休息区
+        leaves(-1.5, -6.9, 0, 2, 1.20);
+        plantAt(0.8, 6.6);
+      }
+
+      /* ---------- 通用：楼板 + 层号色标 + 分派 ---------- */
+      ibox(plan, W, 0.14, D, 0, 0.07, 0, MAT.inFloorGray);
+      var FCOL = [MAT.warn, MAT.inChairBlue, MAT.inLed, MAT.inSofa,
+                  MAT.inDeskTop, MAT.inPlant, MAT.inCabPanel, MAT.inWood, MAT.inRug];
+      ibox(plan, 1.40, 0.05, 0.72, -HW + 1.45, 0.175, HD - 0.95, FCOL[f]);
+
+      if (f === 0) fLobby();
+      else if (f === 1) fOpenPlan();
+      else if (f === 2) fStandard();
+      else if (f === 3) fDept();
+      else if (f === 4) fMeeting();
+      else if (f === 5) fLab();
+      else if (f === 6) fDataCenter();
+      else if (f === 7) fLounge();
+      else fExec();
+
+      /* 【第27轮】抽屉抽出后这一层就是画面主体：让室内家具 / 隔墙投下阴影
          （ibox 默认 castShadow=false，平铺在地板上会显得像一张贴纸）。
-         跳过楼板本身（y≤0.2）—— 楼板与下层箱体顶面同标高，给它开投影会在边缘压出
-         一圈阴影瑕疵。同一时刻只有一层平面可见，且 shadowMap 是按需刷新，
-         静止时不重算 → 开销可控。 */
+         跳过楼板本身（y≤0.2）—— 楼板与下层箱体顶面同标高，开投影会在边缘压出阴影瑕疵。
+         同一时刻只有一层平面可见，且 shadowMap 按需刷新，静止时不重算 → 开销可控。 */
       plan.traverse(function (o) { if (o.isMesh && o.position.y > 0.2) o.castShadow = true; });
-    }
-
-    /* ---------- 主厂房室内平面（46 × 30：柱网 + 加工中心带 + 装配线 + 物流区）---------- */
+    }    /* ---------- 主厂房室内平面（46 × 30：柱网 + 加工中心带 + 装配线 + 物流区）---------- */
     function buildHallPlan(plan, w, d) {
       var W = w - 1.6, D = d - 1.6;
       var i, k;
@@ -4472,17 +4777,31 @@
     /* ---- 【第27轮】通用补间：k 从 0（收）到 1（展），apply(k) 负责把 k 写到物体上 ----
        为什么不复用 regLift：regLift 只管"沿 y 抬升一个标量"，而"抽屉"要同时改
        position.x 与 scale —— 硬塞进那个简单模型只会把它搞脏。 */
-    function regTween(apply) {
-      var t = { k: 0, target: 0, apply: apply };
+    function regTween(apply, rate) {
+      var t = { k: 0, target: 0, apply: apply, rate: rate || 4.6 };
       TWEENS.push(t);
       return t;
     }
+
+    /* ---- 【第28轮】"壳体升起后右移" ----
+       屋顶升起后沿**默认机位的屏幕右方向** (+x,-z)/√2 平移，把地面室内平面完整让出来。
+       为什么必须带 -z 分量：壳体抬高后挡住平面的，是它"朝相机那一侧"的投影 ——
+       只往 +x 平移（实测 40m）依旧挡；往 -z 让开才是真正解除遮挡的那一步。
+       平移量 × 抬升量按各建筑实测标定：俯视下壳体与室内平面完全不重叠，也不压邻近屋面。 */
+    function regShellDrift(sh, dx, dz, rate) {
+      sh.dr = regTween(function (k) {
+        sh.unit.g.position.x = dx * k;
+        sh.unit.g.position.z = dz * k;
+      }, rate || 3.4);
+      return sh.dr;
+    }
+
     function stepTweens(dt) {
       var moving = false;
       for (var i = 0; i < TWEENS.length; i++) {
         var t = TWEENS[i];
         if (t.k === t.target) continue;
-        t.k += (t.target - t.k) * Math.min(1, dt * 4.6);   // 略慢于升降，抽屉"抽出来"的手感更足
+        t.k += (t.target - t.k) * Math.min(1, dt * t.rate);   // 速率可调：抽屉 4.6（手感干脆）／壳体右移 3.4（更稳）
         if (Math.abs(t.target - t.k) < 0.0012) t.k = t.target;
         t.apply(t.k);
         moving = true;
@@ -4576,9 +4895,9 @@
     function hideTip() { showTip(''); }
 
     function hintOf(info) {
-      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层抽出放大）';
+      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层向右抽出 · 放大 2 倍）';
       var sh = SHELLS[info.bld];
-      return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + '，查看室内平面';
+      return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + ' 并向右移开，完整露出室内平面';
     }
 
     function collapseAll() {
@@ -4596,6 +4915,7 @@
       for (var k in SHELLS) {
         if (!SHELLS.hasOwnProperty(k)) continue;
         setLift(SHELLS[k].unit, 0);
+        if (SHELLS[k].dr) SHELLS[k].dr.target = 0;   // 第28轮：屋盖右移同步收回（走同一套补间，不瞬移）
         SHELLS[k].plan.visible = false;
       }
       pickState = null;
@@ -4620,17 +4940,24 @@
         setLift(OFFICE.top, LIFT_OFFICE);               // 顶部机房/女儿墙/光伏随之上移
         var cur = OFFICE.units[info.f];
         if (cur) {
-          if (!cur.built) { buildOfficePlan(cur.plan, OFFICE.w, OFFICE.d, info.f); cur.built = true; }
+          if (!cur.built) {
+            buildOfficePlan(cur.plan, OFFICE.w, OFFICE.d, info.f);
+            cur.built = true;
+            // 平面图是"点开才生成"的，生成时补一次拾取标记 —— 否则点在平面图内部收不起来
+            tagPick(cur.plan, { kind: 'floor', bld: 'office', f: info.f, key: info.key });
+          }
           cur.plan.visible = true;
         }
-        showTip((info.f + 1) + 'F　·　上层已升起，本层已抽出并放大　·　再次点击或点空白收回', true);
+        showTip((info.f + 1) + 'F ' + (cur && cur.name ? cur.name : '') +
+                '　·　已向右抽出 · 放大 2 倍 · 悬停展示　·　再次点击或点空白收回', true);
       } else {
         var sh = SHELLS[info.bld];
         if (!sh) return;
         setLift(sh.unit, sh.lift);
+        if (sh.dr) sh.dr.target = 1;                 // 第28轮：屋盖升起的同时向右移开
         if (!sh.built) { sh.build(sh.plan); sh.built = true; }
         sh.plan.visible = true;
-        showTip(sh.label + '　·　屋盖已升起，再次点击或点空白收起', true);
+        showTip(sh.label + '　·　屋盖已升起并向右侧移开，室内平面完整露出　·　再次点击或点空白收起', true);
       }
       pickState = { key: info.key };
     }
@@ -4703,6 +5030,21 @@
           tgt: controls ? [+controls.target.x.toFixed(3), +controls.target.y.toFixed(3), +controls.target.z.toFixed(3)] : null,
           rot: worldGroup ? +worldGroup.rotation.y.toFixed(6) : null,
           drawer: TWEENS.map(function (t) { return Math.round(t.k * 1000) / 1000; }),
+          drift: (function () {
+            var o = {};
+            for (var kk in SHELLS) {
+              if (SHELLS.hasOwnProperty(kk)) o[kk] = SHELLS[kk].dr ? Math.round(SHELLS[kk].dr.k * 1000) / 1000 : null;
+            }
+            return o;
+          })(),
+          plates: OFFICE ? OFFICE.units.map(function (u) {
+            return {
+              f: u.f,
+              x: Math.round(u.dg.position.x * 100) / 100,
+              y: Math.round(u.dg.position.y * 100) / 100,
+              s: Math.round(u.dg.scale.x * 1000) / 1000
+            };
+          }) : null,
           glow: CHARGE_GLOW.map(function (c) {
             return c ? +c.cap.emissiveIntensity.toFixed(3) : null;
           }),
@@ -5036,6 +5378,9 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
 
 
 
