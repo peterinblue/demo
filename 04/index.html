@@ -2566,7 +2566,7 @@
          ① 放大 2 倍（上一版 1.28 倍）→ 楼板 footprint 由 22.75×16.75 变 45.5×33.5m。
             园区里放不下这么大一块平地（办公楼以东唯一的大空区是 x[-27,38]×z[9,28.5]，
             63×19.5，进深只有 19.5m < 33.5m），所以抽出后**抬到展示标高悬停**
-            （DRAWER_CLEAR=16.5m，高于主厂房 13.8m 的屋面）——既不插进任何建筑，也不压马路。
+            （DRAWER_CLEAR=22m，高于主厂房 13.8m 的屋面）——既不插进任何建筑，也不压马路。
          ② 抽出距离 38m：放大后楼板西缘落在局部 x=15.25（世界 x=-22.75），
             距塔楼东立面（世界 x=-27）还有 4.25m 净距 —— 这一层与整栋楼彻底脱开、互不遮挡。
          ③ 三段式时序（本轮最容易踩的坑，不能省）：
@@ -2576,6 +2576,10 @@
             若三段同时进行，1F/2F 会在还没抬起来时就被放大成 33.5m 进深、直接穿过主厂房南墙。 */
       const DRAWER_OUT = 38, DRAWER_S = 1.0, DRAWER_CLEAR = 22;
       function ss(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
+      // 第29轮缓动：eio = ease-in-out-cubic（两头慢、中间快，比 smoothstep 更从容）；
+      // back = 末端轻微过冲回弹（放大到位时"弹"一下，动效更活）
+      function eio(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+      function back(t, s) { t = t < 0 ? 0 : (t > 1 ? 1 : t); s = s === undefined ? 1.0 : s; var u = t - 1; return 1 + (s + 1) * u * u * u + s * u * u; }
       const OFFICE_FLOORS = ['大堂·门厅', '开敞办公', '标准办公', '部门办公', '会议中心',
                              '研发实验室', '数据中心', '休闲办公', '高管层'];
 
@@ -2644,16 +2648,20 @@
 
         // 【第28轮】抽屉补间：向右抽出 → 抬到展示标高 → 放大 2 倍（三段式，见上方参数区注释）
         const dr = regTween(function (k) {
-          var xk = ss(k / 0.52);
-          var yk = ss((k - 0.40) / 0.34);
-          var sk = ss((k - 0.56) / 0.44);
+          // 【第29轮】放慢 + 美化：整体 3.0s 走完（原 rate 4.6 约 1s，太快、且起步就最快）
+          // 三段各用 ease-in-out-cubic（两头轻、中间稳），放大段末端带轻微过冲回弹；
+          // 起始还有一点极短的"蓄力"（先向 -x 让 0.45m 再滑出），让抽屉有起势、不是硬拽。
+          var xk = eio(k / 0.60);                       // ① 平移段 0 → 0.60（向右抽出）
+          var yk = eio((k - 0.46) / 0.36);              // ② 抬升段 0.46 → 0.82（抬到展示标高）
+          var sk = back((k - 0.64) / 0.36, 0.9);        // ③ 放大段 0.64 → 1.0（放大 2 倍，轻微回弹）
+          var wind = Math.sin(Math.min(1, k / 0.14) * Math.PI) * 0.45;   // 起势预备
           var dy = DRAWER_CLEAR - f * floorH;
-          dg.position.x = DRAWER_OUT * xk;
+          dg.position.x = DRAWER_OUT * xk - wind;
           dg.position.y = (dy > 0 ? dy : 0) * yk;
           var sc = 1 + DRAWER_S * sk;
           dg.scale.set(sc, sc, sc);
           if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
-        });
+        }, 2.2, { dur: 3.0 });
         dr.target = 0;
         units.push({ u: u, f: f, plan: plan, dg: dg, built: false, dr: dr,
                      name: OFFICE_FLOORS[f % OFFICE_FLOORS.length] });
@@ -3072,19 +3080,111 @@
       return w;
     }
 
-    // 棱台座舱：4 边 CylinderGeometry 转 45° = 矩形棱台（比方盒子更接近真实车身）。
-    // rb / rt = 底 / 顶相对半径；sx / sz 把正方形截面调成"车宽 × 舱长"。
-    function makeCabin(rb, rt, h, sx, sz) {
-      const geo = new THREE.CylinderGeometry(rt, rb, h, 4);
-      geo.rotateY(Math.PI / 4);
-      const m = new THREE.Mesh(geo, MAT.carGlass);
-      m.scale.set(sx, 1, sz);
-      m.castShadow = true;
+    /* ---- 【第29轮】车身重做：从"五个方块拼方盒"改为"侧剖面挤出 + 独立玻璃" ----
+       用一个真实的乘用车侧影（前保杠 → 机盖 → 前风挡 → 车顶 → 后风挡 → 尾箱 → 后保杠，
+       底部带两个**轮拱半圆**）作为 2D 剖面，沿车宽方向挤出并倒角，一次得到"有坡度、
+       有圆角、轮子嵌在拱里"的真车身；窗户另贴独立深色玻璃板（前风挡 / 后风挡 / 两侧窗带），
+       钣金与玻璃分开 —— 这是让它"一眼像车"的关键。
+       ★ 本段不新增任何 rnd() 调用，业务随机流序列与改造前逐一对齐。 */
+
+    // 车顶内收系数：腰线（belt）以下 = 1（不内收）；腰线以上按高度平方收窄，车顶约窄 16%
+    // —— 真车车顶明显窄于车身，不加这一道，挤出体就是一块"板砖"。
+    function tumbleAt(y, o) {
+      if (y <= o.belt) return 1;
+      var t = (y - o.belt) / Math.max(0.001, o.roof - o.belt);
+      if (t > 1) t = 1;
+      return 1 - 0.16 * t * t;
+    }
+
+    // 由车型参数生成侧剖面（Shape 在 XY 平面：x = 车长方向、y = 离地高度；随后旋转 + 挤出成体）
+    function carProfile(o) {
+      const s = new THREE.Shape();
+      const L2 = o.L / 2, c = o.c, ra = o.archR;
+      const nose = Math.max(o.belt - 0.17, c + 0.30);
+      const zcF = -o.axleZ, zcR = o.axleZ;
+      // —— 车头：底 → 前保杠 → 机盖前端
+      s.moveTo(-L2 + 0.06, c);
+      s.lineTo(-L2, c + 0.13);
+      s.lineTo(-L2 + 0.05, nose);
+      s.lineTo(o.hoodF, o.belt - 0.09);
+      // —— 机盖 → 前风挡 → 车顶 → 后风挡
+      s.lineTo(o.wb, o.belt);
+      s.lineTo(o.wt, o.roof);
+      s.lineTo(o.rr, o.roof);
+      s.lineTo(o.rb, o.belt);
+      // —— 车尾（皮卡带敞开货斗）
+      if (o.bed) {
+        s.lineTo(o.rb + 0.05, o.bed.top);
+        s.lineTo(o.bed.z1, o.bed.top);
+        s.lineTo(o.bed.z1 + 0.04, o.bed.top - 0.22);
+      } else {
+        s.lineTo(o.tailR, o.belt - 0.07);
+      }
+      s.lineTo(L2, c + 0.13);        // 后保杠上沿
+      s.lineTo(L2 - 0.06, c);        // 车尾底部
+      // —— 底部（右 → 左），带两个向上鼓起的轮拱
+      s.lineTo(zcR + ra, c);
+      s.absarc(zcR, c, ra, 0, Math.PI, false);
+      s.lineTo(zcF + ra, c);
+      s.absarc(zcF, c, ra, 0, Math.PI, false);
+      s.closePath();
+      return s;
+    }
+
+    // 侧剖面 → 车身实体（挤出方向 = 车宽，倒角让棱线圆润；r128 的 Extrude 沿 +Z 挤出，
+    // 这里旋转 90° 把挤出轴对到车宽 X 上，再平移居中）
+    function buildCarBody(o, bodyMat) {
+      const geo = new THREE.ExtrudeGeometry(carProfile(o), {
+        depth: o.W - 0.09, bevelEnabled: true, bevelThickness: 0.045,
+        bevelSize: 0.045, bevelSegments: 2, curveSegments: 8, steps: 1
+      });
+      geo.rotateY(-Math.PI / 2);
+      geo.translate(o.W / 2, 0, 0);
+      // 车顶内收：按高度把 X 收窄（腰线处出现一道自然棱线，正是真车的腰线）
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        if (y > o.belt) pos.setX(i, pos.getX(i) * tumbleAt(y, o));
+      }
+      pos.needsUpdate = true;
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, bodyMat);
+      m.castShadow = true; m.receiveShadow = true;
       return m;
     }
 
-    /* 通用件：底部包围 + 四轮 + 前后灯组 + 后视镜 + 充电口盖。
-       o = { L 车长, W 车宽, R 轮径, axleZ 轴距半长, trackX 轮距半宽, skirtH 包围高,
+    // 玻璃组：前风挡 / 后风挡 / 两侧窗带（深色板，骑在钣金表面、微凸出，避免共面闪烁）
+    function buildCarGlass(v, o) {
+      const W = o.W;
+      const dzF = o.wt - o.wb, dyF = o.roof - o.belt;
+      const lenF = Math.sqrt(dzF * dzF + dyF * dyF);
+      const gF = new THREE.Mesh(new THREE.BoxGeometry(W * 0.86 * tumbleAt(o.belt + dyF / 2, o), lenF * 0.99, 0.05), MAT.carGlass);
+      gF.position.set(0, o.belt + dyF / 2, o.wb + dzF / 2);
+      gF.rotation.x = Math.atan2(dzF, dyF);
+      v.add(gF);
+
+      const dzR = o.rb - o.rr, dyR = o.belt - o.roof;
+      const lenR = Math.sqrt(dzR * dzR + dyR * dyR);
+      if (lenR > 0.22) {
+        const gR = new THREE.Mesh(new THREE.BoxGeometry(W * 0.84 * tumbleAt(o.roof + dyR / 2, o), lenR * 0.96, 0.05), MAT.carGlass);
+        gR.position.set(0, o.roof + dyR / 2, o.rr + dzR / 2);
+        gR.rotation.x = Math.atan2(dzR, dyR);
+        v.add(gR);
+      }
+
+      const lS = (o.rr - o.wt) - 0.16, hS = (o.roof - o.belt) - 0.12;
+      if (lS > 0.35 && hS > 0.22) {
+        for (const sx of [1, -1]) {
+          const sw = new THREE.Mesh(new THREE.BoxGeometry(0.05, hS, lS), MAT.carGlass);
+          var sMid = o.belt + 0.06 + hS / 2;
+          sw.position.set(sx * (W / 2 * tumbleAt(sMid, o) + 0.010), sMid, (o.wt + o.rr) / 2);
+          v.add(sw);
+        }
+      }
+    }
+
+    /* 通用件：四轮 + 前后灯组 + 后视镜 + 充电口盖。
+       o = { L 车长, W 车宽, R 轮径, axleZ 轴距半长, trackX 轮距半宽, skirtH 包围高(0=不加),
              lightY 灯高, lightH 灯厚, portY 充电口高, portZ 充电口纵向位置,
              mirrorY / mirrorZ 后视镜（省略则不装） }
        并把充电口坐标写进 v.userData.port —— 充电枪线缆落点由它反算，
@@ -3092,10 +3192,13 @@
     function carCommon(v, o) {
       const halfL = o.L / 2, halfW = o.W / 2;
 
-      const skirt = new THREE.Mesh(new THREE.BoxGeometry(o.W + 0.04, o.skirtH, o.L - 0.10), MAT.carTrim);
-      skirt.position.y = o.R + o.skirtH * 0.34;
-      skirt.castShadow = true;
-      v.add(skirt);
+      // 上一版这里有一圈"底部包围"方盒；新车身剖面已自带下缘与轮拱，不再需要（skirtH≤0 时跳过）
+      if (o.skirtH > 0.02) {
+        const skirt = new THREE.Mesh(new THREE.BoxGeometry(o.W + 0.04, o.skirtH, o.L - 0.10), MAT.carTrim);
+        skirt.position.y = o.R + o.skirtH * 0.34;
+        skirt.castShadow = true;
+        v.add(skirt);
+      }
 
       for (const wx of [-1, 1]) {
         for (const wz of [-1, 1]) {
@@ -3105,12 +3208,13 @@
         }
       }
 
+      // 灯组：车身剖面带倒角，前/后极面略在 ±L/2 之外，灯往前探一点才露得出来
       for (const s of [1, -1]) {
-        const hl = new THREE.Mesh(new THREE.BoxGeometry(o.W * 0.24, o.lightH, 0.10), MAT.headLight);
-        hl.position.set(s * halfW * 0.60, o.lightY, -halfL + 0.03);
+        const hl = new THREE.Mesh(new THREE.BoxGeometry(o.W * 0.26, o.lightH, 0.12), MAT.headLight);
+        hl.position.set(s * halfW * 0.60, o.lightY, -halfL - 0.03);
         v.add(hl);
-        const tl = new THREE.Mesh(new THREE.BoxGeometry(o.W * 0.22, o.lightH, 0.10), MAT.tailLight);
-        tl.position.set(s * halfW * 0.62, o.lightY, halfL - 0.03);
+        const tl = new THREE.Mesh(new THREE.BoxGeometry(o.W * 0.24, o.lightH, 0.12), MAT.tailLight);
+        tl.position.set(s * halfW * 0.62, o.lightY, halfL + 0.03);
         v.add(tl);
       }
 
@@ -3132,151 +3236,107 @@
       return v;
     }
 
-    /* 通用乘用车装配：把"底盘 → 车身 → 引擎盖 → 座舱 → 车顶"这条链按 spec 摆出来。
-       所有纵向标高都从轮径 R 与腰线推出来，不写死绝对高度 ——
-       换比例（比如把轿车拉成厢货）不会出现"座舱悬空 / 沉进车身"。 */
+    /* 通用乘用车装配：剖面车身 + 玻璃 + 细节（保杠下唇 / 进气格栅 / 腰线饰条 / 轮拱内衬 /
+       皮卡斗底），再交由 carCommon 装轮子、车灯、后视镜与充电口。
+       所有标高都写进车型参数表（绝对离地高度），不再像旧版那样从轮径层层反推 ——
+       换比例不会出现"座舱悬空 / 沉进车身"。 */
     function makeCarType(s, bodyMat) {
       const v = new THREE.Group();
-      const L = s.L, W = s.W, y0 = s.R;
-      const beltY = s.bodyY + s.bodyH / 2;                    // 腰线（相对轮心面）
+      const L = s.L, W = s.W;
       const portZ = L / 2 - (s.portBack === undefined ? 0.45 : s.portBack);
+      const fh = s.fasciaH || 0.26;
+
+      v.add(buildCarBody(s, bodyMat));
+      buildCarGlass(v, s);
+
+      // 前后保杠下唇（深色）
+      for (const zz of [-1, 1]) {
+        const fas = new THREE.Mesh(new THREE.BoxGeometry(W * 0.985, fh, 0.30), MAT.carTrim);
+        fas.position.set(0, s.c + fh / 2 + 0.01, zz * (L / 2 - 0.14));
+        fas.castShadow = true;
+        v.add(fas);
+      }
+      // 进气格栅（车头，深色）
+      const grille = new THREE.Mesh(new THREE.BoxGeometry(W * 0.58, 0.18, 0.08), MAT.carTrim);
+      grille.position.set(0, s.belt - 0.30, -L / 2 - 0.02);
+      v.add(grille);
+      // 腰线饰条（两侧窗台线）
+      for (const sx of [1, -1]) {
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, Math.max(0.6, (s.rb - s.wb) * 0.96)), MAT.alu);
+        trim.position.set(sx * (W / 2 - 0.006), s.belt - 0.01, (s.wb + s.rb) / 2 - 0.05);
+        v.add(trim);
+      }
+      // 轮拱内衬（深色，堵住轮拱隧道的透视）
+      for (const zz of [-1, 1]) {
+        const well = new THREE.Mesh(new THREE.BoxGeometry(W * 0.80, s.archR * 1.15, s.archR * 1.7), MAT.carTrim);
+        well.position.set(0, s.c + s.archR * 0.42, zz * s.axleZ);
+        v.add(well);
+      }
+      // 皮卡：敞开货斗的斗底（深色板，露在斗沿之下）
+      if (s.bed) {
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(W - 0.30, 0.06, (s.bed.z1 - s.bed.z0) - 0.16), MAT.carTrim);
+        deck.position.set(0, s.bed.top - 0.14, (s.bed.z0 + s.bed.z1) / 2);
+        v.add(deck);
+      }
 
       carCommon(v, {
-        L: L, W: W, R: s.R, axleZ: s.axleZ, trackX: s.trackX, skirtH: s.skirtH,
-        lightY: y0 + s.lightY, lightH: s.lightH, portY: y0 + s.portY, portZ: portZ,
-        mirrorY: s.mirrorY ? y0 + s.mirrorY : 0, mirrorZ: s.mirrorZ
+        L: L, W: W, R: s.R, axleZ: s.axleZ, trackX: s.trackX, skirtH: 0,
+        lightY: s.lightY, lightH: s.lightH, portY: s.portY, portZ: portZ,
+        mirrorY: s.mirrorY || 0, mirrorZ: s.mirrorZ || 0
       });
-
-      // 主车身
-      const body = new THREE.Mesh(new THREE.BoxGeometry(W, s.bodyH, s.bodyL), bodyMat);
-      body.position.set(0, y0 + s.bodyY, s.bodyZ || 0);
-      body.castShadow = true; body.receiveShadow = true;
-      v.add(body);
-
-      // 引擎盖：顶面比腰线高 6cm，做出机盖肩线（否则车头就是一块砖）
-      if (s.hood) {
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(W - 0.12, s.hood.h, s.hood.l), bodyMat);
-        hood.position.set(0, y0 + beltY + 0.06 - s.hood.h / 2, s.hood.z);
-        hood.castShadow = true;
-        v.add(hood);
-      }
-      // 行李厢盖 / 尾门（三厢车尾）
-      if (s.boot) {
-        const boot = new THREE.Mesh(new THREE.BoxGeometry(W - 0.12, s.boot.h, s.boot.l), bodyMat);
-        boot.position.set(0, y0 + beltY + 0.04 - s.boot.h / 2, s.boot.z);
-        boot.castShadow = true;
-        v.add(boot);
-      }
-
-      // 敞开货斗（皮卡）：矮一档的后箱 + 两侧斗壁 + 尾门 + 深色斗底
-      if (s.bed) {
-        const bodyBotY = s.bodyY - s.bodyH / 2;
-        const bedTopY = beltY - (s.bed.drop === undefined ? 0.34 : s.bed.drop);
-        const baseH = Math.max(0.20, bedTopY - bodyBotY);
-        const base = new THREE.Mesh(new THREE.BoxGeometry(W, baseH, s.bed.l), bodyMat);
-        base.position.set(0, y0 + bodyBotY + baseH / 2, s.bed.z);
-        base.castShadow = true; base.receiveShadow = true;
-        v.add(base);
-
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(W - 0.26, 0.08, s.bed.l - 0.20), MAT.carTrim);
-        deck.position.set(0, y0 + bedTopY + 0.04, s.bed.z);
-        v.add(deck);
-        for (const sx of [-1, 1]) {
-          const wall = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.30, s.bed.l), bodyMat);
-          wall.position.set(sx * (W / 2 - 0.09), y0 + bedTopY + 0.19, s.bed.z);
-          wall.castShadow = true;
-          v.add(wall);
-        }
-        const gate = new THREE.Mesh(new THREE.BoxGeometry(W - 0.16, 0.34, 0.14), bodyMat);
-        gate.position.set(0, y0 + bedTopY + 0.21, s.bed.z + s.bed.l / 2 - 0.07);
-        gate.castShadow = true;
-        v.add(gate);
-      }
-
-      // 座舱（棱台玻璃）：底边坐进车身 0.18m，避免玻璃与车身侧面共面闪烁
-      if (s.cabin) {
-        const cabY = beltY - 0.18 + s.cabin.h / 2;
-        const cabin = makeCabin(1.0, s.cabin.top, s.cabin.h, W * 0.94 * CABIN_K, s.cabin.l * CABIN_K);
-        cabin.position.set(0, y0 + cabY, s.cabin.z);
-        v.add(cabin);
-
-        const roofY = cabY + s.cabin.h / 2 + 0.05;
-        const roofW = W * 0.94 * s.cabin.top - 0.07;
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.10, s.roof.l), bodyMat);
-        roof.position.set(0, y0 + roofY, s.cabin.z);
-        roof.castShadow = true;
-        v.add(roof);
-
-        if (s.rails) {                       // 车顶行李架：SUV / MPV 的辨识特征
-          for (const sx of [-1, 1]) {
-            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.08, s.roof.l - 0.24), MAT.carTrim);
-            rail.position.set(sx * roofW * 0.40, y0 + roofY + 0.09, s.cabin.z);
-            rail.castShadow = true;
-            v.add(rail);
-          }
-        }
-      }
-
-      // 环窗带（厢式面包车 / 厢货）：一圈玻璃带比"棱台座舱"更像厢体车
-      if (s.band) {
-        const band = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, s.band.h, s.band.l), MAT.carGlass);
-        band.position.set(0, y0 + s.band.y, s.band.z);
-        v.add(band);
-      }
       return v;
     }
 
-    /* 车型参数表。坐标约定沿用改造前：车头朝 -z、车尾朝 +z。
-       y 均为"路面之上的绝对高度"；portBack = 充电口距车尾的距离。 */
+    /* 车型参数表【第29轮重写】。坐标约定沿用改造前：车头朝 -z、车尾朝 +z。
+       数值均为"路面之上的绝对高度"。剖面关键点：
+         c 离地间隙（底边基线） / belt 腰线（机盖·尾箱顶面） / roof 车顶
+         hoodF 机盖前端 z / wb 前风挡根部 z / wt 前风挡顶（车顶前缘）z
+         rr 车顶后缘 z / rb 后风挡底 z / tailR 尾箱后缘 z
+         archR 轮拱半径（≈轮径 + 0.12） / bed 皮卡货斗 {z0,z1,top}
+         lightY/lightH 灯高·灯厚 / portY·portBack 充电口 / mirrorY·mirrorZ 后视镜 */
     var VEH = {
-      // 两厢小车：最短最矮、小轮
-      hatch: { L: 4.05, W: 1.94, R: 0.33, axleZ: 1.28, trackX: 0.93, skirtH: 0.26,
-               bodyL: 3.90, bodyH: 0.80, bodyY: 0.47,
-               hood: { h: 0.26, l: 0.84, z: -1.42 }, boot: { h: 0.22, l: 0.26, z: 1.70 },
-               cabin: { l: 2.35, h: 0.64, z: 0.20, top: 0.80 }, roof: { l: 1.62 },
-               lightY: 0.50, lightH: 0.15, portY: 0.56, portBack: 0.42,
-               mirrorY: 0.99, mirrorZ: -0.72 },
+      // 两厢小车：最短最矮、小轮、尾门近垂直
+      hatch: { L: 4.05, W: 1.94, R: 0.33, axleZ: 1.28, trackX: 0.93, archR: 0.44,
+               c: 0.17, belt: 0.82, roof: 1.42,
+               hoodF: -1.82, wb: -1.14, wt: -0.22, rr: 0.92, rb: 1.62, tailR: 1.96,
+               lightY: 0.58, lightH: 0.15, portY: 0.62, portBack: 0.44,
+               mirrorY: 1.00, mirrorZ: -0.66, fasciaH: 0.24 },
 
-      // 三厢轿车：基准车型（体积与改造前那款基本一致，只是补了行李厢与后视镜）
-      sedan: { L: 4.60, W: 2.05, R: 0.35, axleZ: 1.45, trackX: 0.98, skirtH: 0.30,
-               bodyL: 4.40, bodyH: 0.86, bodyY: 0.49,
-               hood: { h: 0.30, l: 1.16, z: -1.62 }, boot: { h: 0.26, l: 1.00, z: 1.64 },
-               cabin: { l: 2.55, h: 0.72, z: 0.10, top: 0.86 }, roof: { l: 1.54 },
-               lightY: 0.60, lightH: 0.16, portY: 0.64, portBack: 0.62,
-               mirrorY: 1.16, mirrorZ: -0.78 },
+      // 三厢轿车：基准车型
+      sedan: { L: 4.60, W: 2.05, R: 0.35, axleZ: 1.45, trackX: 0.98, archR: 0.47,
+               c: 0.18, belt: 0.86, roof: 1.46,
+               hoodF: -2.10, wb: -1.32, wt: -0.34, rr: 1.02, rb: 1.82, tailR: 2.26,
+               lightY: 0.62, lightH: 0.15, portY: 0.66, portBack: 0.62,
+               mirrorY: 1.06, mirrorZ: -0.80, fasciaH: 0.26 },
 
       // 城市 SUV：高车身 + 大轮 + 行李架
-      suv:   { L: 4.85, W: 2.14, R: 0.43, axleZ: 1.50, trackX: 1.02, skirtH: 0.38,
-               bodyL: 4.70, bodyH: 1.04, bodyY: 0.56,
-               hood: { h: 0.30, l: 1.02, z: -1.78 }, boot: { h: 0.26, l: 0.46, z: 2.02 },
-               cabin: { l: 2.62, h: 0.80, z: 0.28, top: 0.88 }, roof: { l: 1.94 }, rails: true,
-               lightY: 0.80, lightH: 0.19, portY: 0.86, portBack: 0.72,
-               mirrorY: 1.34, mirrorZ: -0.96 },
+      suv:   { L: 4.85, W: 2.14, R: 0.43, axleZ: 1.50, trackX: 1.02, archR: 0.55,
+               c: 0.24, belt: 1.06, roof: 1.76,
+               hoodF: -2.20, wb: -1.42, wt: -0.42, rr: 1.22, rb: 1.98, tailR: 2.36,
+               lightY: 0.82, lightH: 0.18, portY: 0.88, portBack: 0.72,
+               mirrorY: 1.30, mirrorZ: -0.92, fasciaH: 0.30, rails: true },
 
-      // MPV 商务车：一厢式，舱长
-      mpv:   { L: 5.10, W: 2.10, R: 0.38, axleZ: 1.60, trackX: 1.00, skirtH: 0.30,
-               bodyL: 4.95, bodyH: 1.14, bodyY: 0.52,
-               hood: { h: 0.28, l: 0.92, z: -2.00 }, boot: { h: 0.26, l: 0.38, z: 2.24 },
-               cabin: { l: 3.28, h: 0.78, z: 0.32, top: 0.90 }, roof: { l: 2.72 }, rails: true,
-               lightY: 0.78, lightH: 0.18, portY: 0.84, portBack: 0.76,
-               mirrorY: 1.34, mirrorZ: -1.12 },
+      // MPV 商务车：一厢式、长舱长顶
+      mpv:   { L: 5.10, W: 2.10, R: 0.38, axleZ: 1.60, trackX: 1.00, archR: 0.49,
+               c: 0.20, belt: 1.04, roof: 1.80,
+               hoodF: -2.30, wb: -1.72, wt: -0.78, rr: 1.52, rb: 2.24, tailR: 2.50,
+               lightY: 0.80, lightH: 0.17, portY: 0.86, portBack: 0.76,
+               mirrorY: 1.28, mirrorZ: -1.04, fasciaH: 0.26, rails: true },
 
       // 皮卡：驾驶室 + 敞开货斗，最大轮径
-      pickup: { L: 5.35, W: 2.10, R: 0.45, axleZ: 1.72, trackX: 1.02, skirtH: 0.40,
-                bodyL: 2.95, bodyZ: -1.20, bodyH: 0.96, bodyY: 0.60,
-                hood: { h: 0.28, l: 1.08, z: -2.06 },
-                bed: { l: 2.20, z: 1.50, drop: 0.36 },
-                cabin: { l: 1.85, h: 0.74, z: -0.66, top: 0.84 }, roof: { l: 1.40 },
-                lightY: 0.78, lightH: 0.19, portY: 0.82, portBack: 0.50,
-                mirrorY: 1.30, mirrorZ: -1.52 },
+      pickup: { L: 5.35, W: 2.10, R: 0.45, axleZ: 1.72, trackX: 1.02, archR: 0.57,
+                c: 0.28, belt: 1.04, roof: 1.78,
+                hoodF: -2.40, wb: -1.72, wt: -0.92, rr: -0.28, rb: 0.30,
+                bed: { z0: 0.38, z1: 2.56, top: 0.72 },
+                lightY: 0.82, lightH: 0.18, portY: 0.86, portBack: 0.52,
+                mirrorY: 1.30, mirrorZ: -1.44, fasciaH: 0.32 },
 
-      // 厢式面包车：通体货厢 + 环窗带，最高
-      van:   { L: 5.00, W: 2.06, R: 0.37, axleZ: 1.55, trackX: 0.98, skirtH: 0.28,
-               bodyL: 4.85, bodyH: 1.78, bodyY: 0.95,
-               hood: { h: 0.26, l: 0.62, z: -2.16 },
-               band: { h: 0.52, l: 3.10, z: -0.55 },
-               lightY: 0.72, lightH: 0.18, portY: 0.80, portBack: 0.62,
-               mirrorY: 1.42, mirrorZ: -1.62 }
+      // 厢式面包车：通体货厢、长窗带、最高
+      van:   { L: 5.00, W: 2.06, R: 0.37, axleZ: 1.55, trackX: 0.98, archR: 0.48,
+               c: 0.20, belt: 1.10, roof: 2.00,
+               hoodF: -2.26, wb: -2.02, wt: -1.52, rr: 1.88, rb: 2.32, tailR: 2.46,
+               lightY: 0.76, lightH: 0.18, portY: 0.84, portBack: 0.62,
+               mirrorY: 1.34, mirrorZ: -1.52, fasciaH: 0.26 }
     };
 
     // 车型分发（未知型号退回三厢轿车）
@@ -4777,8 +4837,14 @@
     /* ---- 【第27轮】通用补间：k 从 0（收）到 1（展），apply(k) 负责把 k 写到物体上 ----
        为什么不复用 regLift：regLift 只管"沿 y 抬升一个标量"，而"抽屉"要同时改
        position.x 与 scale —— 硬塞进那个简单模型只会把它搞脏。 */
-    function regTween(apply, rate) {
-      var t = { k: 0, target: 0, apply: apply, rate: rate || 4.6 };
+    function regTween(apply, rate, opts) {
+      opts = opts || {};
+      // 两种驱动方式：
+      //   rate 模式（默认）—— 指数逼近，起步最快，适合"干脆利落"的壳体右移；
+      //   dur 模式（第29轮新增）—— 按固定时长 dur 线性推进 k，起步可做出"由慢到快"的从容感，
+      //   用于楼层抽屉（原来 rate 4.6 约 1s 就冲到位，太快）。
+      var t = { k: 0, target: 0, apply: apply, rate: rate || 4.6,
+                dur: opts.dur || 0, from: 0, el: 0, _lt: 0 };
       TWEENS.push(t);
       return t;
     }
@@ -4801,8 +4867,17 @@
       for (var i = 0; i < TWEENS.length; i++) {
         var t = TWEENS[i];
         if (t.k === t.target) continue;
-        t.k += (t.target - t.k) * Math.min(1, dt * t.rate);   // 速率可调：抽屉 4.6（手感干脆）／壳体右移 3.4（更稳）
-        if (Math.abs(t.target - t.k) < 0.0012) t.k = t.target;
+        if (t.dur > 0) {
+          // 时间驱动：目标一变就从头计时，k 沿 from→target 线性推进（缓动由 apply 内部负责）
+          if (t._lt !== t.target) { t.from = t.k; t.el = 0; t._lt = t.target; }
+          t.el += dt;
+          var p = t.el / t.dur; if (p > 1) p = 1;
+          t.k = t.from + (t.target - t.from) * p;
+          if (p >= 1) { t.k = t.target; t.el = 0; }
+        } else {
+          t.k += (t.target - t.k) * Math.min(1, dt * t.rate);   // 速率可调：壳体右移 3.4（更稳）
+          if (Math.abs(t.target - t.k) < 0.0012) t.k = t.target;
+        }
         t.apply(t.k);
         moving = true;
       }
@@ -4832,7 +4907,7 @@
       for (var i = 0; i < LIFT_UNITS.length; i++) {
         var u = LIFT_UNITS[i];
         if (u.cur === u.target) continue;
-        u.cur += (u.target - u.cur) * Math.min(1, dt * 6.0);
+        u.cur += (u.target - u.cur) * Math.min(1, dt * 3.2);   // 第29轮：6.0→3.2，与放慢后的抽屉同步
         if (Math.abs(u.target - u.cur) < 0.003) u.cur = u.target;
         u.g.position.y = u.cur;
         moving = true;
@@ -5378,6 +5453,8 @@
     // 初始化
     initTheme();
     init3D();
+
+
 
 
 
