@@ -2941,8 +2941,23 @@
             配 41 才保得住净距）。终态楼板西缘 = 局部 x 41 − 25.03 = 15.97（世界 x = -22.03），
             距塔楼东立面（世界 x = -27）**4.97m**，与上一版的 4.56m 基本持平：
             改小是为了"看着舒服"，不是要把楼贴回塔楼。
-         ③ 展示标高 17m 与"可升可降"逻辑**原样保留**（见上）。 */
-      const DRAWER_OUT = 41, DRAWER_S = 1.2, DRAWER_CLEAR = 17;
+         ③ 展示标高 17m 与"可升可降"逻辑**原样保留**（见上）。
+
+         【第33轮】"定在 2 倍 + 底座压薄"：
+         ① 放大倍数 2.2 → **2.0 倍**：footprint 50.1×36.9 → **45.5×33.5m**。
+            2.0 倍是"室内隔断 / 工位 / 家具照样看得清"的稳妥档，也是这轮定下来的终值。
+         ② 抽出距离 41 → **38.7m**：这一改唯一的目的就是**把净距钉死不变**。最宽构件是腰线，
+            半宽 = (22 + 0.75) × 2.0 / 2 = 22.75；终态西缘 = 局部 x 38.7 − 22.75 = 15.95
+            （世界 x = -22.05），距塔楼东立面（世界 x = -27）**4.95m** ——
+            与 2.2 倍版的 4.97m 只差 2cm，等于没动：变的是占地，不是间距。
+         ③ **底座压薄（第33轮新增，本次重点）**：原来抽出件是"整层高 3.4m 的楼板 + 四面幕墙"
+            一起被放大 —— 2.2 倍时底座厚达 7.5m，侧看就是个玻璃盒子，比平面图本身还抢眼。
+            现在把"楼板 + 幕墙 + 腰线"统一收进子组 sbase，抽出到位时只压 **sbase.scale.y**
+            → DRAWER_BASE(=0.16)：底座厚 = 3.4 × 0.16 = 0.54（局部）→ **1.09m**（2.0 倍下），
+            平面图 plan 同步降到压扁后的板面上。抽出件 = "一块薄板顶着一张平面图"。
+            ys 与放大段共用同一个 sk 驱动 → 未抽出时 sbase.scale.y ≡ 1，几何零变化。
+         ④ 展示标高 17m、三段式时序（平移→定位→放大）、"可升可降"逻辑**原样保留**。 */
+      const DRAWER_OUT = 38.7, DRAWER_S = 1.0, DRAWER_CLEAR = 17, DRAWER_BASE = 0.16;
       function ss(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
       // 第29轮缓动：eio = ease-in-out-cubic（两头慢、中间快，比 smoothstep 更从容）；
       // back = 末端轻微过冲回弹（放大到位时"弹"一下，动效更活）
@@ -2959,21 +2974,33 @@
 
       const units = [];
 
-      /* 两级分组（第28轮）：
-           fl —— 抬升单元，只由 regLift 写 position.y（"被点中的楼层以上的各层升起"）
-           dg —— 抽屉单元，只由 regTween 写 position.x / position.y / scale（抽出 + 抬高 + 放大）
-         两者各写各自的属性、互不覆盖；上一版把抽屉的 y 也写在 fl 上，会和抬升互相打架。 */
+      /* 三级分组（第28轮立骨架，第33轮补第三级）：
+           fl   —— 抬升单元，只由 regLift 写 position.y（"被点中的楼层以上的各层升起"）
+           dg   —— 抽屉单元，只由 regTween 写 position.x / position.y / scale（抽出 + 抬高 + 放大）
+           sbase—— 【第33轮】底座单元（楼板 + 幕墙 + 腰线），只由 regTween 写 scale.y（压薄底座）
+         各级各写各自的属性、互不覆盖；上一版把抽屉的 y 也写在 fl 上，会和抬升互相打架。
+         plan 挂在 dg 上（**不跟 sbase 一起被压扁**），只由 regTween 写它的 position.y，
+         落在压扁后的板面上。 */
       for (let f = 0; f < floors; f++) {
         const fl = new THREE.Group();
         fl.position.y = f * floorH;
         const dg = new THREE.Group();
         fl.add(dg);
 
+        /* 【第33轮】底座子组 sbase：楼板 / 幕墙 / 腰线全挂这里，平面图 plan 仍挂 dg。
+           抽出到位时只压扁 sbase.scale.y（→ DRAWER_BASE），plan 不进这组、只把 y 降到
+           "压扁后的板面"上 —— 于是抽出件是一块薄板顶着一张平面图，而不是连整层高（3.4m）
+           一起被放大成 7m 厚的玻璃盒子（用户原话："底部不要很厚"）。
+           未抽出时 sbase.scale.y 恒为 1，就是个 identity 组：矩阵相乘不引入任何浮点变化，
+           未点击状态与改动前逐像素一致（由 fair33 的像素比对兜底）。 */
+        const sbase = new THREE.Group();
+        dg.add(sbase);
+
         // 层实体（混凝土）
         const core = new THREE.Mesh(new THREE.BoxGeometry(w, floorH, d), MAT.concrete);
         core.position.y = floorH / 2;
         core.castShadow = true; core.receiveShadow = true;
-        dg.add(core);
+        sbase.add(core);
 
         // 四面幕墙（该层，贴图玻璃分格）—— 与原"通高一片"逐像素等价：
         // 原版是一片 BoxGeometry(w+0.30, h-1.2, 0.18)、中心 y=h/2 → 竖直覆盖 [0.6, 30.0]，
@@ -2989,10 +3016,10 @@
           for (const s of [1, -1]) {
             const f1 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(w + 0.30, fyh, 0.18), v0, v1), fMat);
             f1.position.set(0, fcy, s * (d / 2 + 0.16));
-            dg.add(f1);
+            sbase.add(f1);
             const f2 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(0.18, fyh, d + 0.30), v0, v1), fMat);
             f2.position.set(s * (w / 2 + 0.16), fcy, 0);
-            dg.add(f2);
+            sbase.add(f2);
           }
         }
 
@@ -3002,36 +3029,44 @@
           const band = new THREE.Mesh(new THREE.BoxGeometry(w + 0.75, 0.44, d + 0.75), MAT.alu);
           band.position.y = 0;
           band.castShadow = true;
-          dg.add(band);
+          sbase.add(band);
         }
 
-        // 该层平面图（站在抽屉组顶面上；懒生成 + 默认隐藏）
+        // 该层平面图（【第33轮】站在"压扁后的底座板面"上；懒生成 + 默认隐藏）
+        // 注意：plan 挂在 dg 而**不是** sbase —— 它不该跟着底座一起被压扁。
         const plan = new THREE.Group();
-        plan.position.y = floorH;
+        plan.position.y = floorH;              // = floorH × 1（底座未压扁时的板面高度）
         plan.visible = false;
         dg.add(plan);
 
         tagPick(fl, { kind: 'floor', bld: 'office', f: f, key: 'office|' + f });
         const u = regLift(fl);
 
-        // 【第28轮】抽屉补间：向右抽出 → 垂直定位到统一展示标高 → 放大 2.2 倍（三段式，见上方参数区注释）
+        // 【第28轮】抽屉补间：向右抽出 → 垂直定位到统一展示标高 → 放大 2.0 倍（三段式，见上方参数区注释）
         const dr = regTween(function (k) {
           // 【第29轮】放慢 + 美化：整体 3.0s 走完（原 rate 4.6 约 1s，太快、且起步就最快）
           // 三段各用 ease-in-out-cubic（两头轻、中间稳），放大段末端带轻微过冲回弹；
           // 起始还有一点极短的"蓄力"（先向 -x 让 0.45m 再滑出），让抽屉有起势、不是硬拽。
           var xk = eio(k / 0.60);                       // ① 平移段 0 → 0.60（向右抽出）
           var yk = eio((k - 0.46) / 0.36);              // ② 垂直段 0.46 → 0.82（升/降到统一展示标高）
-          var sk = back((k - 0.64) / 0.36, 0.9);        // ③ 放大段 0.64 → 1.0（放大 2.2 倍，轻微回弹）
+          var sk = back((k - 0.64) / 0.36, 0.9);        // ③ 放大段 0.64 → 1.0（放大 2.0 倍，轻微回弹）
           var wind = Math.sin(Math.min(1, k / 0.14) * Math.PI) * 0.45;   // 起势预备
           var dy = DRAWER_CLEAR - f * floorH;
           dg.position.x = DRAWER_OUT * xk - wind;
           dg.position.y = dy * yk;   // 【第31轮】不再夹到 0：6F 以上也一起降到 17m 展示标高，各层悬停高度统一
           var sc = 1 + DRAWER_S * sk;
           dg.scale.set(sc, sc, sc);
+          // 【第33轮】底座压薄：只动 sbase.scale.y（楼板 + 幕墙 + 腰线一起收薄），
+          // 平面图同步降到压扁后的板面。ys 与放大段共用同一个 sk 驱动 ——
+          // sk=0（未抽出）时 ys=1，sbase 就是 identity，几何与改动前完全一致；
+          // sk 末端有轻微过冲，于是底座会"多压一点再弹回来"，顺手带出一点回弹手感。
+          var ys = 1 - (1 - DRAWER_BASE) * sk;
+          sbase.scale.y = ys;
+          plan.position.y = floorH * ys;
           if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
         }, 2.2, { dur: 3.0 });
         dr.target = 0;
-        units.push({ u: u, f: f, plan: plan, dg: dg, built: false, dr: dr,
+        units.push({ u: u, f: f, plan: plan, dg: dg, sbase: sbase, built: false, dr: dr,
                      name: OFFICE_FLOORS[f % OFFICE_FLOORS.length] });
         g.add(fl);
       }
@@ -5342,7 +5377,7 @@
     function hideTip() { showTip(''); }
 
     function hintOf(info) {
-      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层向右抽出 · 放大 2.2 倍）';
+      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层向右抽出 · 放大 2.0 倍）';
       var sh = SHELLS[info.bld];
       return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + ' 并向右移开，完整露出室内平面';
     }
@@ -5398,7 +5433,7 @@
         }
         showAreaPanel('office', info.f);          // 第30轮：右侧信息面板（位置 + 用能 + 趋势）
         showTip((info.f + 1) + 'F ' + (cur && cur.name ? cur.name : '') +
-                '　·　已向右抽出 · 放大 2.2 倍 · 悬停展示　·　再次点击或点空白收回', true);
+                '　·　已向右抽出 · 放大 2.0 倍 · 悬停展示　·　再次点击或点空白收回', true);
       } else {
         var sh = SHELLS[info.bld];
         if (!sh) return;
@@ -5495,7 +5530,11 @@
               f: u.f,
               x: Math.round(u.dg.position.x * 100) / 100,
               y: Math.round(u.dg.position.y * 100) / 100,
-              s: Math.round(u.dg.scale.x * 1000) / 1000
+              s: Math.round(u.dg.scale.x * 1000) / 1000,
+              // 【第33轮】底座压薄的两个观测量：sbase.scale.y（压扁比例，未抽出=1、到位=0.16）
+              // 与 plan.position.y（平面图落在压扁后的板面上，= floorH × sy）。纯调试用。
+              sy: Math.round(u.sbase.scale.y * 1000) / 1000,
+              py: Math.round(u.plan.position.y * 1000) / 1000
             };
           }) : null,
           glow: CHARGE_GLOW.map(function (c) {
@@ -6405,6 +6444,8 @@
     // 初始化
     initTheme();
     init3D();
+
+
 
 
 
