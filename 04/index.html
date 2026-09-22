@@ -574,6 +574,337 @@
       .scene-hint { bottom: 150px; font-size: 0.55rem; }
     }
 
+    /* ============ 区域信息面板（点击办公楼楼层 / 厂房时出现在屏幕右侧） ============ */
+    /* 配色全部走 --ap-* 变量：默认=傍晚(dark)，body.light / body.black 各覆盖一套，
+       因此面板外壳随三套昼夜主题自动换肤，无需 JS 参与。 */
+    .area-panel {
+      --ap-bg: rgba(18, 58, 104, 0.74);
+      --ap-bd: rgba(95, 208, 255, 0.35);
+      --ap-fg: #ffffff;
+      --ap-dim: rgba(255, 255, 255, 0.58);
+      --ap-dim2: rgba(255, 255, 255, 0.44);
+      --ap-card: rgba(95, 208, 255, 0.07);
+      --ap-card-bd: rgba(95, 208, 255, 0.16);
+      --ap-rule: rgba(255, 255, 255, 0.10);
+      --ap-head: linear-gradient(135deg, rgba(95, 208, 255, 0.15), rgba(95, 208, 255, 0.02) 62%);
+      --ap-day: #4cc9ff;
+      --ap-mon: #2f8fff;
+      --ap-year: #00ff9d;
+      --ap-up: #ffcc00;
+      --ap-down: #00ff9d;
+      --ap-shadow: 0 18px 46px rgba(0, 0, 0, 0.45), inset 0 0 40px rgba(76, 201, 255, 0.05);
+
+      position: absolute;
+      right: 16px;
+      top: 92px;
+      width: 344px;
+      max-height: calc(100vh - 190px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 17;
+      border-radius: 10px;
+      background: var(--ap-bg);
+      border: 1px solid var(--ap-bd);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--ap-shadow);
+      color: var(--ap-fg);
+      padding-bottom: 11px;
+      visibility: hidden;
+      opacity: 0;
+      transform: translateX(26px);
+      pointer-events: none;
+      transition: opacity 0.30s ease, transform 0.36s cubic-bezier(0.22, 0.92, 0.26, 1), visibility 0s linear 0.36s;
+    }
+    .area-panel.show {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      transition: opacity 0.30s ease, transform 0.36s cubic-bezier(0.22, 0.92, 0.26, 1), visibility 0s;
+    }
+    /* 细滚动条（内容超高时） */
+    .area-panel::-webkit-scrollbar { width: 4px; }
+    .area-panel::-webkit-scrollbar-track { background: transparent; }
+    .area-panel::-webkit-scrollbar-thumb { background: var(--ap-card-bd); border-radius: 2px; }
+    /* 四角装饰角标，与 .panel 的视觉语言一致 */
+    .area-panel::before, .area-panel::after {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      border: 2px solid var(--ap-day);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .area-panel::before { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 10px 0 0 0; }
+    .area-panel::after { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 10px 0; }
+
+    .ap-head {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 13px 14px 12px;
+      background: var(--ap-head);
+      border-bottom: 1px solid var(--ap-rule);
+      position: relative;
+    }
+    .ap-badge {
+      width: 38px; height: 38px;
+      flex: 0 0 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ap-day);
+      background: linear-gradient(145deg, rgba(95, 208, 255, 0.24), rgba(47, 143, 255, 0.12));
+      border: 1px solid rgba(95, 208, 255, 0.34);
+      box-shadow: inset 0 0 14px rgba(95, 208, 255, 0.18);
+    }
+    .ap-badge svg { width: 20px; height: 20px; }
+    .ap-head-txt { min-width: 0; }
+    .ap-title {
+      font-size: 0.94rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      line-height: 1.24;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ap-sub { font-size: 0.63rem; color: var(--ap-dim); margin-top: 3px; }
+    .ap-close {
+      position: absolute;
+      right: 11px; top: 11px;
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+      color: var(--ap-dim);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: color 0.18s, background 0.18s, border-color 0.18s;
+    }
+    .ap-close:hover { color: #fff; background: rgba(255, 90, 110, 0.18); border-color: rgba(255, 90, 110, 0.45); }
+
+    .ap-sec { padding: 11px 14px 0; }
+    .ap-sec-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--ap-dim);
+      margin-bottom: 9px;
+    }
+    .ap-sec-title::before {
+      content: '';
+      width: 3px; height: 11px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--ap-day), var(--ap-mon));
+      box-shadow: 0 0 8px rgba(95, 208, 255, 0.5);
+    }
+    .ap-sec-sub {
+      margin-left: auto;
+      font-size: 0.58rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--ap-dim2);
+      padding: 1px 7px;
+      border-radius: 9px;
+      background: var(--ap-card);
+      border: 1px solid var(--ap-card-bd);
+    }
+
+    .ap-kv { display: flex; flex-direction: column; gap: 6px; }
+    .ap-kv-row { display: flex; align-items: flex-start; gap: 9px; font-size: 0.68rem; line-height: 1.5; }
+    .ap-kv-k { flex: 0 0 66px; color: var(--ap-dim2); }
+    .ap-kv-v { flex: 1; color: var(--ap-fg); opacity: 0.92; }
+
+    .ap-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .ap-stat {
+      position: relative;
+      padding: 9px 3px 8px;
+      border-radius: 8px;
+      text-align: center;
+      background: var(--ap-card);
+      border: 1px solid var(--ap-card-bd);
+      cursor: pointer;
+      overflow: hidden;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .ap-stat[data-p="day"] { --c: var(--ap-day); }
+    .ap-stat[data-p="month"] { --c: var(--ap-mon); }
+    .ap-stat[data-p="year"] { --c: var(--ap-year); }
+    .ap-stat::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--c);
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    .ap-stat:hover { transform: translateY(-1px); border-color: rgba(95, 208, 255, 0.36); }
+    .ap-stat.active { background: rgba(95, 208, 255, 0.14); border-color: rgba(95, 208, 255, 0.44); }
+    .ap-stat.active::before { opacity: 1; box-shadow: 0 0 10px var(--c); }
+    .ap-stat-period { font-size: 0.6rem; color: var(--ap-dim); letter-spacing: 0.5px; }
+    .ap-stat-val {
+      font-family: 'Consolas', 'SFMono-Regular', 'Menlo', 'Courier New', monospace;
+      font-size: 1.0rem;
+      font-weight: 700;
+      color: var(--c);
+      line-height: 1.25;
+      margin: 3px 0 1px;
+    }
+    .ap-stat-unit { font-size: 0.54rem; color: var(--ap-dim2); }
+    .ap-stat-yoy {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      font-size: 0.55rem;
+      white-space: nowrap;
+    }
+    .ap-stat-yoy.up { color: var(--ap-up); background: rgba(255, 204, 0, 0.14); }
+    .ap-stat-yoy.down { color: var(--ap-down); background: rgba(0, 255, 157, 0.14); }
+
+    .ap-chart-head {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 15px 0 5px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .ap-unit {
+      font-size: 0.54rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--ap-dim2);
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: var(--ap-card);
+      border: 1px solid var(--ap-card-bd);
+    }
+    .ap-hint { margin-left: auto; font-size: 0.54rem; font-weight: 400; color: var(--ap-dim2); }
+    .ap-chart { width: 100%; height: 176px; }
+
+    .ap-foot {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 9px 14px 0;
+      padding-top: 9px;
+      border-top: 1px solid var(--ap-rule);
+      font-size: 0.56rem;
+      color: var(--ap-dim2);
+    }
+    .ap-legend { display: flex; align-items: center; gap: 10px; }
+    .ap-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+    .ap-legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid currentColor; }
+    .ap-legend .dash i { border-top-style: dashed; border-top-color: var(--ap-dim); }
+    .ap-legend .solid { color: var(--ap-day); }
+    .ap-foot-note { margin-left: auto; white-space: nowrap; }
+
+    /* ---- 白天主题 ---- */
+    body.light .area-panel {
+      --ap-bg: rgba(255, 255, 255, 0.90);
+      --ap-bd: rgba(0, 140, 180, 0.30);
+      --ap-fg: #16304a;
+      --ap-dim: rgba(30, 50, 80, 0.60);
+      --ap-dim2: rgba(30, 50, 80, 0.46);
+      --ap-card: rgba(0, 140, 180, 0.055);
+      --ap-card-bd: rgba(0, 140, 180, 0.17);
+      --ap-rule: rgba(20, 40, 70, 0.11);
+      --ap-head: linear-gradient(135deg, rgba(0, 150, 200, 0.14), rgba(0, 150, 200, 0.02) 62%);
+      --ap-day: #0a7fb8;
+      --ap-mon: #1d6fa5;
+      --ap-year: #0a8a5a;
+      --ap-up: #9c6b06;
+      --ap-down: #0a8a5a;
+      --ap-shadow: 0 16px 40px rgba(20, 45, 80, 0.17), inset 0 0 40px rgba(0, 150, 200, 0.04);
+    }
+    body.light .area-panel::before, body.light .area-panel::after { border-color: #0088aa; }
+    body.light .ap-badge {
+      background: linear-gradient(145deg, rgba(0, 150, 200, 0.20), rgba(0, 120, 170, 0.08));
+      border-color: rgba(0, 140, 180, 0.32);
+      box-shadow: inset 0 0 14px rgba(0, 150, 200, 0.12);
+    }
+    body.light .ap-stat:hover { border-color: rgba(0, 140, 180, 0.40); }
+    body.light .ap-stat.active { background: rgba(0, 150, 200, 0.14); border-color: rgba(0, 140, 180, 0.46); }
+    body.light .ap-stat-yoy.up { background: rgba(200, 140, 0, 0.15); }
+    body.light .ap-stat-yoy.down { background: rgba(0, 150, 110, 0.15); }
+    body.light .ap-close:hover { color: #b3203a; background: rgba(230, 60, 80, 0.13); border-color: rgba(230, 60, 80, 0.36); }
+
+    /* ---- 晚间主题 ---- */
+    body.black .area-panel {
+      --ap-bg: rgba(8, 20, 38, 0.85);
+      --ap-bd: rgba(95, 208, 255, 0.24);
+      --ap-fg: #cfe6f5;
+      --ap-dim: rgba(170, 200, 225, 0.60);
+      --ap-dim2: rgba(170, 200, 225, 0.44);
+      --ap-card: rgba(95, 208, 255, 0.055);
+      --ap-card-bd: rgba(95, 208, 255, 0.15);
+      --ap-rule: rgba(120, 170, 210, 0.14);
+      --ap-head: linear-gradient(135deg, rgba(50, 140, 220, 0.16), rgba(50, 140, 220, 0.02) 62%);
+      --ap-shadow: 0 18px 46px rgba(0, 0, 0, 0.65), inset 0 0 40px rgba(40, 120, 200, 0.06);
+    }
+    body.black .area-panel::before, body.black .area-panel::after { border-color: rgba(95, 208, 255, 0.55); }
+    body.black .ap-badge {
+      background: linear-gradient(145deg, rgba(50, 140, 220, 0.26), rgba(30, 90, 160, 0.10));
+      box-shadow: inset 0 0 16px rgba(95, 208, 255, 0.20);
+    }
+
+    /* ---- 窄屏 / 移动端 ---- */
+    @media (max-width: 1280px) {
+      .area-panel { width: 312px; }
+      .ap-chart { height: 162px; }
+    }
+    @media (max-width: 1024px) {
+      .area-panel { width: 284px; top: 84px; max-height: calc(100vh - 168px); }
+      .ap-chart { height: 150px; }
+      .ap-stat-val { font-size: 0.92rem; }
+    }
+    /* 手机：改为"贴底信息卡"。
+       坑：这里原本给的是 max-height:46vh —— 实测面板内容高 566px、46vh 只有 369px，
+       趋势图被整个裁到滚动区以下（滚动条在手机上几乎没人会拉）。可用竖向空间其实是
+       header 底(54) → 底栏顶(661) 这一段，所以改成 bottom 锚定 + 高度随内容，
+       并把内部字号/间距整体收紧，保证趋势图一屏可见。 */
+    @media (max-width: 768px) {
+      .area-panel {
+        left: 8px; right: 8px;
+        top: auto; bottom: 150px;
+        width: auto;
+        max-height: calc(100vh - 214px);
+        padding-bottom: 8px;
+      }
+      .ap-head { padding: 10px 11px 9px; gap: 9px; }
+      .ap-badge { width: 32px; height: 32px; flex-basis: 32px; border-radius: 8px; }
+      .ap-badge svg { width: 17px; height: 17px; }
+      .ap-title { font-size: 0.86rem; }
+      .ap-sub { font-size: 0.58rem; }
+      .ap-close { right: 8px; top: 7px; }
+      .ap-sec { padding: 9px 11px 0; }
+      .ap-sec-title { font-size: 0.63rem; margin-bottom: 7px; }
+      .ap-kv { gap: 5px; }
+      .ap-kv-row { font-size: 0.63rem; gap: 7px; }
+      .ap-kv-k { flex-basis: 56px; }
+      .ap-stats { gap: 6px; }
+      .ap-stat { padding: 7px 2px; }
+      .ap-stat-period { font-size: 0.55rem; }
+      .ap-stat-val { font-size: 0.84rem; }
+      .ap-stat-unit { font-size: 0.5rem; }
+      .ap-stat-yoy { font-size: 0.5rem; padding: 1px 4px; margin-top: 4px; }
+      .ap-chart-head { margin: 11px 0 4px; font-size: 0.63rem; }
+      .ap-chart { height: 126px; }
+      .ap-foot { margin: 7px 11px 0; padding-top: 7px; font-size: 0.52rem; }
+      .ap-foot-note { display: none; }
+    }
+
     /* ============ 亮色主题（body.light） ============ */
     body.light { color: #1a2740; background: #e9eff6; }
 
@@ -870,6 +1201,8 @@
 
     <!-- 左侧面板 -->
     <!-- 左右看板已移除 -->
+    <!-- 区域信息面板：点击办公楼楼层 / 厂房时出现，屏幕右侧固定 -->
+    <div class="area-panel" id="areaPanel" aria-hidden="true"></div>
 
     <!-- 底部功能按钮 -->
     <div class="bottom-bar">
@@ -4944,8 +5277,10 @@
     function ensureTip() {
       if (tipEl) return tipEl;
       tipEl = document.createElement('div');
+      // 第30轮：窄屏底栏在 bottom:96px —— 提示条固定 98px 会被底栏压住，按屏宽抬高
+      var tipBottom = (window.innerWidth <= 768) ? 156 : 98;
       tipEl.style.cssText =
-        'position:absolute;left:50%;bottom:98px;transform:translate(-50%,10px);max-width:88%;' +
+        'position:absolute;left:50%;bottom:' + tipBottom + 'px;transform:translate(-50%,10px);max-width:88%;' +
         'padding:9px 18px;border-radius:20px;background:rgba(10,18,28,.80);color:#eaf3fc;' +
         'font:500 13px/1.55 system-ui,"Microsoft YaHei",sans-serif;letter-spacing:.2px;' +
         'border:1px solid rgba(150,205,255,.24);box-shadow:0 10px 28px rgba(0,0,0,.36);' +
@@ -4955,6 +5290,8 @@
       return tipEl;
     }
     function showTip(text, sticky) {
+      // 第30轮：窄屏 + 面板已展开时，提示条会压在面板上（两者信息重复），直接不显示
+      if (text && window.innerWidth <= 768 && apEl && apEl.classList.contains('show')) text = '';
       var el = ensureTip();
       if (!text) {
         el.style.opacity = '0';
@@ -4994,6 +5331,7 @@
         SHELLS[k].plan.visible = false;
       }
       pickState = null;
+      hideAreaPanel();          // 第30轮：收起时同步关闭右侧信息面板
     }
 
     function openPick(info) {
@@ -5023,6 +5361,7 @@
           }
           cur.plan.visible = true;
         }
+        showAreaPanel('office', info.f);          // 第30轮：右侧信息面板（位置 + 用能 + 趋势）
         showTip((info.f + 1) + 'F ' + (cur && cur.name ? cur.name : '') +
                 '　·　已向右抽出 · 放大 2 倍 · 悬停展示　·　再次点击或点空白收回', true);
       } else {
@@ -5032,6 +5371,7 @@
         if (sh.dr) sh.dr.target = 1;                 // 第28轮：屋盖升起的同时向右移开
         if (!sh.built) { sh.build(sh.plan); sh.built = true; }
         sh.plan.visible = true;
+        showAreaPanel(info.bld, -1);               // 第30轮：右侧信息面板
         showTip(sh.label + '　·　屋盖已升起并向右侧移开，室内平面完整露出　·　再次点击或点空白收起', true);
       }
       pickState = { key: info.key };
@@ -5081,6 +5421,8 @@
       floor: function (f) { openPick({ kind: 'floor', bld: 'office', f: f, key: 'office|' + f }); },
       shell: function (b) { openPick({ kind: 'shell', bld: b, key: b }); },
       collapse: function () { collapseAll(); hideTip(); },
+      area: function (kind, f) { showAreaPanel(kind, f === undefined ? -1 : f); },
+      areaMode: function (m) { if (apState) { apState.mode = m; apApply(); apDrawChart(0); } },
       // 立即到位（不走插值动画）：无头截图脚本用，避免虚拟时间下 rAF 推进不稳定
       settle: function () {
         for (var i = 0; i < LIFT_UNITS.length; i++) {
@@ -5093,6 +5435,7 @@
           tw.k = tw.target;
           tw.apply(tw.k);
         }
+        settleAreaChart();                          // 第30轮：趋势图直接落到终帧
         if (renderer) renderer.shadowMap.needsUpdate = true;
       },
       info: function () {
@@ -5123,10 +5466,486 @@
           glow: CHARGE_GLOW.map(function (c) {
             return c ? +c.cap.emissiveIntensity.toFixed(3) : null;
           }),
+          area: apState ? { kind: apState.kind, f: apState.f, mode: apState.mode,
+                           open: !!(apEl && apEl.classList.contains('show')),
+                           title: apState.d.title, yoy: apState.d.yoy,
+                           totals: apState.d.series.totals } : null,
           meshes: (function () { var n = 0; scene.traverse(function (o) { if (o.isMesh) n++; }); return n; })()
         };
       }
     };
+
+    /* ===================== 区域信息面板（第30轮） =====================
+       点击办公楼某一层 / 任一厂房 → 屏幕右侧弹出固定信息面板：
+         · 位置信息：所在区域 / 建筑·楼层 / 面积 / 层高 / 功能用途 / 计量点位
+         · 用能信息：当日 · 本月 · 本年 电能消耗 + 同比
+         · 用能消耗趋势折线图（日 24h / 月 30d / 年 12m 三尺度，点上方卡片切换）
+       数据是"演示用确定性模型"：以各区「日均用电量」为基准 × 形状曲线生成，
+       自带独立 PRNG（种子由基准值派生）—— 既不占用业务随机序列 srnd()，
+       也不受 Three.js 内部随机消耗影响，因此：
+         ① 同一区域每次点开画出的曲线完全一致；
+         ② 园区植被等既有外观**不受任何扰动**（未点击时仍为逐像素零回归）。
+       面板外壳的配色走 CSS 变量，由 body.light / body.black 自动切换；
+       折线图配色由 apColors() 按 currentTheme 计算，setTheme 时同步刷新。 */
+
+    /* ---------- 形状曲线（会被归一化成"均值 = 1"，因此只表达形状） ---------- */
+    // 日：24 个整点的用电强度
+    var AP_SHAPE_DAY = {
+      office: [0.34, 0.31, 0.30, 0.30, 0.32, 0.42, 0.62, 0.86, 1.08, 1.24, 1.32, 1.26,
+               1.10, 1.18, 1.30, 1.28, 1.16, 0.96, 0.72, 0.58, 0.50, 0.44, 0.38, 0.35],
+      lab:    [0.72, 0.70, 0.69, 0.69, 0.71, 0.78, 0.88, 1.00, 1.10, 1.16, 1.18, 1.14,
+               1.06, 1.12, 1.18, 1.16, 1.10, 1.02, 0.94, 0.88, 0.84, 0.80, 0.76, 0.74],
+      dc:     [1.00, 0.99, 0.98, 0.98, 0.99, 1.00, 1.01, 1.01, 1.02, 1.02, 1.02, 1.02,
+               1.01, 1.01, 1.02, 1.02, 1.01, 1.01, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+      hall:   [0.82, 0.80, 0.79, 0.79, 0.81, 0.86, 0.95, 1.04, 1.10, 1.12, 1.13, 1.10,
+               1.06, 1.09, 1.13, 1.12, 1.08, 1.02, 0.95, 0.90, 0.87, 0.85, 0.83, 0.82],
+      shop:   [0.40, 0.38, 0.37, 0.37, 0.40, 0.55, 0.82, 1.06, 1.22, 1.30, 1.28, 1.16,
+               0.98, 1.12, 1.28, 1.30, 1.22, 1.04, 0.78, 0.62, 0.54, 0.48, 0.44, 0.42],
+      sub:    [0.88, 0.86, 0.85, 0.85, 0.86, 0.90, 0.96, 1.02, 1.07, 1.10, 1.11, 1.09,
+               1.05, 1.07, 1.10, 1.10, 1.06, 1.01, 0.96, 0.93, 0.91, 0.89, 0.88, 0.88]
+    };
+    // 月：星期一到星期日的相对权重（办公楼周末低，连续生产的厂房周末几乎不停）
+    var AP_SHAPE_WEEK = {
+      office: [1.08, 1.11, 1.10, 1.08, 1.05, 0.72, 0.64],
+      lab:    [1.06, 1.09, 1.09, 1.07, 1.04, 0.84, 0.80],
+      dc:     [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+      hall:   [1.03, 1.05, 1.05, 1.04, 1.03, 0.94, 0.90],
+      shop:   [1.04, 1.06, 1.06, 1.05, 1.02, 0.92, 0.88],
+      sub:    [1.02, 1.03, 1.03, 1.02, 1.01, 0.96, 0.94]
+    };
+    // 年：1~12 月的季节权重（办公/实验夏季空调尖峰，厂房四季度订单走高）
+    var AP_SHAPE_YEAR = {
+      office: [0.86, 0.80, 0.90, 0.93, 1.01, 1.17, 1.31, 1.33, 1.10, 0.94, 0.89, 0.96],
+      lab:    [0.94, 0.90, 0.98, 1.01, 1.04, 1.10, 1.18, 1.16, 1.06, 1.00, 0.96, 1.00],
+      dc:     [1.00, 0.99, 1.00, 1.01, 1.02, 1.03, 1.05, 1.05, 1.02, 1.00, 0.99, 1.00],
+      hall:   [0.94, 0.88, 1.00, 1.04, 1.06, 1.08, 1.11, 1.07, 1.06, 1.10, 1.12, 1.16],
+      shop:   [0.92, 0.86, 0.99, 1.03, 1.06, 1.09, 1.12, 1.08, 1.05, 1.09, 1.12, 1.15],
+      sub:    [0.96, 0.92, 0.99, 1.02, 1.04, 1.08, 1.14, 1.13, 1.04, 0.99, 0.96, 0.99]
+    };
+
+    var AP_NORM = null;
+    function apNorm(a) {
+      var s = 0, i;
+      for (i = 0; i < a.length; i++) s += a[i];
+      var k = a.length / s, o = [];
+      for (i = 0; i < a.length; i++) o.push(a[i] * k);
+      return o;
+    }
+    function apNormAll() {
+      if (AP_NORM) return AP_NORM;
+      AP_NORM = { day: {}, week: {}, year: {} };
+      var k;
+      for (k in AP_SHAPE_DAY) if (AP_SHAPE_DAY.hasOwnProperty(k)) AP_NORM.day[k] = apNorm(AP_SHAPE_DAY[k]);
+      for (k in AP_SHAPE_WEEK) if (AP_SHAPE_WEEK.hasOwnProperty(k)) AP_NORM.week[k] = apNorm(AP_SHAPE_WEEK[k]);
+      for (k in AP_SHAPE_YEAR) if (AP_SHAPE_YEAR.hasOwnProperty(k)) AP_NORM.year[k] = apNorm(AP_SHAPE_YEAR[k]);
+      return AP_NORM;
+    }
+    // 独立 PRNG（种子由基准值派生）—— 与 srnd() 完全无关，不扰动园区既有随机流
+    function apRand(seed) {
+      var s = (Math.floor(seed) >>> 0) || 1;
+      return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    }
+
+    /* ---------- 各区域的位置 / 用能基准数据 ---------- */
+    // 办公楼逐层：用途、基准日用电量（kWh/日）、负荷形状、同比
+    var AP_FLOOR_INFO = [
+      { name: '大堂·门厅', use: '门厅接待 · 访客登记 · 电梯厅',   day: 62,  shape: 'office', yoy: 0.8, peak: '08:00–10:00 / 17:00–19:00' },
+      { name: '开敞办公', use: '开放式工位区 · 洽谈区 · 打印区',   day: 148, shape: 'office', yoy: 2.1, peak: '09:00–11:00 / 14:00–17:00' },
+      { name: '标准办公', use: '独立办公室 · 小型洽谈 · 资料角',   day: 108, shape: 'office', yoy: 1.4, peak: '09:00–11:00 / 14:00–17:00' },
+      { name: '部门办公', use: '部门办公 · 档案资料 · 复印区',     day: 100, shape: 'office', yoy: 0.6, peak: '09:00–11:00 / 14:00–17:00' },
+      { name: '会议中心', use: '大中小会议室 · 视频会议 · 茶歇区', day: 132, shape: 'office', yoy: 3.4, peak: '10:00–12:00 / 15:00–17:00' },
+      { name: '研发实验室', use: '实验台 · 洁净间 · 仪器测试区',   day: 196, shape: 'lab',    yoy: 3.1, peak: '09:00–17:00 持续运行' },
+      { name: '数据中心', use: '机柜列 · 网络机房 · 监控大屏',     day: 380, shape: 'dc',     yoy: 6.2, peak: '全天 24h 恒定' },
+      { name: '休闲办公', use: '休闲工位 · 茶水吧台 · 活动区',     day: 62,  shape: 'office', yoy: -1.2, peak: '11:00–13:00 / 17:00–19:00' },
+      { name: '高管层',   use: '高管办公 · 接待室 · 秘书区',       day: 62,  shape: 'office', yoy: 0.4, peak: '09:00–11:00 / 14:00–17:00' }
+    ];
+    var AP_SHELL_INFO = {
+      hall: {
+        title: '主厂房', badge: 'factory', shape: 'hall', day: 2400, yoy: -4.8,
+        peak: '09:00–11:00 / 14:00–16:00',
+        sub: '钢结构大跨厂房 · 屋顶光伏发电',
+        rows: [
+          ['所在区域', '园区中部 · 生产区'],
+          ['建筑类型', '钢结构大跨 · 金属墙板 + 玻璃腰带'],
+          ['占地 / 面积', '46 × 30 m · 1,380 m²'],
+          ['檐高', '12 m（单层大跨）'],
+          ['功能用途', '生产主车间 · 屋顶光伏发电'],
+          ['计量点位', 'HK-MAIN-01']
+        ]
+      },
+      shop: {
+        title: '生产车间', badge: 'workshop', shape: 'shop', day: 900, yoy: -3.2,
+        peak: '08:00–11:00 / 13:00–16:00',
+        sub: '钢结构装配车间 · 高侧窗采光',
+        rows: [
+          ['所在区域', '园区东侧 · 生产区'],
+          ['建筑类型', '钢结构 · 压型钢板外墙 + 高侧窗'],
+          ['占地 / 面积', '28 × 20 m · 560 m²'],
+          ['檐高', '9 m（单层）'],
+          ['功能用途', '装配车间 · 测试工位 · 成品暂存'],
+          ['计量点位', 'HK-SHOP-02']
+        ]
+      },
+      sub: {
+        title: '配电间', badge: 'power', shape: 'sub', day: 380, yoy: 1.4,
+        peak: '负载跟随（以变压器损耗为主）',
+        sub: '箱式变电站 · 园区自用配电',
+        rows: [
+          ['所在区域', '园区东北角 · 围墙内侧'],
+          ['建筑类型', '箱式变电站 · 压型钢板箱体'],
+          ['占地 / 面积', '7.2 × 5.0 m · 36 m²'],
+          ['檐高', '3.0 m（含混凝土基础平台）'],
+          ['功能用途', '10 kV 进线 · 干式变压器 · 低压配电'],
+          ['计量点位', 'HK-SUB-03']
+        ]
+      }
+    };
+
+    var AP_ICON = {
+      office: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h2M13 9h2M9 13h2M13 13h2M10 17h4"/></svg>',
+      factory: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21V10l5 3V10l5 3V8l6 4v9"/><path d="M8 21v-4h3v4"/></svg>',
+      workshop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21v-9h7v9"/><path d="M11 21v-6h9v6"/><path d="M6.6 15.4h1.8M15.6 18h1.8"/></svg>',
+      power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M13 7l-4 6h3l-1 4 4-6h-3z"/></svg>'
+    };
+
+    function apPad2(n) { return (n < 10 ? '0' : '') + n; }
+
+    /* ---------- 由形状生成三条曲线（返回 日/月/年 三组数据 + 合计） ---------- */
+    function apSeries(shape, base) {
+      var N = apNormAll();
+      var r = apRand(base * 7919 + 104729);          // 种子由基准值派生 → 同区域恒等、不同区域互异
+      function jit(a) { return 1 + (r() * 2 - 1) * a; }
+      var i, pd = N.day[shape], pw = N.week[shape], py = N.year[shape];
+      var day = [], month = [], year = [];
+      // 日：24 个整点，均值 = base/24，合计 = base
+      for (i = 0; i < 24; i++) day.push(+(base * pd[i] / 24 * jit(0.035)).toFixed(2));
+      // 月：30 天，均值 = base（工作日高 / 周末低，月末略降）
+      var OFF = 2;                                    // 演示用固定偏移（保证跨渲染可复现）
+      for (i = 0; i < 30; i++) month.push(+(base * pw[(i + OFF) % 7] * (1 - 0.0009 * i) * jit(0.04)).toFixed(1));
+      // 年：12 个月，均值 = base × 30.4
+      for (i = 0; i < 12; i++) year.push(Math.round(base * 30.4 * py[i] * jit(0.02)));
+      var sum = function (a) { var s = 0, k; for (k = 0; k < a.length; k++) s += a[k]; return s; };
+      // 与"上一周期"的对比增幅（%）：曲线图里要看得见差异，不能用 +3% 这种量级
+      // （3% 在 2~10 的纵轴上只有 0.2 格，会被主线与面积填充完全盖住，图例形同虚设）
+      var up = +(3.5 + r() * 8.5).toFixed(1);
+      return { day: day, month: month, year: year, up: up, totals: { day: sum(day), month: sum(month), year: sum(year) } };
+    }
+
+    function apNum(v) {   // 大数自动换"万"，保持 3~4 位有效数字
+      if (v >= 100000) return { v: (v / 10000).toFixed(1), u: '万kWh' };
+      if (v >= 10000) return { v: (v / 10000).toFixed(2), u: '万kWh' };
+      if (v >= 1000) return { v: Math.round(v).toLocaleString('en-US'), u: 'kWh' };
+      return { v: v.toFixed(1), u: 'kWh' };
+    }
+
+    var AP_MINUS = '−';
+    function apYoyText(v) { return '同比 ' + (v >= 0 ? '+' : AP_MINUS) + Math.abs(v).toFixed(1) + '%'; }
+    // 图表内数值统一格式：年尺度是"万kWh/月"必须留 2 位小数；其余大数取整加千分位
+    function apFmtVal(v) {
+      v = +v;
+      if (apState && apState.mode === 'year') return v.toFixed(2);
+      return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(1);
+    }
+
+    function apBuild(kind, f) {
+      if (kind === 'office') {
+        if (!OFFICE || f < 0 || f >= AP_FLOOR_INFO.length) return null;
+        var fi = AP_FLOOR_INFO[f], fn = f + 1;
+        return {
+          badge: 'office',
+          title: fn + 'F ' + fi.name,
+          sub: '研发办公楼 · ' + fn + 'F / 共 9F',
+          rows: [
+            ['所在区域', '园区西侧 · 研发办公区'],
+            ['建筑面积', '352 m²（22 × 16 m 标准层）'],
+            ['层高 / 净高', '3.4 m / 约 2.9 m'],
+            ['功能用途', fi.use],
+            ['供电方式', '低压 380 V · 楼层双回路'],
+            ['计量点位', 'HK-OFF-' + apPad2(fn)]
+          ],
+          base: fi.day, shape: fi.shape, yoy: fi.yoy, peak: fi.peak
+        };
+      }
+      var sh = AP_SHELL_INFO[kind];
+      if (!sh) return null;
+      return {
+        badge: sh.badge, title: sh.title, sub: sh.sub, rows: sh.rows,
+        base: sh.day, shape: sh.shape, yoy: sh.yoy, peak: sh.peak
+      };
+    }
+
+    /* ---------- 面板 DOM（骨架只建一次，之后只改内容，避免重建 ECharts 容器） ---------- */
+    var apEl = null, apNode = {}, apChart = null, apState = null, AP_ANIM = 620;
+
+    function apEnsureDOM() {
+      if (apEl) return;
+      apEl = $('areaPanel');
+      if (!apEl) return;
+      apEl.innerHTML =
+        '<div class="ap-head">' +
+          '<div class="ap-badge" id="apBadge"></div>' +
+          '<div class="ap-head-txt">' +
+            '<div class="ap-title" id="apTitle"></div>' +
+            '<div class="ap-sub" id="apSub"></div>' +
+          '</div>' +
+          '<div class="ap-close" id="apClose" title="关闭并收回">✕</div>' +
+        '</div>' +
+        '<div class="ap-sec">' +
+          '<div class="ap-sec-title">位置信息</div>' +
+          '<div class="ap-kv" id="apKv"></div>' +
+        '</div>' +
+        '<div class="ap-sec">' +
+          '<div class="ap-sec-title">用能信息<span class="ap-sec-sub" id="apMeter">电能</span></div>' +
+          '<div class="ap-stats" id="apStats">' +
+            '<div class="ap-stat" data-p="day"><div class="ap-stat-period">当日</div>' +
+              '<div class="ap-stat-val" data-v="day">—</div><div class="ap-stat-unit" data-u="day"></div>' +
+              '<div class="ap-stat-yoy" data-y="day"></div></div>' +
+            '<div class="ap-stat" data-p="month"><div class="ap-stat-period">本月</div>' +
+              '<div class="ap-stat-val" data-v="month">—</div><div class="ap-stat-unit" data-u="month"></div>' +
+              '<div class="ap-stat-yoy" data-y="month"></div></div>' +
+            '<div class="ap-stat" data-p="year"><div class="ap-stat-period">本年</div>' +
+              '<div class="ap-stat-val" data-v="year">—</div><div class="ap-stat-unit" data-u="year"></div>' +
+              '<div class="ap-stat-yoy" data-y="year"></div></div>' +
+          '</div>' +
+          '<div class="ap-chart-head">用能消耗趋势' +
+            '<span class="ap-unit" id="apUnit">kWh/时</span>' +
+            '<span class="ap-hint">点上方卡片切换尺度</span>' +
+          '</div>' +
+          '<div class="ap-chart" id="apChart"></div>' +
+        '</div>' +
+        '<div class="ap-foot">' +
+          '<span class="ap-legend"><span class="solid"><i></i>本期</span>' +
+          '<span class="dash"><i></i>上期</span></span>' +
+          '<span class="ap-foot-note" id="apNote"></span>' +
+        '</div>';
+
+      apNode.badge = $('apBadge'); apNode.title = $('apTitle'); apNode.sub = $('apSub');
+      apNode.kv = $('apKv'); apNode.stats = $('apStats'); apNode.chart = $('apChart');
+      apNode.unit = $('apUnit'); apNode.note = $('apNote'); apNode.meter = $('apMeter');
+      apNode.vals = { day: apNode.stats.querySelector('[data-v="day"]'), month: apNode.stats.querySelector('[data-v="month"]'), year: apNode.stats.querySelector('[data-v="year"]') };
+      apNode.units = { day: apNode.stats.querySelector('[data-u="day"]'), month: apNode.stats.querySelector('[data-u="month"]'), year: apNode.stats.querySelector('[data-u="year"]') };
+      apNode.yoys = { day: apNode.stats.querySelector('[data-y="day"]'), month: apNode.stats.querySelector('[data-y="month"]'), year: apNode.stats.querySelector('[data-y="year"]') };
+
+      $('apClose').addEventListener('click', function (e) {
+        e.stopPropagation();
+        collapseAll(); hideTip();          // 关面板 = 收回 3D 展开，保持一致
+      });
+      // 点卡片切尺度（日 / 月 / 年）
+      apNode.stats.querySelectorAll('.ap-stat').forEach(function (c) {
+        c.addEventListener('click', function () {
+          if (!apState) return;
+          apState.mode = c.getAttribute('data-p');
+          apApply(); apDrawChart();
+        });
+      });
+      apEl.addEventListener('click', function (e) { e.stopPropagation(); });
+      window.addEventListener('resize', function () { if (apChart) apChart.resize(); });
+    }
+
+    /* ---------- 折线图配色（三套主题各一份，切换主题时同步刷新） ---------- */
+    function apColors() {
+      if (currentTheme === 'light') return {
+        line: '#0d84b8', line2: '#8cb9cd', glow: 'rgba(13,132,184,0.30)',
+        a0: 'rgba(13,150,200,0.30)', a1: 'rgba(13,150,200,0.01)',
+        a2: 'rgba(140,185,205,0.16)', a3: 'rgba(140,185,205,0.00)',
+        axis: 'rgba(20,40,70,0.22)', split: 'rgba(20,40,70,0.08)', label: 'rgba(30,50,80,0.62)',
+        avg: 'rgba(20,90,120,0.42)', avgTx: 'rgba(20,90,120,0.85)',
+        cross: 'rgba(13,132,184,0.55)', tipBg: 'rgba(255,255,255,0.97)', tipBd: 'rgba(0,140,180,0.35)', tipTx: '#16304a'
+      };
+      if (currentTheme === 'black') return {
+        line: '#5fd0ff', line2: '#3f7ba8', glow: 'rgba(95,208,255,0.48)',
+        a0: 'rgba(95,208,255,0.34)', a1: 'rgba(95,208,255,0.01)',
+        a2: 'rgba(63,123,168,0.18)', a3: 'rgba(63,123,168,0.00)',
+        axis: 'rgba(120,170,210,0.22)', split: 'rgba(120,170,210,0.10)', label: 'rgba(170,200,225,0.62)',
+        avg: 'rgba(0,255,157,0.40)', avgTx: 'rgba(120,240,200,0.85)',
+        cross: 'rgba(95,208,255,0.55)', tipBg: 'rgba(8,20,38,0.97)', tipBd: 'rgba(95,208,255,0.35)', tipTx: '#d8e8f5'
+      };
+      return {   // dark（傍晚）
+        line: '#6fd6ff', line2: '#4a86b8', glow: 'rgba(111,214,255,0.45)',
+        a0: 'rgba(111,214,255,0.32)', a1: 'rgba(111,214,255,0.01)',
+        a2: 'rgba(74,134,184,0.18)', a3: 'rgba(74,134,184,0.00)',
+        axis: 'rgba(255,255,255,0.18)', split: 'rgba(255,255,255,0.09)', label: 'rgba(255,255,255,0.55)',
+        avg: 'rgba(0,255,157,0.36)', avgTx: 'rgba(150,245,205,0.85)',
+        cross: 'rgba(111,214,255,0.5)', tipBg: 'rgba(13,43,84,0.97)', tipBd: 'rgba(95,208,255,0.35)', tipTx: '#eaf3fc'
+      };
+    }
+
+    /* ---------- 当前尺度的横轴 / 纵轴 / 数据 ---------- */
+    function apModeData() {
+      var ser = apState.d.series, m = apState.mode, k = 1 + ser.up / 100;
+      var x = [], v, unit, unitName, cmpName;
+      var i;
+      if (m === 'day') {
+        for (i = 0; i < 24; i++) x.push(apPad2(i));
+        v = ser.day.slice(); unit = 'kWh/时'; unitName = '时'; cmpName = '昨日';
+      } else if (m === 'month') {
+        for (i = 0; i < 30; i++) x.push(apPad2(i + 1));
+        v = ser.month.slice(); unit = 'kWh/日'; unitName = '日'; cmpName = '上月';
+      } else {
+        for (i = 0; i < 12; i++) x.push((i + 1) + '月');
+        v = ser.year.map(function (t) { return +(t / 10000).toFixed(2); });
+        unit = '万kWh/月'; unitName = '月'; cmpName = '去年';
+      }
+      var dp = m === 'year' ? 2 : (m === 'day' ? 2 : 1);
+      var v2 = v.map(function (t) { return +(t / k).toFixed(dp); });
+      return { x: x, v: v, v2: v2, unit: unit, unitName: unitName, cmpName: cmpName, up: ser.up };
+    }
+
+    function apAxisNum(t) {
+      // 年尺度单位是"万kWh/月"，数值常在 1.x —— 必须留 2 位小数，
+      // 否则 1.05 / 1.10 / 1.15 全被舍成同一个 "1.1"，纵轴看起来是坏的
+      if (apState.mode === 'year') return t < 10 ? t.toFixed(2) : t.toFixed(1);
+      if (t >= 10000) return (t / 10000).toFixed(1) + '万';
+      return Math.abs(t) >= 1000 ? Math.round(t).toLocaleString('en-US') : t;
+    }
+
+    function apChartOption(dur) {
+      var d = apModeData(), th = apColors();
+      var fmt = apFmtVal;
+      return {
+        animationDuration: dur === undefined ? AP_ANIM : dur,
+        animationEasing: 'cubicOut',
+        grid: { top: 20, right: 12, bottom: 20, left: 44 },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: th.tipBg, borderColor: th.tipBd, borderWidth: 1, padding: [7, 10],
+          textStyle: { color: th.tipTx, fontSize: 11 },
+          axisPointer: { type: 'line', lineStyle: { color: th.cross, width: 1, type: [3, 3] } },
+          formatter: function (ps) {
+            if (!ps || !ps.length) return '';
+            var h = '<div style="font-size:10px;opacity:.65;margin-bottom:4px">' + ps[0].axisValue + ' · ' + d.unitName + '</div>';
+            for (var i = 0; i < ps.length; i++) {
+              h += '<div style="display:flex;align-items:center;gap:7px;font-size:11px;line-height:1.7">' +
+                   '<span style="width:7px;height:7px;border-radius:2px;background:' + ps[i].color + '"></span>' +
+                   '<span style="flex:1;opacity:.8">' + ps[i].seriesName + '</span>' +
+                   '<b style="font-family:Consolas,monospace">' + fmt(ps[i].value) + '</b></div>';
+            }
+            h += '<div style="font-size:10px;opacity:.62;margin-top:3px;border-top:1px solid ' + th.split + ';padding-top:3px">' +
+                 '较' + d.cmpName + ' <b style="font-family:Consolas,monospace">+' + d.up.toFixed(1) + '%</b></div>';
+            return h;
+          }
+        },
+        xAxis: {
+          type: 'category', data: d.x, boundaryGap: false,
+          axisLine: { lineStyle: { color: th.axis } },
+          axisTick: { show: false },
+          axisLabel: { color: th.label, fontSize: 9, interval: apState.mode === 'month' ? 4 : (apState.mode === 'day' ? 3 : 0) }
+        },
+        yAxis: {
+          type: 'value', scale: true,
+          splitNumber: 5,            // 3 → 5：数据中心这类"几乎平线"的区域，间隔取小值后纵轴才不会留出一大片空白
+          splitLine: { lineStyle: { color: th.split } },
+          axisLabel: { color: th.label, fontSize: 9, formatter: apAxisNum }
+        },
+        series: [
+          {
+            name: '本期', type: 'line', smooth: 0.36, symbol: 'circle', symbolSize: 5,
+            showSymbol: false,
+            lineStyle: { width: 2.4, color: th.line, shadowColor: th.glow, shadowBlur: 9, shadowOffsetY: 3 },
+            itemStyle: { color: th.line, borderColor: th.tipBg, borderWidth: 1.5 },
+            areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: th.a0 }, { offset: 1, color: th.a1 }]) },
+            data: d.v,
+            markLine: {
+              silent: true, symbol: 'none',
+              lineStyle: { color: th.avg, type: [4, 4], width: 1 },
+              // 标签垫底色：月/年尺度上曲线常常正好压在均值线右端（如"周末低谷+工作日高峰"），
+              // 不带底色的文字会被曲线穿过，读不出来
+              label: {
+                show: true, position: 'insideEndTop', color: th.avgTx, fontSize: 9,
+                backgroundColor: th.tipBg, padding: [2, 4], borderRadius: 3,
+                formatter: function (p) { return '均值 ' + apFmtVal(p.value); }
+              },
+              data: [{ type: 'average' }]
+            },
+            markPoint: {
+              symbol: 'circle', symbolSize: 7,
+              itemStyle: { color: th.line, borderColor: th.tipBg, borderWidth: 1.5 },
+              label: { show: true, position: 'top', color: th.avgTx, fontSize: 9, distance: 6,
+                       formatter: function (p) { return apFmtVal(p.value); } },
+              data: [{ type: 'max', name: '峰值' }]
+            }
+          },
+          {
+            name: d.cmpName, type: 'line', smooth: 0.36, symbol: 'none',
+            lineStyle: { width: 1.5, color: th.line2, type: [5, 4], opacity: 0.95 },
+            data: d.v2
+          }
+        ]
+      };
+    }
+
+    function apDrawChart(dur) {
+      if (!apChart) return;
+      apChart.setOption(apChartOption(dur), true);
+    }
+    function apEnsureChart() {
+      if (apChart || !apNode.chart || !window.echarts) return;
+      apChart = echarts.init(apNode.chart);
+      apChart.resize();
+    }
+
+    /* ---------- 内容填充 ---------- */
+    function apApply() {
+      var d = apState.d;
+      apNode.badge.innerHTML = AP_ICON[d.badge] || AP_ICON.office;
+      apNode.title.textContent = d.title;
+      apNode.sub.textContent = d.sub;
+      var h = '', i;
+      for (i = 0; i < d.rows.length; i++) {
+        h += '<div class="ap-kv-row"><span class="ap-kv-k">' + d.rows[i][0] + '</span>' +
+             '<span class="ap-kv-v">' + d.rows[i][1] + '</span></div>';
+      }
+      apNode.kv.innerHTML = h;
+
+      var t = d.series.totals, keys = ['day', 'month', 'year'], k;
+      for (i = 0; i < keys.length; i++) {
+        k = keys[i];
+        var n = apNum(t[k]);
+        apNode.vals[k].textContent = n.v;
+        apNode.units[k].textContent = n.u;
+        // 同比：月 / 年尺度的波动天然小于当日 → 按尺度递减，保持可信
+        var yv = d.yoy * (k === 'day' ? 1 : (k === 'month' ? 0.68 : 0.42));
+        var el = apNode.yoys[k];
+        el.textContent = apYoyText(yv);
+        el.className = 'ap-stat-yoy ' + (yv >= 0 ? 'up' : 'down');
+      }
+      apNode.stats.querySelectorAll('.ap-stat').forEach(function (c) {
+        c.classList.toggle('active', c.getAttribute('data-p') === apState.mode);
+      });
+
+      var md = apModeData();
+      apNode.unit.textContent = md.unit;
+      apNode.note.textContent = '峰值时段 ' + d.peak;
+    }
+
+    function showAreaPanel(kind, f) {
+      var d = apBuild(kind, f === undefined ? -1 : f);
+      if (!d) return;
+      apEnsureDOM();
+      if (!apEl) return;
+      d.series = apSeries(d.shape, d.base);
+      apState = { kind: kind, f: f === undefined ? -1 : f, mode: 'day', d: d };
+      apApply();
+      apEl.classList.add('show');
+      apEnsureChart();
+      if (apChart) { apDrawChart(); setTimeout(function () { if (apChart) apChart.resize(); }, 80); }
+    }
+    function hideAreaPanel() {
+      if (apEl) apEl.classList.remove('show');
+      apState = null;
+    }
+    // 主题切换时刷新折线图配色（面板没开就什么都不做）
+    function syncAreaTheme() {
+      if (!apChart || !apState || !apEl || !apEl.classList.contains('show')) return;
+      apDrawChart(0);
+    }
+    function settleAreaChart() {
+      if (!apChart || !apState) return;
+      apDrawChart(0);
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { collapseAll(); hideTip(); }
+    });
 
     // withLight：是否挂真实点光源。远景处的灯只保留光晕/光锥/地面光斑（表现"灯亮着"），
     // 不挂点光源 —— 点光源数量直接进入所有材质的片元着色器循环，13 盏全挂会让移动端掉帧。
@@ -5433,6 +6252,7 @@
       else if (t === 'black') document.body.classList.add('black');
       applyTheme(t);
       updateThemeBtn();
+      syncAreaTheme();          // 第30轮：面板折线图配色跟随主题
     }
 
     function toggleTheme() {
@@ -5453,6 +6273,7 @@
     // 初始化
     initTheme();
     init3D();
+
 
 
 
