@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="输入文字或网址，即时生成二维码，支持下载 PNG。" />
+  <meta name="description" content="输入文字或网址，自定义图案、图眼、Logo、颜色、边框与模板，生成二维码。" />
   <title>二维码生成器</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -15,78 +15,193 @@
         <span class="brand-text">QR Studio</span>
       </div>
       <h1>文字 / 网址 → 二维码</h1>
-      <p class="hero-sub">粘贴任意内容，即时生成高清二维码。支持电脑与手机。</p>
+      <p class="hero-sub">粘贴内容即时生成，并自定义图案、图眼、Logo、颜色、边框与模板。</p>
     </header>
 
-    <main class="card">
-      <section class="panel panel-form" aria-label="生成设置">
-        <label class="field-label" for="content">内容</label>
-        <textarea
-          id="content"
-          class="content-input"
-          rows="5"
-          placeholder="例如：https://github.com 或 你好，世界"
-          spellcheck="false"
-          autocomplete="off"
-        ></textarea>
-        <div class="hint-row">
-          <span id="type-hint" class="hint">将自动识别文字或网址</span>
-          <button type="button" id="clear-btn" class="btn-ghost">清空</button>
+    <main class="layout">
+      <section class="card card-main" aria-label="内容与预览">
+        <div class="panel panel-form">
+          <label class="field-label" for="content">第1步 · 输入内容</label>
+          <textarea
+            id="content"
+            class="content-input"
+            rows="4"
+            placeholder="例如：https://github.com 或 你好，世界"
+            spellcheck="false"
+            autocomplete="off"
+          ></textarea>
+          <div class="hint-row">
+            <span id="type-hint" class="hint">将自动识别文字或网址</span>
+            <button type="button" id="clear-btn" class="btn-ghost">清空</button>
+          </div>
+
+          <div class="options compact">
+            <div class="option">
+              <label class="field-label" for="size">导出尺寸</label>
+              <select id="size" class="select">
+                <option value="512">512 × 512</option>
+                <option value="768" selected>768 × 768</option>
+                <option value="1024">1024 × 1024</option>
+                <option value="1536">1536 × 1536</option>
+              </select>
+            </div>
+            <div class="option">
+              <label class="field-label" for="ecc">容错级别</label>
+              <select id="ecc" class="select">
+                <option value="L">L · 7%</option>
+                <option value="M">M · 15%</option>
+                <option value="Q">Q · 25%</option>
+                <option value="H" selected>H · 30%</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" id="download-btn" class="btn-primary" disabled>下载 PNG</button>
+            <button type="button" id="copy-btn" class="btn-secondary" disabled>复制内容</button>
+          </div>
         </div>
 
-        <div class="options">
-          <div class="option">
-            <label class="field-label" for="size">尺寸</label>
-            <select id="size" class="select">
-              <option value="256">256 × 256</option>
-              <option value="512" selected>512 × 512</option>
-              <option value="1024">1024 × 1024</option>
-            </select>
+        <div class="panel panel-preview" aria-label="二维码预览">
+          <div class="preview-head">
+            <span class="field-label">预览</span>
+            <span id="status" class="status">输入内容后自动生成</span>
           </div>
-          <div class="option">
-            <label class="field-label" for="ecc">容错级别</label>
-            <select id="ecc" class="select">
-              <option value="L">L · 7%</option>
-              <option value="M" selected>M · 15%</option>
-              <option value="Q">Q · 25%</option>
-              <option value="H">H · 30%</option>
-            </select>
+          <div class="preview-stage">
+            <div id="qr-box" class="qr-box is-empty" aria-live="polite">
+              <div class="empty-state">
+                <div class="empty-frame" aria-hidden="true"></div>
+                <p>二维码将显示在这里</p>
+              </div>
+              <canvas id="qr-canvas" width="768" height="768" hidden></canvas>
+            </div>
           </div>
-          <div class="option">
-            <label class="field-label" for="fg">前景色</label>
-            <input id="fg" class="color" type="color" value="#0B1220" />
-          </div>
-          <div class="option">
-            <label class="field-label" for="bg">背景色</label>
-            <input id="bg" class="color" type="color" value="#FFFFFF" />
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="button" id="download-btn" class="btn-primary" disabled>
-            下载 PNG
-          </button>
-          <button type="button" id="copy-btn" class="btn-secondary" disabled>
-            复制内容
-          </button>
+          <p id="meta" class="meta"></p>
         </div>
       </section>
 
-      <section class="panel panel-preview" aria-label="二维码预览">
-        <div class="preview-head">
-          <span class="field-label">预览</span>
-          <span id="status" class="status">输入内容后自动生成</span>
+      <section class="card card-custom" aria-label="自定义设计">
+        <div class="custom-head">
+          <span class="step-badge">第2步</span>
+          <h2>自定义设计二维码</h2>
         </div>
-        <div class="preview-stage">
-          <div id="qr-box" class="qr-box is-empty" aria-live="polite">
-            <div class="empty-state">
-              <div class="empty-frame" aria-hidden="true"></div>
-              <p>二维码将显示在这里</p>
+
+        <div class="tabs" role="tablist" aria-label="自定义选项">
+          <button type="button" class="tab is-active" data-tab="pattern" role="tab" aria-selected="true">图案</button>
+          <button type="button" class="tab" data-tab="eye" role="tab" aria-selected="false">图眼</button>
+          <button type="button" class="tab" data-tab="logo" role="tab" aria-selected="false">Logo</button>
+          <button type="button" class="tab" data-tab="color" role="tab" aria-selected="false">颜色</button>
+          <button type="button" class="tab" data-tab="frame" role="tab" aria-selected="false">边框</button>
+          <button type="button" class="tab" data-tab="template" role="tab" aria-selected="false">模板</button>
+        </div>
+
+        <p id="tab-tip" class="tab-tip">根据品牌形象和使用场景选择合适的二维码图案</p>
+
+        <!-- 图案 -->
+        <div class="tab-panel is-active" data-panel="pattern" role="tabpanel">
+          <div class="swatch-grid" id="pattern-grid"></div>
+        </div>
+
+        <!-- 图眼 -->
+        <div class="tab-panel" data-panel="eye" role="tabpanel" hidden>
+          <div class="swatch-grid" id="eye-grid"></div>
+        </div>
+
+        <!-- Logo -->
+        <div class="tab-panel" data-panel="logo" role="tabpanel" hidden>
+          <div class="logo-block">
+            <div class="logo-upload">
+              <div class="logo-thumb" id="logo-thumb" aria-hidden="true">
+                <span>无</span>
+              </div>
+              <div class="logo-actions">
+                <label class="btn-primary btn-file">
+                  上传 Logo
+                  <input id="logo-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                </label>
+                <button type="button" id="logo-remove" class="btn-secondary" disabled>移除 Logo</button>
+              </div>
+              <p class="muted">支持 PNG / JPG，建议 300×300。加 Logo 时容错建议 H。</p>
             </div>
-            <canvas id="qr-canvas" width="512" height="512" hidden></canvas>
+            <div class="option logo-size-option">
+              <label class="field-label" for="logo-size">Logo 大小</label>
+              <input id="logo-size" type="range" min="12" max="28" value="20" />
+              <span class="muted" id="logo-size-val">20%</span>
+            </div>
           </div>
         </div>
-        <p id="meta" class="meta"></p>
+
+        <!-- 颜色 -->
+        <div class="tab-panel" data-panel="color" role="tabpanel" hidden>
+          <div class="color-block">
+            <div class="radio-row" role="radiogroup" aria-label="着色方式">
+              <label class="radio"><input type="radio" name="color-mode" value="solid" checked /> 纯色</label>
+              <label class="radio"><input type="radio" name="color-mode" value="gradient" /> 渐变</label>
+            </div>
+            <div class="options">
+              <div class="option">
+                <label class="field-label" for="fg">前景色</label>
+                <input id="fg" class="color" type="color" value="#0B1220" />
+              </div>
+              <div class="option" id="fg2-wrap" hidden>
+                <label class="field-label" for="fg2">前景渐变</label>
+                <input id="fg2" class="color" type="color" value="#2F6BFF" />
+              </div>
+              <div class="option">
+                <label class="field-label" for="eye-color">图眼颜色</label>
+                <input id="eye-color" class="color" type="color" value="#0B1220" />
+              </div>
+              <div class="option">
+                <label class="field-label" for="bg">背景色</label>
+                <input id="bg" class="color" type="color" value="#FFFFFF" />
+              </div>
+              <div class="option" id="bg2-wrap" hidden>
+                <label class="field-label" for="bg2">背景渐变</label>
+                <input id="bg2" class="color" type="color" value="#E8EEFC" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 边框 -->
+        <div class="tab-panel" data-panel="frame" role="tabpanel" hidden>
+          <div class="swatch-grid" id="frame-grid"></div>
+          <div class="options frame-options">
+            <div class="option">
+              <label class="field-label" for="frame-color">边框颜色</label>
+              <input id="frame-color" class="color" type="color" value="#054080" />
+            </div>
+            <div class="option">
+              <label class="field-label" for="frame-text">边框文本</label>
+              <input id="frame-text" class="select" type="text" value="扫一扫" maxlength="24" />
+            </div>
+            <div class="option">
+              <label class="field-label" for="frame-font">字体</label>
+              <select id="frame-font" class="select">
+                <option value="Arial, sans-serif" selected>Arial</option>
+                <option value="'PingFang SC', 'Microsoft YaHei', sans-serif">黑体</option>
+                <option value="Georgia, 'Songti SC', serif">宋体</option>
+                <option value="'Courier New', monospace">等宽</option>
+              </select>
+            </div>
+            <div class="option">
+              <label class="field-label" for="text-mode">填充方式</label>
+              <select id="text-mode" class="select">
+                <option value="solid" selected>纯色</option>
+                <option value="gradient">渐变</option>
+              </select>
+            </div>
+            <div class="option" id="frame-color2-wrap" hidden>
+              <label class="field-label" for="frame-color2">边框渐变</label>
+              <input id="frame-color2" class="color" type="color" value="#2F6BFF" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 模板 -->
+        <div class="tab-panel" data-panel="template" role="tabpanel" hidden>
+          <div class="swatch-grid" id="template-grid"></div>
+        </div>
       </section>
     </main>
 
