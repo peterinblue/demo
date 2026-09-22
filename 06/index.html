@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="输入文字或网址，即时生成二维码，支持下载 PNG。" />
+  <title>二维码生成器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">QR Studio</span>
+      </div>
+      <h1>文字 / 网址 → 二维码</h1>
+      <p class="hero-sub">粘贴任意内容，即时生成高清二维码。支持电脑与手机。</p>
+    </header>
+
+    <main class="card">
+      <section class="panel panel-form" aria-label="生成设置">
+        <label class="field-label" for="content">内容</label>
+        <textarea
+          id="content"
+          class="content-input"
+          rows="5"
+          placeholder="例如：https://github.com 或 你好，世界"
+          spellcheck="false"
+          autocomplete="off"
+        ></textarea>
+        <div class="hint-row">
+          <span id="type-hint" class="hint">将自动识别文字或网址</span>
+          <button type="button" id="clear-btn" class="btn-ghost">清空</button>
+        </div>
+
+        <div class="options">
+          <div class="option">
+            <label class="field-label" for="size">尺寸</label>
+            <select id="size" class="select">
+              <option value="256">256 × 256</option>
+              <option value="512" selected>512 × 512</option>
+              <option value="1024">1024 × 1024</option>
+            </select>
+          </div>
+          <div class="option">
+            <label class="field-label" for="ecc">容错级别</label>
+            <select id="ecc" class="select">
+              <option value="L">L · 7%</option>
+              <option value="M" selected>M · 15%</option>
+              <option value="Q">Q · 25%</option>
+              <option value="H">H · 30%</option>
+            </select>
+          </div>
+          <div class="option">
+            <label class="field-label" for="fg">前景色</label>
+            <input id="fg" class="color" type="color" value="#0B1220" />
+          </div>
+          <div class="option">
+            <label class="field-label" for="bg">背景色</label>
+            <input id="bg" class="color" type="color" value="#FFFFFF" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="download-btn" class="btn-primary" disabled>
+            下载 PNG
+          </button>
+          <button type="button" id="copy-btn" class="btn-secondary" disabled>
+            复制内容
+          </button>
+        </div>
+      </section>
+
+      <section class="panel panel-preview" aria-label="二维码预览">
+        <div class="preview-head">
+          <span class="field-label">预览</span>
+          <span id="status" class="status">输入内容后自动生成</span>
+        </div>
+        <div class="preview-stage">
+          <div id="qr-box" class="qr-box is-empty" aria-live="polite">
+            <div class="empty-state">
+              <div class="empty-frame" aria-hidden="true"></div>
+              <p>二维码将显示在这里</p>
+            </div>
+            <canvas id="qr-canvas" width="512" height="512" hidden></canvas>
+          </div>
+        </div>
+        <p id="meta" class="meta"></p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>本地生成，内容不上传服务器 · 适配桌面与移动端</p>
+    </footer>
+  </div>
+
+  <script src="lib/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
