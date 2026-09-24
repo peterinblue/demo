@@ -847,6 +847,11 @@
     on($('#btn-share-link'), 'click', async () => {
       readForm();
       const url = `${location.origin}${location.pathname}#c=${encodeShare()}`;
+      // 交给分享弹层：网页二维码 + 微信分享
+      if (window.CardShare && CardShare.openShareQr) {
+        CardShare.openShareQr(url, state);
+        return;
+      }
       if (navigator.share) {
         try {
           await navigator.share({
@@ -927,4 +932,27 @@
   } else {
     init();
   }
+
+  // 供保存/分享/查看模块调用
+  global.CardEditor = {
+    getState: function () {
+      try {
+        readForm();
+      } catch (_) {}
+      return { ...state };
+    },
+    setState: function (next) {
+      state = { ...DEFAULT_STATE, ...next };
+      try {
+        fillForm();
+        applyTemplate();
+        renderCard();
+        saveState();
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    readForm: readForm,
+    refresh: refresh,
+  };
 })();
