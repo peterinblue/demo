@@ -714,10 +714,13 @@
         }
       }
       if (t && t.name === 'name') {
+        // 只要不是正在手写英文名，就始终按姓名生成正序拼音
         const enEl = form.elements.namedItem('nameEn');
-        const cur = String((enEl && enEl.value) || '').trim();
-        nameEnAuto = !cur || cur === lastAutoNameEn;
-        syncNameEnFromName(false);
+        const editingEn = enEl && document.activeElement === enEl;
+        if (!editingEn) {
+          nameEnAuto = true;
+          syncNameEnFromName(true);
+        }
       }
       scheduleRefresh();
     });
