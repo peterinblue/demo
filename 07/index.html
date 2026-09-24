@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="名片工坊 — 个人电子名片制作器。参考宽脉名片与名片全能王，实时预览、多套模板、一键导出。" />
+  <title>名片工坊 · 个人电子名片制作器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- 顶栏 -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="8.5" cy="11" r="2.2" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M14 10h5M14 13.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <strong>名片工坊</strong>
+          <span>CardCraft Studio</span>
+        </div>
+      </div>
+
+      <nav class="top-tabs" role="tablist">
+        <button class="tab is-active" data-panel="edit" role="tab" aria-selected="true">编辑</button>
+        <button class="tab" data-panel="template" role="tab" aria-selected="false">模板</button>
+        <button class="tab" data-panel="export" role="tab" aria-selected="false">导出</button>
+      </nav>
+
+      <div class="top-actions">
+        <button type="button" class="btn btn-ghost" id="btn-reset" title="恢复示例数据">示例</button>
+        <button type="button" class="btn btn-primary" id="btn-quick-export">导出名片</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <!-- 左侧：编辑面板 -->
+      <aside class="sidebar">
+        <!-- 编辑 -->
+        <section class="panel is-active" id="panel-edit" role="tabpanel">
+          <div class="panel-head">
+            <h2>个人信息</h2>
+            <p>填写内容将实时同步到名片预览</p>
+          </div>
+
+          <form id="card-form" class="form" autocomplete="off">
+            <div class="field-row">
+              <label class="field">
+                <span>姓名</span>
+                <input type="text" name="name" id="f-name" placeholder="你的姓名" maxlength="20" />
+              </label>
+              <label class="field">
+                <span>英文名</span>
+                <input type="text" name="nameEn" id="f-nameEn" placeholder="English name" maxlength="32" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>职位</span>
+                <input type="text" name="title" id="f-title" placeholder="产品设计师" maxlength="24" />
+              </label>
+              <label class="field">
+                <span>公司</span>
+                <input type="text" name="company" id="f-company" placeholder="公司名称" maxlength="28" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>手机</span>
+                <input type="tel" name="phone" id="f-phone" placeholder="138 0013 8000" maxlength="24" />
+              </label>
+              <label class="field">
+                <span>邮箱</span>
+                <input type="email" name="email" id="f-email" placeholder="name@example.com" maxlength="48" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>网站</span>
+                <input type="text" name="website" id="f-website" placeholder="https://" maxlength="48" />
+              </label>
+              <label class="field">
+                <span>微信</span>
+                <input type="text" name="wechat" id="f-wechat" placeholder="微信号" maxlength="32" />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>地址</span>
+              <input type="text" name="address" id="f-address" placeholder="省市区 / 街道" maxlength="48" />
+            </label>
+
+            <label class="field">
+              <span>一句话简介</span>
+              <textarea name="bio" id="f-bio" rows="2" maxlength="48" placeholder="用一句话介绍自己"></textarea>
+            </label>
+
+            <div class="avatar-block">
+              <div class="avatar-preview" id="avatar-preview">
+                <span class="avatar-placeholder" id="avatar-placeholder">照</span>
+                <img id="avatar-img" alt="头像预览" hidden />
+              </div>
+              <div class="avatar-actions">
+                <label class="btn btn-secondary btn-sm">
+                  上传头像
+                  <input type="file" id="f-avatar" accept="image/*" hidden />
+                </label>
+                <button type="button" class="btn btn-ghost btn-sm" id="btn-clear-avatar">清除</button>
+                <p class="hint">建议正方形，导出高清名片</p>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- 模板 -->
+        <section class="panel" id="panel-template" role="tabpanel" hidden>
+          <div class="panel-head">
+            <h2>名片模板</h2>
+            <p>点击切换，预览即时换装</p>
+          </div>
+
+          <div class="template-grid" id="template-grid">
+            <!-- JS 注入 -->
+          </div>
+
+          <div class="panel-subhead">
+            <h3>强调色</h3>
+            <p>微调模板的主色点缀</p>
+          </div>
+          <div class="color-row" id="color-row">
+            <button type="button" class="swatch is-active" data-color="#0B3D5C" style="--c:#0B3D5C" title="墨蓝"></button>
+            <button type="button" class="swatch" data-color="#B8956A" style="--c:#B8956A" title="暖金"></button>
+            <button type="button" class="swatch" data-color="#1F6B4A" style="--c:#1F6B4A" title="竹青"></button>
+            <button type="button" class="swatch" data-color="#A33B2B" style="--c:#A33B2B" title="赤朱"></button>
+            <button type="button" class="swatch" data-color="#2A2A2E" style="--c:#2A2A2E" title="玄墨"></button>
+            <button type="button" class="swatch" data-color="#4A5FA8" style="--c:#4A5FA8" title="靛青"></button>
+          </div>
+        </section>
+
+        <!-- 导出 -->
+        <section class="panel" id="panel-export" role="tabpanel" hidden>
+          <div class="panel-head">
+            <h2>导出与分享</h2>
+            <p>把电子名片发给任何人</p>
+          </div>
+
+          <div class="export-list">
+            <button type="button" class="export-card" id="btn-png">
+              <div class="export-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="11" r="1.6" fill="currentColor"/><path d="M4 16l4.5-4 3 2.5L16 10l4 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <strong>下载 PNG</strong>
+                <span>高清名片图片（正 + 背）</span>
+              </div>
+            </button>
+
+            <button type="button" class="export-card" id="btn-vcard">
+              <div class="export-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.4"/><path d="M8 17c.7-1.8 2.1-2.7 4-2.7s3.3.9 4 2.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <strong>下载 vCard</strong>
+                <span>可直接导入手机通讯录</span>
+              </div>
+            </button>
+
+            <button type="button" class="export-card" id="btn-copy-text">
+              <div class="export-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6 16H5a2 2 0 01-2-2V5a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.6"/></svg>
+              </div>
+              <div>
+                <strong>复制名片文本</strong>
+                <span>一键复制到剪贴板</span>
+              </div>
+            </button>
+
+            <button type="button" class="export-card" id="btn-share-link">
+              <div class="export-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="18" cy="6" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="18" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M8.2 10.8l7.5-3.6M8.2 13.2l7.5 3.6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </div>
+              <div>
+                <strong>分享链接</strong>
+                <span>对方打开即可查看名片</span>
+              </div>
+            </button>
+
+            <button type="button" class="export-card" id="btn-save-local">
+              <div class="export-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6"/><path d="M8 4v5h7M8 20v-6h8v6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </div>
+              <div>
+                <strong>保存到本机</strong>
+                <span>写入浏览器本地存储</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="tips">
+            <h3>使用提示</h3>
+            <ul>
+              <li>二维码为标准 vCard，微信 / 系统相机可识别</li>
+              <li>分享链接把资料编码在 URL 中，无需服务器</li>
+              <li>编辑内容会自动暂存，刷新不丢失</li>
+            </ul>
+          </div>
+        </section>
+      </aside>
+
+      <!-- 右侧：预览舞台 -->
+      <section class="stage">
+        <div class="stage-toolbar">
+          <div class="face-switch" role="group" aria-label="名片面">
+            <button type="button" class="face-btn is-active" data-face="front">正面</button>
+            <button type="button" class="face-btn" data-face="back">背面</button>
+            <button type="button" class="face-btn" data-face="flip">翻转</button>
+          </div>
+          <div class="stage-meta">
+            <span id="template-label">极简白</span>
+            <span class="dot">·</span>
+            <span>90 × 54 mm</span>
+          </div>
+        </div>
+
+        <div class="stage-canvas">
+          <div class="card-scene" id="card-scene">
+            <div class="card-3d" id="card-3d">
+              <!-- 正面 -->
+              <article class="card face-front t-minimal" id="card-front" data-template="minimal">
+                <div class="card-deco"></div>
+                <div class="card-body">
+                  <div class="card-avatar-wrap">
+                    <div class="card-avatar" id="card-avatar-front">
+                      <span id="card-avatar-letter">照</span>
+                      <img id="card-avatar-img-front" alt="" hidden />
+                    </div>
+                  </div>
+                  <div class="card-main">
+                    <h1 class="card-name" id="card-name">林思远</h1>
+                    <p class="card-name-en" id="card-name-en">Siyuan Lin</p>
+                    <p class="card-role"><span id="card-title">产品设计师</span><span class="sep" id="card-role-sep"> · </span><span id="card-company">澄明科技</span></p>
+                    <ul class="card-contacts" id="card-contacts">
+                      <li data-k="phone"><span class="ico">☎</span><span id="card-phone">138 0013 8000</span></li>
+                      <li data-k="email"><span class="ico">✉</span><span id="card-email">siyuan.lin@example.com</span></li>
+                      <li data-k="wechat"><span class="ico">微</span><span id="card-wechat">siyuan_design</span></li>
+                      <li data-k="website"><span class="ico">链</span><span id="card-website">example.com</span></li>
+                    </ul>
+                  </div>
+                </div>
+                <footer class="card-footer">
+                  <span id="card-address">上海市静安区南京西路 1266 号</span>
+                </footer>
+              </article>
+
+              <!-- 背面 -->
+              <article class="card face-back t-minimal" id="card-back" data-template="minimal">
+                <div class="card-deco"></div>
+                <div class="back-layout">
+                  <div class="qr-block">
+                    <div class="qr-frame">
+                      <canvas id="qr-canvas" width="220" height="220" aria-label="名片二维码"></canvas>
+                    </div>
+                    <p class="qr-hint">扫码存通讯录</p>
+                  </div>
+                  <div class="back-side">
+                    <p class="back-brand" id="back-company">澄明科技</p>
+                    <p class="back-name" id="back-name">林思远</p>
+                    <p class="back-bio" id="back-bio">专注数字产品体验，用设计连接人与信息。</p>
+                    <div class="back-accent"></div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-note">
+          <p>参考宽脉名片 · 名片全能王 — 实时编辑、模板换装、二维码一键分享</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- 隐藏：用于 PNG 导出的高清画布 -->
+  <canvas id="export-canvas" hidden></canvas>
+
+  <script src="js/qr.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
