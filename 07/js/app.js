@@ -4,6 +4,10 @@
 (function () {
   'use strict';
 
+  window.addEventListener('error', (e) => {
+    console.error('app error', e.message, e.filename, e.lineno);
+  });
+
   const STORAGE_KEY = 'cardcraft-studio-v1';
   const TEMPLATES = [
     { id: 'minimal', name: '极简白', desc: '留白 · 细线', className: 't-minimal', accent: '#1a1814' },
@@ -86,25 +90,44 @@
   }
 
   // ---------- State I/O ----------
+  let composing = false;
+  let refreshTimer = 0;
+  let lastQrText = '';
+
   function readForm() {
     const fd = new FormData(form);
     for (const [k, v] of fd.entries()) {
       if (k !== 'avatar') state[k] = String(v).trim();
     }
-    syncNameEnFromName();
+    if (!composing) syncNameEnFromName();
   }
 
   /** 中文姓名 → 正序拼音（姓在前）。手改过英文名则不覆盖 */
   function syncNameEnFromName() {
-    if (typeof PinyinLite === 'undefined' || !PinyinLite.nameToPinyin) return;
-    const auto = PinyinLite.nameToPinyin(state.name);
-    lastAutoNameEn = auto;
-    if (!nameEnAuto) return;
-    if (auto) {
-      state.nameEn = auto;
-      const el = form.elements.namedItem('nameEn');
-      if (el && el.value !== auto) el.value = auto;
+    try {
+      if (typeof PinyinLite === 'undefined' || !PinyinLite.nameToPinyin) return;
+      const auto = PinyinLite.nameToPinyin(state.name);
+      lastAutoNameEn = auto;
+      if (!nameEnAuto) return;
+      if (auto) {
+        state.nameEn = auto;
+        const el = form.elements.namedItem('nameEn');
+        if (el && el.value !== auto) el.value = auto;
+      }
+    } catch (_) {
+      /* 拼音失败不阻塞编辑 */
     }
+  }
+
+  function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      try {
+        refresh();
+      } catch (err) {
+        console.error('refresh failed', err);
+      }
+    }, 40);
   }
 
   function fillForm() {
@@ -203,9 +226,11 @@
   function applyTemplate() {
     const tpl = TEMPLATES.find((t) => t.id === state.template) || TEMPLATES[0];
     [cardFront, cardBack].forEach((el) => {
+      if (!el) return;
       el.className = `card ${el.classList.contains('face-front') ? 'face-front' : 'face-back'} ${tpl.className}`;
     });
-    $('#template-label').textContent = tpl.name;
+    const label = $('#template-label');
+    if (label) label.textContent = tpl.name;
     document.documentElement.style.setProperty('--card-accent', state.accent || tpl.accent);
 
     $$('.template-item').forEach((btn) => {
@@ -214,6 +239,8 @@
     $$('.swatch').forEach((btn) => {
       btn.classList.toggle('is-active', btn.dataset.color.toLowerCase() === (state.accent || '').toLowerCase());
     });
+    // 换色/换模板后强制重绘二维码
+    lastQrText = '';
   }
 
   function renderAvatar() {
@@ -286,8 +313,9 @@
   function renderQR() {
     try {
       const vcard = buildVCard();
-      // 限制长度避免超容量
       const text = vcard.length > 900 ? vcard.slice(0, 900) : vcard;
+      if (text === lastQrText && qrCanvas.width > 0) return;
+      lastQrText = text;
       const matrix = QRMini.encodeText(text);
       const tpl = TEMPLATES.find((t) => t.id === state.template) || TEMPLATES[0];
       const dark =
@@ -302,7 +330,6 @@
       });
     } catch (err) {
       console.warn('QR 生成失败', err);
-      // 画占位
       const ctx = qrCanvas.getContext('2d');
       qrCanvas.width = 140;
       qrCanvas.height = 140;
@@ -627,11 +654,37 @@
   }
 
   // ---------- Events ----------
+  function on(el, type, fn) {
+    if (!el) return;
+    el.addEventListener(type, (e) => {
+      try {
+        fn(e);
+      } catch (err) {
+        console.error(type, err);
+      }
+    });
+  }
+
   function bind() {
-    form.addEventListener('input', (e) => {
+    // 中文输入法：组合期间不刷新、不改英文名，避免卡死
+    on(form, 'compositionstart', () => {
+      composing = true;
+    });
+    on(form, 'compositionend', (e) => {
+      composing = false;
+      const t = e.target;
+      if (t && t.name === 'name') {
+        const enEl = form.elements.namedItem('nameEn');
+        const cur = String((enEl && enEl.value) || '').trim();
+        nameEnAuto = !cur || cur === lastAutoNameEn;
+      }
+      refresh();
+    });
+
+    on(form, 'input', (e) => {
+      if (composing) return;
       const t = e.target;
       if (t && t.name === 'nameEn') {
-        // 手改英文名：停止自动填充；清空则恢复自动
         const val = String(t.value || '').trim();
         if (!val) {
           nameEnAuto = true;
@@ -643,20 +696,23 @@
       if (t && t.name === 'name') {
         const enEl = form.elements.namedItem('nameEn');
         const cur = String((enEl && enEl.value) || '').trim();
-        // 英文名仍为空或等于上次自动值 → 继续跟随姓名
         nameEnAuto = !cur || cur === lastAutoNameEn;
       }
-      refresh();
+      scheduleRefresh();
     });
 
     // 载入后校准自动状态
     (function calibrateNameEnAuto() {
-      const auto = typeof PinyinLite !== 'undefined' ? PinyinLite.nameToPinyin(state.name) : '';
-      lastAutoNameEn = auto;
-      nameEnAuto = !state.nameEn || state.nameEn === auto;
+      try {
+        const auto = typeof PinyinLite !== 'undefined' ? PinyinLite.nameToPinyin(state.name) : '';
+        lastAutoNameEn = auto;
+        nameEnAuto = !state.nameEn || state.nameEn === auto;
+      } catch (_) {
+        nameEnAuto = false;
+      }
     })();
 
-    $('#f-avatar').addEventListener('change', (e) => {
+    on($('#f-avatar'), 'change', (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) {
@@ -687,16 +743,17 @@
       reader.readAsDataURL(file);
     });
 
-    $('#btn-clear-avatar').addEventListener('click', () => {
+    on($('#btn-clear-avatar'), 'click', () => {
       state.avatar = '';
-      $('#f-avatar').value = '';
+      const f = $('#f-avatar');
+      if (f) f.value = '';
       renderAvatar();
       saveState();
     });
 
     // tabs
     $$('.tab').forEach((tab) => {
-      tab.addEventListener('click', () => {
+      on(tab, 'click', () => {
         const id = tab.dataset.panel;
         $$('.tab').forEach((t) => {
           t.classList.toggle('is-active', t === tab);
@@ -712,11 +769,11 @@
 
     // face
     $$('.face-btn').forEach((btn) => {
-      btn.addEventListener('click', () => setFace(btn.dataset.face));
+      on(btn, 'click', () => setFace(btn.dataset.face));
     });
 
     // colors
-    $('#color-row').addEventListener('click', (e) => {
+    on($('#color-row'), 'click', (e) => {
       const btn = e.target.closest('.swatch');
       if (!btn) return;
       state.accent = btn.dataset.color;
@@ -725,8 +782,8 @@
     });
 
     // exports
-    $('#btn-png').addEventListener('click', exportPNG);
-    $('#btn-quick-export').addEventListener('click', () => {
+    on($('#btn-png'), 'click', exportPNG);
+    on($('#btn-quick-export'), 'click', () => {
       $$('.tab').forEach((t) => {
         const on = t.dataset.panel === 'export';
         t.classList.toggle('is-active', on);
@@ -739,14 +796,14 @@
       });
     });
 
-    $('#btn-vcard').addEventListener('click', () => {
+    on($('#btn-vcard'), 'click', () => {
       readForm();
       const blob = new Blob([buildVCard()], { type: 'text/vcard;charset=utf-8' });
       downloadBlob(blob, `${state.name || 'contact'}.vcf`);
       toast('vCard 已下载');
     });
 
-    $('#btn-copy-text').addEventListener('click', async () => {
+    on($('#btn-copy-text'), 'click', async () => {
       readForm();
       try {
         await navigator.clipboard.writeText(buildPlainText());
@@ -763,7 +820,7 @@
       }
     });
 
-    $('#btn-share-link').addEventListener('click', async () => {
+    on($('#btn-share-link'), 'click', async () => {
       readForm();
       const url = `${location.origin}${location.pathname}#c=${encodeShare()}`;
       if (navigator.share) {
@@ -787,13 +844,13 @@
       }
     });
 
-    $('#btn-save-local').addEventListener('click', () => {
+    on($('#btn-save-local'), 'click', () => {
       readForm();
       saveState();
       toast('已保存到本机');
     });
 
-    $('#btn-reset').addEventListener('click', () => {
+    on($('#btn-reset'), 'click', () => {
       if (!confirm('恢复为示例数据？当前编辑将被覆盖。')) return;
       state = { ...DEFAULT_STATE };
       fillForm();
@@ -807,33 +864,37 @@
 
   // ---------- Init ----------
   function init() {
-    loadState();
-    // 启动时若英文名为空或旧倒序默认，自动纠正为正序拼音
-    if (typeof PinyinLite !== 'undefined') {
-      lastAutoNameEn = PinyinLite.nameToPinyin(state.name);
-      if (!state.nameEn || state.nameEn === 'Siyuan Lin') {
-        state.nameEn = lastAutoNameEn;
+    try {
+      loadState();
+      // 启动时若英文名为空或旧倒序默认，自动纠正为正序拼音
+      if (typeof PinyinLite !== 'undefined') {
+        lastAutoNameEn = PinyinLite.nameToPinyin(state.name);
+        if (!state.nameEn || state.nameEn === 'Siyuan Lin') {
+          state.nameEn = lastAutoNameEn;
+        }
       }
-    }
-    fillForm();
-    renderTemplates();
-    applyTemplate();
-    renderCard();
-    bind();
-    setFace('front');
+      fillForm();
+      renderTemplates();
+      applyTemplate();
+      renderCard();
+      bind();
+      setFace('front');
 
-    // 深链：#panel=template / #face=back
-    const hash = location.hash || '';
-    const panelMatch = hash.match(/panel=([a-z]+)/);
-    const faceMatch = hash.match(/face=([a-z]+)/);
-    if (panelMatch) {
-      const tab = document.querySelector(`.tab[data-panel="${panelMatch[1]}"]`);
-      if (tab) tab.click();
-    }
-    if (faceMatch) setFace(faceMatch[1]);
+      // 深链：#panel=template / #face=back
+      const hash = location.hash || '';
+      const panelMatch = hash.match(/panel=([a-z]+)/);
+      const faceMatch = hash.match(/face=([a-z]+)/);
+      if (panelMatch) {
+        const tab = document.querySelector(`.tab[data-panel="${panelMatch[1]}"]`);
+        if (tab) tab.click();
+      }
+      if (faceMatch) setFace(faceMatch[1]);
 
-    if (/[#&]c=/.test(hash)) {
-      toast('已载入分享名片');
+      if (/[#&]c=/.test(hash)) {
+        toast('已载入分享名片');
+      }
+    } catch (err) {
+      console.error('init failed', err);
     }
   }
 
