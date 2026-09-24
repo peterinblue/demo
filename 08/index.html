@@ -2004,7 +2004,7 @@
       TEX.solar = texSolar();
       TEX.steel = texSteel();
       TEX.facadeHall = texFacade(16, 24, { lit: 0.20, frame: '#aab5c1' });  // 主厂房幕墙
-      TEX.facadeOffice = texFacade(12, 26, { lit: 0.28, frame: '#c4cdd7' }); // 办公楼层间
+      TEX.facadeOffice = texFacade(10, 4, { lit: 0.24, frame: '#c4cdd7' }); // 园区办公楼（水平长窗）
       // 晚间版（房间灯亮起，同时用作自发光贴图）
       // 【第 17 轮】夜间亮灯数量降到三分之一：厂房高侧窗那一条玻璃带原来一律按默认 0.68 点亮，
       // 夜里就是一条横在建筑上部的亮带（"灯都集中在上半部分"的主要来源之一）。
@@ -2012,7 +2012,7 @@
       // 【最高的那栋楼】晚间不必全亮：行数直接给成楼层数（9 行 = 9 层，一行就是一层），
       // 亮的层数取一半（litRatio 0.5 → 5 层亮 4 层暗），符合"下班后只留一半办公区"的真实感。
       // 原来 rows=26 与 9 层对不上，一行只覆盖 1/3 层，"半亮"根本表达不出来。
-      TEX.facadeOfficeN = texFacade(12, 9, { mode: 'night', frame: '#0a121b', litRatio: 0.33 });
+      TEX.facadeOfficeN = texFacade(10, 4, { mode: 'night', frame: '#0a121b', litRatio: 0.40 });
     }
 
     /* ============ 2. 天空穹顶 + PMREM 环境反射 ============ */
@@ -2261,7 +2261,7 @@
       });
       // 屋面（浅灰金属）
       MAT.roof = new THREE.MeshStandardMaterial({
-        color: C('#b9c2cb'), roughness: 0.62, metalness: 0.38, envMapIntensity: 0.80
+        color: C('#4a90e2'), roughness: 0.52, metalness: 0.42, envMapIntensity: 0.90
       });
       // 铝合金（腰线 / 支架 / 框料）
       MAT.alu = new THREE.MeshStandardMaterial({
@@ -2498,7 +2498,7 @@
       // 提到 1.5 后 z=300m 分辨 3.6mm、z=350m 分辨 4.9mm，比最小高差还小一半。
       // 相机受 minDistance=14 约束，不可能贴到 1.5m 内，取景完全不受影响。
       camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1.5, 1200);
-      camera.position.set(72, 54, 72);
+      camera.position.set(55, 72, 95);
 
       // ---- 渲染器：线性工作流 + ACES 电影级色调映射 ----
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -2533,7 +2533,7 @@
       controls.maxDistance = 300;
       controls.zoomSpeed = 0.85;
       controls.maxPolarAngle = Math.PI / 2 - 0.04;
-      controls.target.set(0, 16, 0);
+      controls.target.set(0, 6, -12);
       // 【第 17 轮】鼠标中键 = 上下左右平移画布（原来中键是推拉镜头，用户要的是拖动画布）。
       // screenSpacePanning=true 让平移沿屏幕方向走（而不是贴着地面平移），"上下左右拖动"更符合直觉。
       // 左键旋转、右键平移都保留。
@@ -2647,18 +2647,31 @@
     }
 
     function createFactoryBuilding() {
-      // ===== 现代工业园区：主厂房 + 办公楼 + 生产车间 + 储罐区 =====
-      addFactoryMainHall(0, -6, 46, 30, 12);   // 中央主厂房
-      addOfficeBuilding(-38, 18, 22, 16, 9);   // 左侧研发办公楼
-      addWorkshop(40, -16, 28, 20, 9);         // 右侧生产车间
-      addStorageTanks(-44, -24);               // 西北储罐区
-      addChargingStation(40, -30.7, Math.PI); // 车间北侧电动车充电站（车位/充电桩紧贴车间北墙，桩体外缘留 5cm 不入墙）
-      addGateHouse(0, 50);                     // 南门岗（园区大门）
-      addParkingLot(50, 18);                   // 东南停车场（移出主干道，避免与路面重叠）
-      addGreenArea(-30, 48.6);                 // 主干道南侧路侧绿带（z 44.2~53，不再压马路）
-      addSubstation(69, -54);                  // 东北角小型配电站（箱式变电站，贴角布置）
-      addPipeRack();                           // 工艺管廊
-      addPerimeterWall();                      // 园区围墙
+      // ===== 浦江园区北区：北侧长条厂房 + 中部主厂房 + 东侧厂房 + 南侧研发楼 + 入口广场 + 光伏车棚 + 水体 =====
+      // 北侧长条厂房（东西走向，三层，屋顶满铺光伏）
+      addWorkshop(-24, -34, 68, 20, 9);
+      // 中部主厂房（L形主体，四层，朝南主入口）
+      addFactoryMainHall(-15, -8, 48, 30, 12);
+      // 东侧连接厂房（南北走向，与主厂房东翼衔接）
+      addWorkshop(28, -8, 20, 42, 10);
+      // 南侧研发/办公楼（入口广场北侧，五层，水平长窗）
+      addOfficeBuilding(-8, 20, 22, 12, 5);
+      // 东侧光伏车棚（长条形，蓝色顶棚）
+      addSolarCarport(56, -6);
+      // 东侧停车场
+      addParkingLot(60, 12);
+      // 入口广场 + 圆形环岛
+      addEntryPlaza(0, 40);
+      // 西侧运动场
+      addSportsCourt(-55, 5);
+      // 东侧水体（沿东围墙的河道）
+      addWaterBody();
+      // 南门岗
+      addGateHouse(0, 50);
+      // 东北角配电站
+      addSubstation(68, -45);
+      // 园区围墙
+      addPerimeterWall();
     }
 
     // 主厂房：钢结构大跨厂房，金属墙板 + 玻璃腰带 + 满铺光伏
@@ -4234,6 +4247,173 @@
       buildingGroup.add(g);
     }
 
+    // ===== 浦江园区北区新增设施 =====
+
+    // 光伏车棚：东侧长条形，顶棚满铺蓝色光伏板
+    function addSolarCarport(x, z) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      const W = 36, D = 9, H = 4.2;
+      // 车棚地坪
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3, D + 3), MAT.asphalt2);
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.y = 0.052;
+      pad.receiveShadow = true;
+      g.add(pad);
+      // 支柱（两侧各一排）
+      for (let i = 0; i < 6; i++) {
+        const px = -W / 2 + W / 5 * i;
+        for (const s of [-1, 1]) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, H, 0.22), MAT.alu);
+          post.position.set(px, H / 2, s * (D / 2 - 0.5));
+          post.castShadow = true; post.receiveShadow = true;
+          g.add(post);
+        }
+        // 顶部横梁
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(W / 5 + 0.3, 0.22, D - 0.4), MAT.alu);
+        beam.position.set(px, H - 0.11, 0);
+        beam.castShadow = true;
+        g.add(beam);
+      }
+      // 蓝色光伏顶棚（分段铺设）
+      for (let i = 0; i < 9; i++) {
+        const pw = W / 9 - 0.2;
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.10, D - 1.2), MAT.solar);
+        panel.position.set(-W / 2 + pw / 2 + i * (W / 9), H, 0);
+        panel.rotation.x = 0.05;
+        panel.castShadow = true; panel.receiveShadow = true;
+        g.add(panel);
+      }
+      // 车位白线
+      for (let i = 0; i <= 6; i++) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.12, D - 1), MAT.marking);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(-W / 2 + i * (W / 6), 0.060, 0);
+        g.add(line);
+      }
+      buildingGroup.add(g);
+    }
+
+    // 东侧水体：沿东围墙南北向河道
+    function addWaterBody() {
+      const g = new THREE.Group();
+      // 主水面：分成两段并轻微错位，模拟自然河道
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x2ea5d8, roughness: 0.10, metalness: 0.12,
+        transparent: true, opacity: 0.88
+      });
+      const w1 = new THREE.Mesh(new THREE.PlaneGeometry(13, 48), waterMat);
+      w1.rotation.x = -Math.PI / 2;
+      w1.position.set(75, 0.038, -25);
+      w1.receiveShadow = true;
+      g.add(w1);
+      const w2 = new THREE.Mesh(new THREE.PlaneGeometry(12, 44), waterMat);
+      w2.rotation.x = -Math.PI / 2;
+      w2.position.set(76, 0.038, 18);
+      w2.receiveShadow = true;
+      g.add(w2);
+      // 水岸（混凝土护岸）
+      for (const s of [-1, 1]) {
+        const bank1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 50), MAT.concrete);
+        bank1.position.set(75 + s * 6.5, 0.17, -26);
+        bank1.castShadow = true; bank1.receiveShadow = true;
+        g.add(bank1);
+        const bank2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 46), MAT.concrete);
+        bank2.position.set(76 + s * 6.2, 0.17, 19);
+        bank2.castShadow = true; bank2.receiveShadow = true;
+        g.add(bank2);
+      }
+      // 河岸行道树（沿河道西侧成列，避开车棚/停车场）
+      for (let z = -48; z <= 38; z += 8) {
+        if (z > -16 && z < 6) continue; // 避让车棚
+        if (z > 8 && z < 22) continue;  // 避让停车场
+        addTree(g, 68, z, rnd(0.85, 1.10), true, true);
+      }
+      buildingGroup.add(g);
+    }
+
+    // 西侧运动场：篮球场 / 网球场
+    function addSportsCourt(x, z) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      // 场地（绿色塑胶）
+      const court = new THREE.Mesh(new THREE.PlaneGeometry(32, 20), new THREE.MeshStandardMaterial({
+        color: 0x5c8a52, roughness: 0.85, metalness: 0.0
+      }));
+      court.rotation.x = -Math.PI / 2;
+      court.position.y = 0.052;
+      court.receiveShadow = true;
+      g.add(court);
+      // 边线
+      const lines = [
+        [32, 0.3, 0, 10], [32, 0.3, 0, -10],
+        [0.3, 20, 16, 0], [0.3, 20, -16, 0]
+      ];
+      lines.forEach(function (ln) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(ln[0], ln[1]), MAT.marking);
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(ln[2], 0.060, ln[3]);
+        g.add(m);
+      });
+      // 中线 + 半场线（篮球场简化）
+      const mid = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 20), MAT.marking);
+      mid.rotation.x = -Math.PI / 2;
+      mid.position.set(0, 0.060, 0);
+      g.add(mid);
+      // 四周围网立柱
+      for (const sx of [-1, 1]) {
+        for (const sz of [-1, 1]) {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.0, 8), MAT.alu);
+          post.position.set(sx * 15, 2.0, sz * 9);
+          g.add(post);
+        }
+      }
+      buildingGroup.add(g);
+    }
+
+    // 入口广场：南门内圆形环岛 + 放射铺装 + 中心绿化
+    function addEntryPlaza(x, z) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      // 广场铺地
+      const plaza = new THREE.Mesh(new THREE.PlaneGeometry(34, 20), pavingMat(6, 3));
+      plaza.rotation.x = -Math.PI / 2;
+      plaza.position.y = 0.054;
+      plaza.receiveShadow = true;
+      g.add(plaza);
+      // 圆形环岛
+      const ring = new THREE.Mesh(new THREE.CircleGeometry(7.5, 48), MAT.grassPatch);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.056;
+      g.add(ring);
+      // 环岛车道
+      const roadLoop = new THREE.Mesh(new THREE.RingGeometry(7.8, 11.2, 48), MAT.asphalt2);
+      roadLoop.rotation.x = -Math.PI / 2;
+      roadLoop.position.y = 0.055;
+      g.add(roadLoop);
+      // 中心花坛/雕塑基座
+      const core = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.45, 24), MAT.concrete);
+      core.position.y = 0.22;
+      g.add(core);
+      // 旗杆
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 7.5, 12), MAT.alu);
+      pole.position.set(0, 3.75, 0);
+      g.add(pole);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.0), MAT.warn);
+      flag.position.set(0.9, 6.2, 0);
+      flag.rotation.y = Math.PI / 2;
+      g.add(flag);
+      // 入口两侧小型绿化
+      for (const s of [-1, 1]) {
+        const bed = new THREE.Mesh(new THREE.PlaneGeometry(5, 8), MAT.grassPatch);
+        bed.rotation.x = -Math.PI / 2;
+        bed.position.set(s * 13, 0.056, 0);
+        g.add(bed);
+        addTree(g, s * 13, 0, rnd(0.65, 0.85), true, true);
+      }
+      buildingGroup.add(g);
+    }
+
     /* ============ 5. 环境（道路 / 树木 / 路灯） ============ */
 
     // 园区科技网格：矩形 + 逐条裁剪在围墙内（替代正方形 GridHelper，避免网格线穿到墙外草地）
@@ -4435,8 +4615,9 @@
       // 改为由"围墙内侧环带"统一承担（它们离墙 6m、又没树池，且与新的环带树两两只差 3.5~4.3m）。
       // 合并后南侧 / 东侧变成一条贴墙、等间距 15.5m 的连续树列。
       const treePositions = [
-        [-61.5, 22],                                    // 原 [-48, 6]（储罐区南侧孤树）已按要求移除
-        [62, -22], [50, 4]
+        [-65, 30],   // 西北角外侧绿化
+        [-55, -45],  // 北厂房西侧
+        [45, 28]     // 东南停车场东侧
       ];
       treePositions.forEach(function (p) {
         addTree(buildingGroup, p[0], p[1], rnd(0.85, 1.3));
@@ -4549,21 +4730,21 @@
         [15, 46, Math.PI],                   // 大门引道东
         [40, 46, Math.PI / 2],
         [64, 46, Math.PI / 2, false],
-        // ② 建筑背面 · 主厂房段（背墙 z=-21 → 灯列 z=-27），间距 22m
-        [-22, -27, Math.PI / 2],
-        [0, -27, Math.PI / 2],
-        [22, -27, Math.PI / 2],
-        // ③ 建筑背面 · 充电站以东段（车间背墙 z=-26 → 灯列 z=-32），间距 16m
-        [56, -32, Math.PI / 2],              // 充电站东侧（照车位带出口，但不进通道）
-        [72, -32, Math.PI / 2, false],       // 园区东北侧（远景，不挂实光）
-        // ④ 办公楼背面（北墙外 z=5）
-        [-44, 5, Math.PI / 2, false],
-        [-32, 5, Math.PI / 2, false],
-        // ⑤ 东西两翼 / 主厂房南广场 / 罐区东侧
-        [-52.5, 20, -Math.PI / 2],
-        [66, 16, Math.PI],                   // 停车场东侧
-        [0, 21, Math.PI / 2],                // 主厂房南广场（正对入口）
-        [-61.5, -20, -Math.PI / 2, false]    // 储罐区东侧（远景，不挂实光）
+        // ② 北厂房背面（背墙 z=-44 → 灯列 z=-50）
+        [-42, -50, Math.PI / 2],
+        [-18, -50, Math.PI / 2],
+        [6, -50, Math.PI / 2],
+        // ③ 主厂房/东侧厂房背面（z=-22 → 灯列 z=-28）
+        [-30, -28, Math.PI / 2],
+        [-6, -28, Math.PI / 2],
+        [24, -28, Math.PI / 2],
+        // ④ 研发楼北侧（z=27）
+        [-22, 27, Math.PI / 2, false],
+        [2, 27, Math.PI / 2, false],
+        // ⑤ 东侧停车场 / 车棚 / 水体
+        [55, 24, Math.PI / 2, false],
+        [66, 0, -Math.PI / 2, false],
+        [0, 21, Math.PI / 2]                  // 主厂房南广场（正对入口）
       ];
       LAMPS.forEach(function (L) {
         addLampPost(buildingGroup, L[0], L[1], L[2], L[3] !== false);
@@ -7104,6 +7285,11 @@
     // 初始化
     initTheme();
     init3D();
+
+
+
+
+
 
 
 
