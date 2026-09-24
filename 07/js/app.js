@@ -16,7 +16,7 @@
 
   const DEFAULT_STATE = {
     name: '林思远',
-    nameEn: 'Siyuan Lin',
+    nameEn: 'Lin Siyuan',
     title: '产品设计师',
     company: '澄明科技',
     phone: '138 0013 8000',
@@ -32,6 +32,10 @@
 
   let state = { ...DEFAULT_STATE };
   let flipped = false;
+  /** 上次自动生成的英文名；用于判断是否被手改 */
+  let lastAutoNameEn = '';
+  /** 英文名是否允许随姓名自动生成 */
+  let nameEnAuto = true;
 
   // ---------- DOM ----------
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -86,6 +90,20 @@
     const fd = new FormData(form);
     for (const [k, v] of fd.entries()) {
       if (k !== 'avatar') state[k] = String(v).trim();
+    }
+    syncNameEnFromName();
+  }
+
+  /** 中文姓名 → 正序拼音（姓在前）。手改过英文名则不覆盖 */
+  function syncNameEnFromName() {
+    if (typeof PinyinLite === 'undefined' || !PinyinLite.nameToPinyin) return;
+    const auto = PinyinLite.nameToPinyin(state.name);
+    lastAutoNameEn = auto;
+    if (!nameEnAuto) return;
+    if (auto) {
+      state.nameEn = auto;
+      const el = form.elements.namedItem('nameEn');
+      if (el && el.value !== auto) el.value = auto;
     }
   }
 
@@ -610,9 +628,33 @@
 
   // ---------- Events ----------
   function bind() {
-    form.addEventListener('input', () => {
+    form.addEventListener('input', (e) => {
+      const t = e.target;
+      if (t && t.name === 'nameEn') {
+        // 手改英文名：停止自动填充；清空则恢复自动
+        const val = String(t.value || '').trim();
+        if (!val) {
+          nameEnAuto = true;
+          syncNameEnFromName();
+        } else {
+          nameEnAuto = val === lastAutoNameEn;
+        }
+      }
+      if (t && t.name === 'name') {
+        const enEl = form.elements.namedItem('nameEn');
+        const cur = String((enEl && enEl.value) || '').trim();
+        // 英文名仍为空或等于上次自动值 → 继续跟随姓名
+        nameEnAuto = !cur || cur === lastAutoNameEn;
+      }
       refresh();
     });
+
+    // 载入后校准自动状态
+    (function calibrateNameEnAuto() {
+      const auto = typeof PinyinLite !== 'undefined' ? PinyinLite.nameToPinyin(state.name) : '';
+      lastAutoNameEn = auto;
+      nameEnAuto = !state.nameEn || state.nameEn === auto;
+    })();
 
     $('#f-avatar').addEventListener('change', (e) => {
       const file = e.target.files && e.target.files[0];
@@ -766,6 +808,13 @@
   // ---------- Init ----------
   function init() {
     loadState();
+    // 启动时若英文名为空或旧倒序默认，自动纠正为正序拼音
+    if (typeof PinyinLite !== 'undefined') {
+      lastAutoNameEn = PinyinLite.nameToPinyin(state.name);
+      if (!state.nameEn || state.nameEn === 'Siyuan Lin') {
+        state.nameEn = lastAutoNameEn;
+      }
+    }
     fillForm();
     renderTemplates();
     applyTemplate();
