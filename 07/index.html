@@ -37,7 +37,7 @@
 
       <div class="top-actions">
         <button type="button" class="btn btn-ghost" id="btn-reset" title="恢复示例数据">示例</button>
-        <button type="button" class="btn btn-primary" id="btn-quick-export">导出名片</button>
+        <button type="button" class="btn btn-primary" id="btn-save-card">保存名片</button>
       </div>
     </header>
 
@@ -66,7 +66,7 @@
             <div class="field-row">
               <label class="field">
                 <span>职位</span>
-                <input type="text" name="title" id="f-title" placeholder="产品设计师" maxlength="24" />
+                <input type="text" name="title" id="f-title" placeholder="" maxlength="24" />
               </label>
               <label class="field">
                 <span>公司</span>
@@ -77,7 +77,7 @@
             <div class="field-row">
               <label class="field">
                 <span>手机</span>
-                <input type="tel" name="phone" id="f-phone" placeholder="138 0013 8000" maxlength="24" />
+                <input type="tel" name="phone" id="f-phone" placeholder="" maxlength="24" />
               </label>
               <label class="field">
                 <span>邮箱</span>
@@ -247,19 +247,19 @@
                     </div>
                   </div>
                   <div class="card-main">
-                    <h1 class="card-name" id="card-name">林思远</h1>
-                    <p class="card-name-en" id="card-name-en">Siyuan Lin</p>
-                    <p class="card-role"><span id="card-title">产品设计师</span><span class="sep" id="card-role-sep"> · </span><span id="card-company">澄明科技</span></p>
+                    <h1 class="card-name" id="card-name"></h1>
+                    <p class="card-name-en" id="card-name-en"></p>
+                    <p class="card-role"><span id="card-title"></span><span class="sep" id="card-role-sep"> · </span><span id="card-company"></span></p>
                     <ul class="card-contacts" id="card-contacts">
-                      <li data-k="phone"><span class="ico">☎</span><span id="card-phone">138 0013 8000</span></li>
-                      <li data-k="email"><span class="ico">✉</span><span id="card-email">siyuan.lin@example.com</span></li>
-                      <li data-k="wechat"><span class="ico">微</span><span id="card-wechat">siyuan_design</span></li>
+                      <li data-k="phone"><span class="ico">☎</span><span id="card-phone"></span></li>
+                      <li data-k="email"><span class="ico">✉</span><span id="card-email"></span></li>
+                      <li data-k="wechat"><span class="ico">微</span><span id="card-wechat"></span></li>
                       <li data-k="website"><span class="ico">链</span><span id="card-website">example.com</span></li>
                     </ul>
                   </div>
                 </div>
                 <footer class="card-footer">
-                  <span id="card-address">上海市静安区南京西路 1266 号</span>
+                  <span id="card-address"></span>
                 </footer>
               </article>
 
@@ -274,9 +274,9 @@
                     <p class="qr-hint">扫码存通讯录</p>
                   </div>
                   <div class="back-side">
-                    <p class="back-brand" id="back-company">澄明科技</p>
-                    <p class="back-name" id="back-name">林思远</p>
-                    <p class="back-bio" id="back-bio">专注数字产品体验，用设计连接人与信息。</p>
+                    <p class="back-brand" id="back-company"></p>
+                    <p class="back-name" id="back-name"></p>
+                    <p class="back-bio" id="back-bio"></p>
                     <div class="back-accent"></div>
                   </div>
                 </div>
@@ -299,8 +299,57 @@
   <canvas id="export-canvas" hidden></canvas>
 
   <script src="js/qr.js"></script>
+  <script src="js/storage.js"></script>
   <script src="js/pinyin-pro.js"></script>
   <script src="js/pinyin.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/saveview.js"></script>
+
+  <!-- 保存成功 · 名片二维码 -->
+  <div class="modal" id="qr-modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
+      <button class="modal-close" type="button" data-close aria-label="关闭">×</button>
+      <h2 id="qr-modal-title">名片二维码</h2>
+      <p class="modal-sub">保存图片后，对方扫码即可查看你的名片。本人扫码可继续编辑。</p>
+      <div class="qr-poster" id="qr-poster">
+        <div class="qr-poster-logo"><img src="assets/personal-logo.png" alt="" /></div>
+        <p class="qr-poster-name" id="qr-poster-name"></p>
+        <p class="qr-poster-meta" id="qr-poster-meta"></p>
+        <div class="qr-poster-code">
+          <canvas id="share-qr-canvas" width="280" height="280"></canvas>
+        </div>
+        <p class="qr-poster-hint">扫码查看名片</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="btn-dl-qr">保存二维码图片</button>
+        <button type="button" class="btn btn-secondary" id="btn-copy-view-link">复制查看链接</button>
+        <button type="button" class="btn btn-secondary" id="btn-copy-edit-link">复制编辑链接</button>
+        <button type="button" class="btn btn-ghost" data-close>完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 扫码查看（只读 / 本人） -->
+  <div class="view-page" id="view-page" hidden>
+    <div class="view-shell">
+      <header class="view-top">
+        <img class="view-logo" src="assets/personal-logo.png" alt="" />
+        <div>
+          <strong>名片工坊</strong>
+          <span>by 梁英俊</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-view-edit" hidden>编辑名片</button>
+      </header>
+      <div class="view-card-wrap" id="view-card-wrap"></div>
+      <div class="view-actions">
+        <button type="button" class="btn btn-primary" id="btn-view-vcard">存入通讯录</button>
+        <button type="button" class="btn btn-secondary" id="btn-view-copy">复制联系方式</button>
+        <a class="btn btn-ghost" id="btn-view-home" href="./">我也要制作</a>
+      </div>
+      <p class="view-note">通过二维码扫描的访客仅可查看，名片主人可编辑</p>
+    </div>
+  </div>
+
 </body>
 </html>
