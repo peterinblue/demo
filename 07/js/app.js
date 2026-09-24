@@ -103,13 +103,13 @@
   }
 
   /** 中文姓名 → 正序拼音（姓在前）。手改过英文名则不覆盖 */
-  function syncNameEnFromName() {
+  function syncNameEnFromName(force) {
     try {
       if (typeof PinyinLite === 'undefined' || !PinyinLite.nameToPinyin) return;
-      const auto = PinyinLite.nameToPinyin(state.name);
+      const auto = PinyinLite.nameToPinyin(state.name || '');
       lastAutoNameEn = auto;
-      if (!nameEnAuto) return;
-      if (auto) {
+      if (!force && !nameEnAuto) return;
+      if (auto || force) {
         state.nameEn = auto;
         const el = form.elements.namedItem('nameEn');
         if (el && el.value !== auto) el.value = auto;
@@ -654,21 +654,25 @@
   }
 
   // ---------- Events ----------
-  function on(el, type, fn) {
+  function on(el, type, fn, capture) {
     if (!el) return;
-    el.addEventListener(type, (e) => {
-      try {
-        fn(e);
-      } catch (err) {
-        console.error(type, err);
-      }
-    });
+    el.addEventListener(
+      type,
+      (e) => {
+        try {
+          fn(e);
+        } catch (err) {
+          console.error(type, err);
+        }
+      },
+      !!capture
+    );
   }
 
   function bind() {
     // 中文输入法：组合期间不刷新、不改英文名，避免卡死
-    on(form, 'compositionstart', () => {
-      composing = true;
+    on(form, 'compositionstart', (e) => {
+      if (e.target && e.target.name === 'name') composing = true;
     });
     on(form, 'compositionend', (e) => {
       composing = false;
@@ -677,18 +681,22 @@
         const enEl = form.elements.namedItem('nameEn');
         const cur = String((enEl && enEl.value) || '').trim();
         nameEnAuto = !cur || cur === lastAutoNameEn;
+        syncNameEnFromName(true);
       }
       refresh();
     });
+    on(form, 'blur', () => {
+      composing = false;
+    }, true);
 
     on(form, 'input', (e) => {
-      if (composing) return;
+      if (composing || e.isComposing) return;
       const t = e.target;
       if (t && t.name === 'nameEn') {
         const val = String(t.value || '').trim();
         if (!val) {
           nameEnAuto = true;
-          syncNameEnFromName();
+          syncNameEnFromName(true);
         } else {
           nameEnAuto = val === lastAutoNameEn;
         }
@@ -697,6 +705,7 @@
         const enEl = form.elements.namedItem('nameEn');
         const cur = String((enEl && enEl.value) || '').trim();
         nameEnAuto = !cur || cur === lastAutoNameEn;
+        syncNameEnFromName(false);
       }
       scheduleRefresh();
     });
