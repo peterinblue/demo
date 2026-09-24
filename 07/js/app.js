@@ -19,16 +19,16 @@
   ];
 
   const DEFAULT_STATE = {
-    name: '林思远',
-    nameEn: 'Lin Siyuan',
-    title: '产品设计师',
-    company: '澄明科技',
-    phone: '138 0013 8000',
-    email: 'siyuan.lin@example.com',
-    website: 'https://example.com',
-    wechat: 'siyuan_design',
-    address: '上海市静安区南京西路 1266 号',
-    bio: '专注数字产品体验，用设计连接人与信息。',
+    name: '',
+    nameEn: '',
+    title: '',
+    company: '',
+    phone: '',
+    email: '',
+    website: '',
+    wechat: '',
+    address: '',
+    bio: '',
     avatar: '',
     template: 'minimal',
     accent: '#0B3D5C',
@@ -149,10 +149,22 @@
         /* fallthrough */
       }
     }
-    // 2) localStorage
+    // 2) 本机历史：有则保留，无则空白（首访清空）
     try {
+      if (typeof CardStore !== 'undefined' && CardStore.loadLastLocal) {
+        const last = CardStore.loadLastLocal();
+        if (last && last.card) {
+          state = { ...DEFAULT_STATE, ...last.card };
+          return;
+        }
+      }
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) state = { ...DEFAULT_STATE, ...JSON.parse(raw) };
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.name && parsed.name !== '林思远') {
+          state = { ...DEFAULT_STATE, ...parsed };
+        }
+      }
     } catch (_) {
       /* ignore */
     }
@@ -860,14 +872,14 @@
     });
 
     on($('#btn-reset'), 'click', () => {
-      if (!confirm('恢复为示例数据？当前编辑将被覆盖。')) return;
+      if (!confirm('清空当前编辑？云端已保存的名片不受影响。')) return;
       state = { ...DEFAULT_STATE };
       fillForm();
       applyTemplate();
       renderCard();
       saveState();
       setFace('front');
-      toast('已恢复示例');
+      toast('已清空');
     });
   }
 
