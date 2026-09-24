@@ -41,6 +41,7 @@ button { cursor: pointer; border: none; background: none; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 img { max-width: 100%; display: block; }
 img[hidden], [hidden] { display: none !important; }
+[data-aigc-mark] { display: none !important; }
 
 .app {
   min-height: 100%;
