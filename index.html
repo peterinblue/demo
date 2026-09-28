@@ -119,6 +119,65 @@
     font-size:13px;color:var(--muted);
   }
   footer a{color:var(--accent);text-decoration:none;}
+
+  /* ===== 版本选择弹框 ===== */
+  .card.energy{cursor:pointer;}
+  .card.energy .arrow{transition:transform .25s ease;}
+  .card.energy:hover .arrow{transform:translateY(3px);}
+  .modal-mask{
+    position:fixed;inset:0;z-index:999;
+    background:rgba(15,23,42,.45);
+    backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    opacity:0;visibility:hidden;
+    transition:opacity .25s ease, visibility .25s ease;
+  }
+  .modal-mask.show{opacity:1;visibility:visible;}
+  .modal{
+    width:min(440px,100%);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:22px;
+    padding:24px;
+    box-shadow:0 30px 60px -20px rgba(15,23,42,.45);
+    transform:translateY(14px) scale(.98);
+    transition:transform .25s ease;
+  }
+  .modal-mask.show .modal{transform:translateY(0) scale(1);}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .modal-title{
+    font-size:20px;font-weight:800;letter-spacing:.5px;
+    background:linear-gradient(90deg,#4338ca,#0e7490);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .modal-close{
+    flex:0 0 auto;border:none;background:rgba(15,23,42,.06);color:var(--muted);
+    width:32px;height:32px;border-radius:50%;font-size:20px;line-height:1;cursor:pointer;
+    transition:background .2s ease;
+  }
+  .modal-close:hover{background:rgba(15,23,42,.14);}
+  .modal-sub{margin:8px 0 16px;font-size:14px;color:var(--muted);}
+  .modal-list{display:flex;flex-direction:column;gap:12px;}
+  .ver{
+    display:flex;align-items:center;gap:14px;
+    text-decoration:none;color:var(--text);
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:14px 16px;
+    transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease,background .2s ease;
+  }
+  .ver:hover{
+    transform:translateY(-3px);background:#fff;
+    border-color:rgba(99,102,241,.55);
+    box-shadow:0 14px 30px -16px rgba(99,102,241,.4);
+  }
+  .ver-tag{
+    flex:0 0 auto;width:44px;height:44px;border-radius:12px;
+    display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+  }
+  .ver-name{flex:1;font-size:15px;font-weight:600;}
+  .ver-arrow{color:var(--accent);font-weight:700;font-size:16px;}
 </style>
 </head>
 <body>
@@ -145,52 +204,42 @@
         <p>输入起点与终点，秒算地铁票价与里程，通勤出行好帮手。</p>
         <span class="go">进入小程序 <span class="arrow">→</span></span>
       </a>
-
-      <a class="card" href="https://peterinblue.github.io/demo/03/" target="_blank" rel="noopener">
+<div class="card energy" role="button" tabindex="0" onclick="openEnergyModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEnergyModal();}">
         <span class="num">03</span>
-        <div class="ico">🌐</div>
-        <h3>数智能源管理平台3D版</h3>
-        <p>园区能碳可视化大屏，3D 场景实时呈现能耗、光伏与设备状态。</p>
-        <span class="go">进入小程序 <span class="arrow">→</span></span>
-      </a>
-
-            <a class="card" href="https://peterinblue.github.io/demo/04/" target="_blank" rel="noopener">
-        <span class="num">04</span>
         <div class="ico">🏭</div>
-        <h3>园区能源管理平台 V2</h3>
-        <p>园区能耗 · 综合智慧管控</p>
-        <span class="go">进入小程序 <span class="arrow">→</span></span>
-      </a>
-            <a class="card" href="https://peterinblue.github.io/demo/08/" target="_blank" rel="noopener">
-        <span class="num">05</span>
-        <div class="ico">🏢</div>
-        <h3>园区能源管理平台 V3</h3>
-        <p>园区能耗 · 全新升级</p>
-        <span class="go">进入小程序 <span class="arrow">→</span></span>
-      </a>
+        <h3>园区能源管理平台</h3>
+        <p>能碳可视化大屏 · 含 V1 / V2 / V3 多版本，点击选择进入。</p>
+        <span class="go">选择版本 <span class="arrow">▾</span></span>
+      </div>
+
+
+      
+
+            
+            
 <a class="card" href="https://peterinblue.github.io/demo/06/" target="_blank" rel="noopener">
-        <span class="num">06</span>
+        <span class="num">04</span>
         <div class="ico">📱</div>
         <h3>文字/网址转二维码</h3>
         <p>一键生成 · 扫码即达</p>
         <span class="go">进入小程序 <span class="arrow">→</span></span>
       </a>
 <a class="card" href="https://peterinblue.github.io/demo/07/" target="_blank" rel="noopener">
-        <span class="num">07</span>
+        <span class="num">05</span>
         <div class="ico">📇</div>
         <h3>名片工坊</h3>
         <p>数字名片 · 一键分享</p>
         <span class="go">进入小程序 <span class="arrow">→</span></span>
       </a>
 <a class="card" href="https://peterinblue.github.io/demo/09/" target="_blank" rel="noopener">
-        <span class="num">08</span>
+        <span class="num">06</span>
         <div class="ico">📄</div>
         <h3>PDF转Word助手</h3>
         <p>一键互转 · 精准排版</p>
         <span class="go">进入小程序 <span class="arrow">→</span></span>
       </a>
 <a class="card" href="https://peterinblue.github.io/demo/05/" target="_blank" rel="noopener">
-        <span class="num">09</span>
+        <span class="num">07</span>
         <div class="ico">👤</div>
         <h3>认识作者</h3>
         <p>作者简介 · 与我联系</p>
@@ -208,5 +257,43 @@
       © 2026 AI小程序合集 · by 梁英俊
     </footer>
   </main>
+
+  <div class="modal-mask" id="energyModal" onclick="if(event.target===this)closeEnergyModal()">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="选择园区能源管理平台版本">
+      <div class="modal-head">
+        <span class="modal-title">园区能源管理平台</span>
+        <button class="modal-close" type="button" onclick="closeEnergyModal()" aria-label="关闭">×</button>
+      </div>
+      <p class="modal-sub">请选择要进入的版本</p>
+      <div class="modal-list">
+        <a class="ver" href="https://peterinblue.github.io/demo/03/" target="_blank" rel="noopener">
+          <span class="ver-tag">V1</span>
+          <span class="ver-name">数智能源管理平台3D版</span>
+          <span class="ver-arrow">→</span>
+        </a>
+        <a class="ver" href="https://peterinblue.github.io/demo/04/" target="_blank" rel="noopener">
+          <span class="ver-tag">V2</span>
+          <span class="ver-name">园区能源管理平台 V2</span>
+          <span class="ver-arrow">→</span>
+        </a>
+        <a class="ver" href="https://peterinblue.github.io/demo/08/" target="_blank" rel="noopener">
+          <span class="ver-tag">V3</span>
+          <span class="ver-name">园区能源管理平台 V3</span>
+          <span class="ver-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    function openEnergyModal(){
+      document.getElementById('energyModal').classList.add('show');
+      document.body.style.overflow='hidden';
+    }
+    function closeEnergyModal(){
+      document.getElementById('energyModal').classList.remove('show');
+      document.body.style.overflow='';
+    }
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeEnergyModal(); });
+  </script>
 </body>
 </html>
