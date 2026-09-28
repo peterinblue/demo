@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>人事工作台 · MVP 单文件原型（HR 视角）</title>
+<style>
+  :root{
+    --primary:#2563eb; --primary-dark:#1d4ed8; --primary-soft:#eff4ff;
+    --bg:#f4f6fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+    --line:#e5e7eb; --success:#16a34a; --success-soft:#e9f9ef;
+    --danger:#dc2626; --danger-soft:#fdecec; --warn:#d97706; --warn-soft:#fff5e6;
+    --purple:#7c3aed; --teal:#0d9488; --radius:14px; --shadow:0 2px 10px rgba(16,24,40,.06);
+    --sidebar-w:228px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
+  /* layout */
+  .app{display:flex;min-height:100vh}
+  .sidebar{
+    width:var(--sidebar-w);flex:0 0 var(--sidebar-w);background:#0f1f3d;color:#cbd5e1;
+    display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:40;
+    transition:transform .25s ease;
+  }
+  .brand{padding:18px 18px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#22d3ee);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px}
+  .brand .t{font-size:15px;font-weight:600;color:#fff;line-height:1.2}
+  .brand .s{font-size:11px;color:#94a3b8}
+  .nav{padding:10px;flex:1;overflow-y:auto}
+  .nav-group{font-size:11px;color:#64748b;padding:12px 12px 6px;letter-spacing:.5px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#cbd5e1;font-size:13.5px;margin-bottom:2px;transition:.15s;cursor:pointer;user-select:none}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-item.active{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.35)}
+  .nav-item .ic{width:18px;text-align:center;font-size:15px}
+  .nav-item .badge{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+  .side-foot{padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#64748b}
+  .main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-width:0}
+  .topbar{
+    height:58px;background:var(--card);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;padding:0 18px;position:sticky;top:0;z-index:30;
+  }
+  .hamburger{display:none;font-size:22px;color:var(--text);width:36px;height:36px;border-radius:8px}
+  .hamburger:hover{background:var(--bg)}
+  .page-title{font-size:17px;font-weight:600}
+  .page-sub{font-size:12px;color:var(--muted)}
+  .search{margin-left:auto;position:relative;flex:0 1 320px}
+  .search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+  .search input:focus{outline:none;border-color:var(--primary);background:#fff}
+  .search .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .top-actions{display:flex;gap:8px}
+  .clock{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .icon-btn{padding:8px 12px;border-radius:9px;background:var(--bg);color:var(--text);font-size:13px;display:flex;align-items:center;gap:6px}
+  .icon-btn:hover{background:var(--primary-soft);color:var(--primary)}
+  .content{padding:20px;flex:1}
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:none}
+  .overlay.show{display:block}
+  .sidebar.mobile-open{transform:translateX(0)!important}
+  @media(max-width:860px){
+    .sidebar{transform:translateX(-100%);width:240px;flex-basis:240px}
+    .main{margin-left:0}
+    .hamburger{display:flex;align-items:center;justify-content:center}
+    .search{flex-basis:auto;min-width:0}
+    .clock{display:none}
+    .page-sub{display:none}
+    .content{padding:14px}
+  }
+  /* cards & grid */
+  .grid{display:grid;gap:14px}
+  .cols-4{grid-template-columns:repeat(4,1fr)}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:860px){.cols-4,.cols-3,.cols-2{grid-template-columns:1fr 1fr}.cols-4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .card h3{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h3 .tag{margin-left:auto;font-size:11px;font-weight:500;color:var(--muted)}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .stat .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .stat .value{font-size:26px;font-weight:700;line-height:1}
+  .stat .value small{font-size:14px;font-weight:500;color:var(--muted)}
+  .stat .delta{font-size:12px;margin-top:6px}
+  .kpi-row{display:flex;gap:14px;flex-wrap:wrap}
+  .warn-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;transition:.15s}
+  .warn-card:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+  .warn-card .wi{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 40px}
+  .warn-card .wt{font-size:13px;font-weight:600}
+  .warn-card .wd{font-size:12px;color:var(--muted)}
+  .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .quick a{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border-radius:12px;background:var(--primary-soft);color:var(--primary-dark);font-size:12.5px;text-decoration:none;transition:.15s}
+  .quick a:hover{background:var(--primary);color:#fff}
+  .quick a .qi{font-size:20px}
+  /* table */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+  thead th{background:#f8fafc;text-align:left;padding:11px 12px;font-weight:600;color:#475569;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0}
+  tbody td{padding:10px 12px;border-bottom:1px solid #f1f5f9;white-space:nowrap}
+  tbody tr:hover{background:#fafbff}
+  tbody tr:last-child td{border-bottom:none}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  /* badges */
+  .badge-dot{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:500}
+  .b-green{background:var(--success-soft);color:var(--success)}
+  .b-blue{background:var(--primary-soft);color:var(--primary-dark)}
+  .b-orange{background:var(--warn-soft);color:var(--warn)}
+  .b-red{background:var(--danger-soft);color:var(--danger)}
+  .b-gray{background:#eef2f7;color:#64748b}
+  .b-purple{background:#f3effe;color:var(--purple)}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  /* buttons */
+  .btn{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:.15s;border:1px solid transparent}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--text)}
+  .btn-ghost:hover{background:var(--bg)}
+  .btn-danger{background:var(--danger-soft);color:var(--danger)}
+  .btn-danger:hover{background:#fbe0e0}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .btn-block{width:100%;justify-content:center}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .toolbar .spacer{flex:1}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:12px;color:var(--muted)}
+  .field input,.field select,.field textarea{padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary)}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+  .filters .field{min-width:140px}
+  /* funnel & charts */
+  .donut{display:flex;align-items:center;gap:18px}
+  .donut .ring{width:128px;height:128px;border-radius:50%;flex:0 0 128px;position:relative}
+  .donut .ring::after{content:"";position:absolute;inset:22px;background:#fff;border-radius:50%}
+  .donut .legend{display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .donut .legend .li{display:flex;align-items:center;gap:8px}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px}
+  .bar-row .name{width:96px;flex:0 0 96px;color:var(--muted)}
+  .bar-row .track{flex:1;height:18px;background:#f1f5f9;border-radius:9px;overflow:hidden}
+  .bar-row .fill{height:100%;border-radius:9px;background:linear-gradient(90deg,#3b82f6,#22d3ee)}
+  .bar-row .num{width:40px;text-align:right;font-weight:600}
+  .funnel{display:flex;flex-direction:column;gap:8px}
+  .funnel .stage{padding:12px 14px;border-radius:10px;color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+  .funnel .conv{font-size:12px;color:var(--muted);text-align:right;margin-top:2px}
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px}
+  .modal.show{display:flex}
+  .modal-bg{position:absolute;inset:0;background:rgba(15,23,42,.45)}
+  .modal-box{position:relative;background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+  .modal-head h3{font-size:16px;font-weight:600}
+  .modal-head .x{margin-left:auto;font-size:22px;color:var(--muted);width:32px;height:32px;border-radius:8px}
+  .modal-head .x:hover{background:var(--bg)}
+  .modal-body{padding:20px}
+  .modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+  .form-grid .full{grid-column:1/-1}
+  /* toast */
+  .toast-wrap{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .toast{padding:10px 18px;border-radius:10px;background:#1f2937;color:#fff;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:pop .2s ease}
+  .toast.ok{background:#16a34a}.toast.err{background:#dc2626}
+  @keyframes pop{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+  .seg{display:inline-flex;background:var(--bg);border-radius:9px;padding:3px}
+  .seg button{padding:6px 12px;border-radius:7px;font-size:12.5px;color:var(--muted)}
+  .seg button.on{background:#fff;color:var(--primary);box-shadow:var(--shadow);font-weight:600}
+  .search-results .ri{padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;cursor:pointer}
+  .search-results .ri:hover{border-color:var(--primary);background:var(--primary-soft)}
+  .search-results .ri .rt{font-size:13px;font-weight:600}
+  .search-results .ri .rm{font-size:12px;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .pay-red{color:var(--danger);font-weight:600}
+  .pay-green{color:var(--success);font-weight:600}
+  .section-title{font-size:15px;font-weight:600;margin:22px 0 12px;display:flex;align-items:center;gap:8px}
+  .section-title::before{content:"";width:4px;height:16px;background:var(--primary);border-radius:2px}
+  .muted{color:var(--muted)}
+  .flex{display:flex}.gap10{gap:10px}.ai-c{align-items:center}.wrap{flex-wrap:wrap}
+  .pill{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">HR</div>
+      <div><div class="t">人事工作台</div><div class="s">MVP · HR 视角</div></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">阶段一 MVP 基础版 · 单文件原型<br>本地存储 · 数据不出本机</div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger">☰</button>
+      <div>
+        <div class="page-title" id="pageTitle">工作台首页</div>
+        <div class="page-sub" id="pageSub">今天要处理 · 人力数据驾驶舱</div>
+      </div>
+      <div class="search">
+        <span class="si">🔍</span>
+        <input id="globalSearch" placeholder="搜员工 / 岗位 / 合同 / 简历 / 审批单…" onkeydown="if(event.key==='Enter')doGlobalSearch()">
+      </div>
+      <div class="top-actions">
+        <span class="clock" id="clock"></span>
+        <button class="icon-btn" onclick="exportBackup()">⬇ 备份</button>
+        <button class="icon-btn" onclick="document.getElementById('importFile').click()">⬆ 恢复</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(this)">
+      </div>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-bg" onclick="closeModal()"></div>
+  <div class="modal-box" id="modalBox"></div>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============== 工具函数 ============== */
+const STORE_KEY = 'hr_workbench_mvp_v1';
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const uid = ()=> 'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+function bjTime(d=new Date()){
+  return new Date(d.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'}));
+}
+function fmtDate(d){ // YYYY-MM-DD 北京时间
+  if(!d) return '';
+  const x = (d instanceof Date)? d : new Date(d);
+  if(isNaN(x)) return '';
+  const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function daysBetween(a,b){ // b - a 的天数
+  const x=new Date(a),y=new Date(b);
+  return Math.round((y-x)/86400000);
+}
+function today(){return bjTime();}
+function fmtDateTime(d){
+  const x=bjTime(d);
+  const hh=String(x.getHours()).padStart(2,'0'),mm=String(x.getMinutes()).padStart(2,'0'),ss=String(x.getSeconds()).padStart(2,'0');
+  return `${fmtDate(x)} ${hh}:${mm}:${ss}`;
+}
+function download(filename,content,mime='text/plain'){
+  const blob=new Blob([content],{type:mime});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function csvBOM(rows){ // rows: array of arrays
+  const esc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const text=rows.map(r=>r.map(esc).join(',')).join('\r\n');
+  return '﻿'+text; // UTF-8 BOM
+}
+function toast(msg,type=''){
+  const el=document.createElement('div');
+  el.className='toast '+type;el.textContent=msg;
+  $('#toastWrap').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},2200);
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ============== 数据层 ============== */
+let data = loadData();
+
+function loadData(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){console.warn('读取失败',e);}
+  return seedData();
+}
+function saveData(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(data));}
+  catch(e){toast('保存失败：'+e.message,'err');}
+}
+function seedData(){
+  const t=today();
+  const employees=[
+    {id:uid(),name:'张伟',dept:'销售一部',position:'渠道经理',employType:'正式',status:'在职',hireDate:fmtDate(addDays(t,-420)),contractEnd:fmtDate(addDays(t,12)),phone:'13800000001'},
+    {id:uid(),name:'李娜',dept:'电商运营',position:'运营专员',employType:'正式',status:'试用期',hireDate:fmtDate(addDays(t,-40)),contractEnd:fmtDate(addDays(t,325)),phone:'13800000002'},
+    {id:uid(),name:'王强',dept:'仓储中心',position:'仓管',employType:'外包',status:'在职',hireDate:fmtDate(addDays(t,-600)),contractEnd:fmtDate(addDays(t,-5)),phone:'13800000003'},
+    {id:uid(),name:'赵敏',dept:'电商运营',position:'主播',employType:'兼职',status:'在职',hireDate:fmtDate(addDays(t,-120)),contractEnd:fmtDate(addDays(t,55)),phone:'13800000004'},
+    {id:uid(),name:'陈杰',dept:'销售二部',position:'销售代表',employType:'正式',status:'在职',hireDate:fmtDate(addDays(t,-300)),contractEnd:fmtDate(addDays(t,40)),phone:'13800000005'},
+    {id:uid(),name:'刘洋',dept:'技术部',position:'运维工程师',employType:'正式',status:'离职',hireDate:fmtDate(addDays(t,-500)),contractEnd:fmtDate(addDays(t,-10)),phone:'13800000006'},
+    {id:uid(),name:'孙丽',dept:'人事行政',position:'HRBP',employType:'正式',status:'在职',hireDate:fmtDate(addDays(t,-700)),contractEnd:fmtDate(addDays(t,80)),phone:'13800000007'},
+    {id:uid(),name:'周涛',dept:'仓储中心',position:'分拣员',employType:'劳务派遣',status:'在职',hireDate:fmtDate(addDays(t,-200)),contractEnd:fmtDate(addDays(t,30)),phone:'13800000008'},
+    {id:uid(),name:'吴婷',dept:'财务部',position:'会计',employType:'实习',status:'试用期',hireDate:fmtDate(addDays(t,-25)),contractEnd:fmtDate(addDays(t,340)),phone:'13800000009'},
+    {id:uid(),name:'郑浩',dept:'销售一部',position:'销售代表',employType:'正式',status:'在职',hireDate:fmtDate(addDays(t,-150)),contractEnd:fmtDate(addDays(t,70)),phone:'13800000010'},
+  ];
+  const candidates=[
+    {id:uid(),name:'林小满',position:'电商运营专员',channel:'BOSS直聘',stage:'简历',interviewDate:'',note:'3年经验'},
+    {id:uid(),name:'黄磊',position:'渠道销售',channel:'内推',stage:'面试中',interviewDate:fmtDate(addDays(t,2)),note:'门店店长推荐'},
+    {id:uid(),name:'徐倩',position:'主播',channel:'猎头',stage:'Offer',interviewDate:fmtDate(addDays(t,-3)),note:'待确认薪资'},
+    {id:uid(),name:'马超',position:'仓管',channel:'官网',stage:'入职',interviewDate:fmtDate(addDays(t,-1)),note:'已发Offer'},
+    {id:uid(),name:'何雨',position:'HRBP',channel:'BOSS直聘',stage:'面试中',interviewDate:fmtDate(addDays(t,4)),note:''},
+    {id:uid(),name:'罗鹏',position:'运维工程师',channel:'内推',stage:'简历',interviewDate:'',note:''},
+  ];
+  const leaves=[
+    {id:uid(),applicant:'赵敏',type:'年假',startDate:fmtDate(addDays(t,3)),endDate:fmtDate(addDays(t,5)),reason:'回家探亲',status:'待审批',applyDate:fmtDate(t)},
+    {id:uid(),applicant:'陈杰',type:'事假',startDate:fmtDate(addDays(t,1)),endDate:fmtDate(addDays(t,1)),reason:'办理证件',status:'待审批',applyDate:fmtDate(t)},
+    {id:uid(),applicant:'周涛',type:'加班',startDate:fmtDate(addDays(t,-1)),endDate:fmtDate(addDays(t,-1)),reason:'大促备货',status:'通过',applyDate:fmtDate(addDays(t,-2))},
+    {id:uid(),applicant:'郑浩',type:'病假',startDate:fmtDate(addDays(t,-4)),endDate:fmtDate(addDays(t,-3)),reason:'感冒',status:'通过',applyDate:fmtDate(addDays(t,-5))},
+    {id:uid(),applicant:'张伟',type:'出差',startDate:fmtDate(addDays(t,6)),endDate:fmtDate(addDays(t,8)),reason:'客户拜访',status:'待审批',applyDate:fmtDate(t)},
+  ];
+  const salaries=[
+    {id:uid(),name:'张伟',month:fmtDate(t).slice(0,7),base:12000,commission:3500,overtime:0,subsidy:800,insurance:1800,tax:620},
+    {id:uid(),name:'李娜',month:fmtDate(t).slice(0,7),base:8000,commission:2200,overtime:0,subsidy:500,insurance:1200,tax:210},
+    {id:uid(),name:'王强',month:fmtDate(t).slice(0,7),base:6500,commission:0,overtime:600,subsidy:300,insurance:980,tax:60},
+    {id:uid(),name:'赵敏',month:fmtDate(t).slice(0,7),base:5000,commission:1500,overtime:0,subsidy:200,insurance:760,tax:30},
+    {id:uid(),name:'陈杰',month:fmtDate(t).slice(0,7),base:9000,commission:2800,overtime:0,subsidy:600,insurance:1400,tax:380},
+  ];
+  const approval={
+    leaveApprover:'孙丽', regularNode:'部门经理→HR复核', overtimeApprover:'部门经理',
+    resignFlow:'员工申请→部门审批→HR复核→总监批准', multiLevel:true
+  };
+  const costTrend=[18.2,19.5,20.1,21.3,22.0,23.4,24.1,25.6,26.2,27.8,28.5,29.3]; // 近12月人力成本(万)
+  return {
+    employees, candidates, leaves, salaries, approval, costTrend,
+    headcount:{planned:60},
+    ignoredContracts:[],
+    salaryTemplate:null,
+    version:1
+  };
+}
+
+/* ============== 导航 ============== */
+const NAV=[
+  {id:'home',icon:'🏠',label:'工作台首页',group:'核心'},
+  {id:'emp',icon:'👥',label:'员工花名册',group:'核心',badge:'emp'},
+  {id:'recruit',icon:'📋',label:'招聘看板',group:'核心',badge:'recruit'},
+  {id:'leave',icon:'🗓️',label:'考勤请假',group:'核心',badge:'leave'},
+  {id:'salary',icon:'💰',label:'薪酬速算',group:'核心'},
+  {id:'contract',icon:'📑',label:'合同预警',group:'核心',badge:'contract'},
+  {id:'report',icon:'📊',label:'报表中心',group:'分析'},
+  {id:'approval',icon:'⚙️',label:'审批配置',group:'设置'},
+];
+let current='home';
+
+function renderNav(){
+  const nav=$('#nav');
+  let html='',lastGroup='';
+  NAV.forEach(n=>{
+    if(n.group!==lastGroup){html+=`<div class="nav-group">${n.group}</div>`;lastGroup=n.group;}
+    const badge = n.badge? `<span class="badge" id="navBadge_${n.badge}"></span>`:'';
+    html+=`<div class="nav-item ${n.id===current?'active':''}" data-page="${n.id}"><span class="ic">${n.icon}</span><span>${n.label}</span>${badge}</div>`;
+  });
+  nav.innerHTML=html;
+  $$('.nav-item',nav).forEach(el=>el.onclick=()=>navigate(el.dataset.page));
+  updateBadges();
+}
+function updateBadges(){
+  const pendLeave=data.leaves.filter(l=>l.status==='待审批').length;
+  const contracts=contractAlertList().length;
+  const recruitCandidates=data.candidates.length;
+  setBadge('leave',pendLeave);
+  setBadge('contract',contracts);
+  setBadge('recruit',recruitCandidates);
+  setBadge('emp',data.employees.length);
+}
+function setBadge(key,v){
+  const el=$('#navBadge_'+key);
+  if(el){el.textContent=v;el.style.display=v>0?'flex':'none';}
+}
+function navigate(page){
+  current=page;
+  renderNav();
+  const meta={home:['工作台首页','今天要处理 · 人力数据驾驶舱'],emp:['员工花名册','8.1 全量档案 · 多用工类型'],recruit:['招聘看板','8.2 渠道简历 · 招聘漏斗'],leave:['考勤请假','8.3 申请与审批'],salary:['薪酬速算','8.4 应发/扣款/实发'],contract:['合同到期预警','8.5 未来90天'],report:['报表中心','8.6 多维统计与导出'],approval:['审批配置','8.7 审批流模板']};
+  $('#pageTitle').textContent=meta[page][0];
+  $('#pageSub').textContent=meta[page][1];
+  closeSidebar();
+  ({home:renderHome,emp:renderEmployees,recruit:renderRecruit,leave:renderLeave,salary:renderSalary,contract:renderContract,report:renderReport,approval:renderApproval})[page]();
+}
+
+/* ============== 首页 ============== */
+function renderHome(){
+  const t=today();
+  const onJob=data.employees.filter(e=>e.status==='在职'||e.status==='试用期');
+  const trial=data.employees.filter(e=>e.status==='试用期').length;
+  const leftJob=data.employees.filter(e=>e.status==='离职').length;
+  const thisMonth=data.employees.filter(e=>e.hireDate&&e.hireDate.slice(0,7)===fmtDate(t).slice(0,7)).length;
+  const plan=data.headcount.planned;
+  const remain=plan-onJob.length;
+  const pendLeave=data.leaves.filter(l=>l.status==='待审批').length;
+  const contracts=contractAlertList();
+  const overdue=contracts.filter(c=>c.tag==='已逾期').length;
+  const recruitCands=data.candidates.length;
+  const resignedThisMonth=data.employees.filter(e=>e.status==='离职').length;
+
+  const kpis=`
+  <div class="grid cols-4">
+    <div class="stat"><div class="label">在职总人数</div><div class="value">${onJob.length}<small> 人</small></div><div class="delta muted">含试用期 ${trial} 人</div></div>
+    <div class="stat"><div class="label">编制剩余</div><div class="value">${remain<0?0:remain}<small> / ${plan}</small></div><div class="delta" style="color:${remain<0?'var(--danger)':'var(--success)'}">${remain<0?'已超编 '+Math.abs(remain)+' 人':'可补 '+remain+' 人'}</div></div>
+    <div class="stat"><div class="label">本月入职 / 离职</div><div class="value">${thisMonth} <small>/ ${resignedThisMonth}</small></div><div class="delta muted">净流入 ${thisMonth-resignedThisMonth} 人</div></div>
+    <div class="stat"><div class="label">本月人力成本</div><div class="value">${data.costTrend[data.costTrend.length-1]}<small> 万</small></div><div class="delta" style="color:var(--success)">▲ 环比 +${(data.costTrend[data.costTrend.length-1]-data.costTrend[data.costTrend.length-2]).toFixed(1)} 万</div></div>
+  </div>`;
+
+  const warns=`
+  <div class="grid cols-3" style="margin-top:14px">
+    <div class="warn-card" onclick="navigate('contract')"><div class="wi" style="background:var(--danger-soft);color:var(--danger)">⏰</div><div><div class="wt">合同到期提醒</div><div class="wd">${contracts.length} 份待处理（逾期 ${overdue}）</div></div></div>
+    <div class="warn-card" onclick="navigate('leave')"><div class="wi" style="background:var(--warn-soft);color:var(--warn)">✅</div><div><div class="wt">转正 / 请假待审批</div><div class="wd">${pendLeave} 条流程待你处理</div></div></div>
+    <div class="warn-card" onclick="navigate('recruit')"><div class="wi" style="background:var(--primary-soft);color:var(--primary-dark)">📋</div><div><div class="wt">招聘缺口</div><div class="wd">${recruitCands} 个在招候选人</div></div></div>
+  </div>`;
+
+  const quick=`
+  <div class="card" style="margin-top:16px">
+    <h3>快捷功能入口</h3>
+    <div class="quick">
+      <a onclick="navigate('emp')"><span class="qi">👥</span>人员档案</a>
+      <a onclick="navigate('recruit')"><span class="qi">📋</span>招聘</a>
+      <a onclick="navigate('leave')"><span class="qi">🗓️</span>考勤核算</a>
+      <a onclick="navigate('salary')"><span class="qi">💰</span>薪酬计算</a>
+      <a onclick="navigate('contract')"><span class="qi">📑</span>合同管理</a>
+      <a onclick="navigate('report')"><span class="qi">📊</span>报表导出</a>
+    </div>
+  </div>`;
+
+  // 人力成本趋势图（SVG）
+  const trend=renderTrend();
+  const deptDist=renderDeptBar();
+
+  $('#content').innerHTML = kpis + warns + quick + `
+  <div class="grid cols-2" style="margin-top:16px">
+    <div class="card"><h3>人力成本月度趋势 <span class="tag">近 12 个月（万元）</span></h3>${trend}</div>
+    <div class="card"><h3>部门人数分布</h3>${deptDist}</div>
+  </div>`;
+}
+function renderTrend(){
+  const arr=data.costTrend;const w=440,h=180,pad=28;
+  const max=Math.max(...arr),min=Math.min(...arr);
+  const x=i=>pad+i*(w-2*pad)/(arr.length-1);
+  const y=v=>h-pad-(v-min)/(max-min||1)*(h-2*pad);
+  let path='',area='',pts='';
+  arr.forEach((v,i)=>{const px=x(i),py=y(v);path+=(i?'L':'M')+px.toFixed(1)+' '+py.toFixed(1)+' ';area+=(i?'L':'M')+px.toFixed(1)+' '+py.toFixed(1)+' ';pts+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="#2563eb"/>`;});
+  area+=`L${x(arr.length-1).toFixed(1)} ${h-pad} L${x(0).toFixed(1)} ${h-pad} Z`;
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">
+    <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".25"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${path}" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+    ${pts}
+    <text x="${pad}" y="${h-8}" font-size="10" fill="#94a3b8">${arr[0]}</text>
+    <text x="${w-pad-22}" y="${h-8}" font-size="10" fill="#94a3b8">${arr[arr.length-1]}</text>
+  </svg>`;
+}
+function renderDeptBar(){
+  const map={};
+  data.employees.filter(e=>e.status!=='离职').forEach(e=>map[e.dept]=(map[e.dept]||0)+1);
+  const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...arr.map(a=>a[1]));
+  if(!arr.length) return '<div class="empty">暂无数据</div>';
+  return arr.map(([d,n])=>`<div class="bar-row"><div class="name">${esc(d)}</div><div class="track"><div class="fill" style="width:${(n/max*100).toFixed(0)}%"></div></div><div class="num">${n}</div></div>`).join('');
+}
+
+/* ============== 8.1 员工花名册 ============== */
+function renderEmployees(){
+  const fd=$('#empFilters_dept')?.value||'';
+  const ft=$('#empFilters_type')?.value||'';
+  const fs=$('#empFilters_status')?.value||'';
+  let list=data.employees.filter(e=>
+    (!fd||e.dept===fd)&&(!ft||e.employType===ft)&&(!fs||e.status===fs));
+  const depts=[...new Set(data.employees.map(e=>e.dept))];
+  const donut=headcountDonut();
+  $('#content').innerHTML=`
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openEmpModal()">＋ 新增员工</button>
+    <button class="btn btn-ghost" onclick="exportEmpCSV()">⬇ 导出花名册 CSV</button>
+    <div class="spacer"></div>
+    <span class="hint">共 ${list.length} 条</span>
+  </div>
+  <div class="filters">
+    <div class="field"><label>部门</label><select id="empFilters_dept">${opt(depts,fd,'全部')}</select></div>
+    <div class="field"><label>用工类型</label><select id="empFilters_type">${opt(['正式','外包','实习','兼职','劳务派遣'],ft,'全部')}</select></div>
+    <div class="field"><label>状态</label><select id="empFilters_status">${opt(['在职','试用期','离职'],fs,'全部')}</select></div>
+    <button class="btn btn-ghost" onclick="empReset()">重置</button>
+  </div>
+  <div class="grid cols-2" style="margin-bottom:14px">
+    <div class="card"><h3>人员结构（在职 / 试用期 / 离职）</h3>${donut}</div>
+    <div class="card"><h3>部门人数分布</h3>${renderDeptBar()}</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>姓名</th><th>部门</th><th>岗位</th><th>用工类型</th><th>状态</th><th>入职日期</th><th>合同到期</th><th>手机号</th><th>操作</th></tr></thead>
+      <tbody id="empBody"></tbody>
+    </table>
+  </div>`;
+  // 绑定筛选（opt 用 fd/ft/fs 标记选中项，重建后保持选择）
+  ['dept','type','status'].forEach(k=>{const el=$('#empFilters_'+k);if(el)el.onchange=renderEmployees;});
+  $('#empBody').innerHTML=list.map(e=>`
+    <tr>
+      <td><b>${esc(e.name)}</b></td><td>${esc(e.dept)}</td><td>${esc(e.position)}</td>
+      <td><span class="badge-dot ${typeColor(e.employType)}">${e.employType}</span></td>
+      <td><span class="badge-dot ${statusColor(e.status)}"><span class="dot" style="background:currentColor"></span>${e.status}</span></td>
+      <td>${e.hireDate}</td><td>${e.contractEnd}</td><td>${e.phone}</td>
+      <td><div class="flex gap10"><button class="btn btn-ghost btn-sm" onclick="openEmpModal('${e.id}')">编辑</button><button class="btn btn-danger btn-sm" onclick="delEmp('${e.id}')">删除</button></div></td>
+    </tr>`).join('') || '<tr><td colspan="9" class="empty">暂无符合条件的数据</td></tr>';
+}
+function opt(arr,sel,all){let h=`<option value="">${all||'全部'}</option>`;arr.forEach(v=>h+=`<option ${v===sel?'selected':''}>${v}</option>`);return h;}
+function typeColor(t){return {正式:'b-blue',外包:'b-purple',实习:'b-green',兼职:'b-orange',劳务派遣:'b-gray'}[t]||'b-gray';}
+function statusColor(s){return {在职:'b-green',试用期:'b-orange',离职:'b-gray'}[s]||'b-gray';}
+function headcountDonut(){
+  const on=data.employees.filter(e=>e.status==='在职').length;
+  const trial=data.employees.filter(e=>e.status==='试用期').length;
+  const off=data.employees.filter(e=>e.status==='离职').length;
+  const total=on+trial+off||1;
+  const p1=on/total*360,p2=trial/total*360;
+  const g1=`conic-gradient(#16a34a 0 ${p1}deg, #d97706 ${p1}deg ${p1+p2}deg, #94a3b8 ${p1+p2}deg 360deg)`;
+  return `<div class="donut"><div class="ring" style="background:${g1}"></div>
+  <div class="legend">
+    <div class="li"><span class="dot" style="background:#16a34a"></span>在职 ${on} 人</div>
+    <div class="li"><span class="dot" style="background:#d97706"></span>试用期 ${trial} 人</div>
+    <div class="li"><span class="dot" style="background:#94a3b8"></span>离职 ${off} 人</div>
+  </div></div>`;
+}
+function empReset(){$('#empFilters_dept').value='';$('#empFilters_type').value='';$('#empFilters_status').value='';renderEmployees();}
+function openEmpModal(id){
+  const e=id?data.employees.find(x=>x.id===id):null;
+  const depts=[...new Set(data.employees.map(x=>x.dept))];
+  const deptOpts=['销售一部','销售二部','电商运营','仓储中心','技术部','财务部','人事行政'].map(d=>`<option ${e&&e.dept===d?'selected':''}>${d}</option>`).join('');
+  openModal(`${id?'编辑':'新增'}员工`,`
+    <div class="form-grid">
+      <div class="field"><label>姓名 *</label><input id="f_name" value="${e?esc(e.name):''}" placeholder="姓名"></div>
+      <div class="field"><label>手机号</label><input id="f_phone" value="${e?esc(e.phone):''}" placeholder="11位手机号"></div>
+      <div class="field"><label>部门 *</label><select id="f_dept">${deptOpts}</select></div>
+      <div class="field"><label>岗位 *</label><input id="f_position" value="${e?esc(e.position):''}" placeholder="岗位名称"></div>
+      <div class="field"><label>用工类型 *</label><select id="f_type">${['正式','外包','实习','兼职','劳务派遣'].map(t=>`<option ${e&&e.employType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>状态 *</label><select id="f_status">${['在职','试用期','离职'].map(s=>`<option ${e&&e.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>入职日期 *</label><input type="date" id="f_hire" value="${e?e.hireDate:fmtDate(today())}"></div>
+      <div class="field"><label>合同到期日 *</label><input type="date" id="f_contract" value="${e?e.contractEnd:fmtDate(addDays(today(),365))}"></div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveEmp('${id||''}')">保存</button>`);
+}
+function saveEmp(id){
+  const name=$('#f_name').value.trim();
+  if(!name){toast('请填写姓名','err');return;}
+  const rec={
+    name,phone:$('#f_phone').value.trim(),dept:$('#f_dept').value,position:$('#f_position').value.trim(),
+    employType:$('#f_type').value,status:$('#f_status').value,hireDate:$('#f_hire').value,contractEnd:$('#f_contract').value
+  };
+  if(id){const i=data.employees.findIndex(x=>x.id===id);data.employees[i]={...data.employees[i],...rec};toast('已更新');}
+  else{data.employees.push({id:uid(),...rec});toast('已新增员工','ok');}
+  saveData();closeModal();renderEmployees();
+}
+function delEmp(id){
+  const e=data.employees.find(x=>x.id===id);
+  openModal('删除确认',`<p>确定要删除员工 <b>${esc(e.name)}</b> 的档案吗？此操作不可撤销。</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-danger" onclick="confirmDelEmp('${id}')">确认删除</button>`);
+}
+function confirmDelEmp(id){
+  data.employees=data.employees.filter(x=>x.id!==id);
+  saveData();closeModal();renderEmployees();toast('已删除','ok');
+}
+function exportEmpCSV(){
+  const rows=[['姓名','部门','岗位','用工类型','状态','入职日期','合同到期日','手机号']];
+  data.employees.forEach(e=>rows.push([e.name,e.dept,e.position,e.employType,e.status,e.hireDate,e.contractEnd,e.phone]));
+  download('花名册_'+fmtDate(today())+'.csv',csvBOM(rows),'text/csv;charset=utf-8');
+  toast('已导出 CSV','ok');
+}
+
+/* ============== 8.2 招聘看板 ============== */
+const STAGES=['简历','面试中','Offer','入职'];
+const STAGE_COLOR={'简历':'#64748b','面试中':'#2563eb','Offer':'#d97706','入职':'#16a34a'};
+function renderRecruit(){
+  const counts=STAGES.map(s=>data.candidates.filter(c=>c.stage===s).length);
+  const totalResume=counts[0]+counts[1]+counts[2]+counts[3];
+  const offerCnt=counts[2]+counts[3];
+  const conv1=totalResume? (offerCnt/totalResume*100).toFixed(0):0;
+  const conv2=counts[2]? (counts[3]/counts[2]*100).toFixed(0):0;
+  $('#content').innerHTML=`
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openCandModal()">＋ 新增候选人</button>
+    <div class="spacer"></div><span class="hint">共 ${data.candidates.length} 位候选人</span>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <h3>招聘漏斗 <span class="tag">转化率：Offer/简历 ${conv1}% · 入职/Offer ${conv2}%</span></h3>
+    <div class="funnel">
+      ${STAGES.map((s,i)=>`<div><div class="stage" style="background:${STAGE_COLOR[s]}">${s}<span>${counts[i]} 人</span></div>${i<STAGES.length-1?`<div class="conv">↓ 转化率 ${counts[i+1]?(counts[i+1]/counts[i]*100).toFixed(0):0}%</div>`:''}</div>`).join('')}
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>姓名</th><th>应聘岗位</th><th>渠道</th><th>阶段</th><th>面试日期</th><th>备注</th><th>操作</th></tr></thead>
+      <tbody>${data.candidates.map(c=>`
+        <tr>
+          <td><b>${esc(c.name)}</b></td><td>${esc(c.position)}</td>
+          <td><span class="badge-dot b-blue">${esc(c.channel)}</span></td>
+          <td><span class="badge-dot" style="background:${STAGE_COLOR[c.stage]}22;color:${STAGE_COLOR[c.stage]}">${c.stage}</span></td>
+          <td>${c.interviewDate||'—'}</td><td>${esc(c.note)||'—'}</td>
+          <td><div class="flex gap10">
+            ${c.stage!=='入职'?`<button class="btn btn-ghost btn-sm" onclick="advanceCand('${c.id}')">推进 ▶</button>`:'<span class="pill">已入职</span>'}
+            <button class="btn btn-danger btn-sm" onclick="delCand('${c.id}')">删除</button>
+          </div></td>
+        </tr>`).join('') || '<tr><td colspan="7" class="empty">暂无候选人，点击右上角新增</td></tr>'}
+      </tbody>
+    </table>
+  </div>`;
+}
+function openCandModal(id){
+  const c=id?data.candidates.find(x=>x.id===id):null;
+  openModal(`${id?'编辑':'新增'}候选人`,`
+    <div class="form-grid">
+      <div class="field"><label>姓名 *</label><input id="c_name" value="${c?esc(c.name):''}"></div>
+      <div class="field"><label>应聘岗位 *</label><input id="c_pos" value="${c?esc(c.position):''}"></div>
+      <div class="field"><label>渠道</label><select id="c_ch">${['BOSS直聘','内推','猎头','官网'].map(x=>`<option ${c&&c.channel===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>阶段</label><select id="c_st">${STAGES.map(s=>`<option ${c&&c.stage===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>面试日期</label><input type="date" id="c_date" value="${c&&c.interviewDate?c.interviewDate:''}"></div>
+      <div class="field full"><label>备注</label><input id="c_note" value="${c?esc(c.note):''}"></div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveCand('${id||''}')">保存</button>`);
+}
+function saveCand(id){
+  const name=$('#c_name').value.trim(),pos=$('#c_pos').value.trim();
+  if(!name||!pos){toast('请填写姓名和岗位','err');return;}
+  const rec={name,position:pos,channel:$('#c_ch').value,stage:$('#c_st').value,interviewDate:$('#c_date').value,note:$('#c_note').value.trim()};
+  if(id){const i=data.candidates.findIndex(x=>x.id===id);data.candidates[i]={...data.candidates[i],...rec};}
+  else data.candidates.push({id:uid(),...rec});
+  saveData();closeModal();renderRecruit();toast('已保存','ok');
+}
+function advanceCand(id){
+  const c=data.candidates.find(x=>x.id===id);
+  const i=STAGES.indexOf(c.stage);
+  if(i<STAGES.length-1){c.stage=STAGES[i+1];if(c.stage==='入职'&&!c.interviewDate)c.interviewDate=fmtDate(today());saveData();renderRecruit();toast('已推进至：'+c.stage,'ok');}
+}
+function delCand(id){if(!confirm('确认删除该候选人？'))return;data.candidates=data.candidates.filter(x=>x.id!==id);saveData();renderRecruit();toast('已删除');}
+
+/* ============== 8.3 考勤请假 ============== */
+function renderLeave(){
+  const list=[...data.leaves].sort((a,b)=>b.applyDate.localeCompare(a.applyDate));
+  $('#content').innerHTML=`
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openLeaveModal()">＋ 发起申请</button>
+    <div class="spacer"></div>
+    <span class="hint">待审批 ${data.leaves.filter(l=>l.status==='待审批').length} 条</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>申请人</th><th>类型</th><th>起止日期</th><th>原因</th><th>申请日期</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>${list.map(l=>`
+        <tr>
+          <td><b>${esc(l.applicant)}</b></td>
+          <td><span class="badge-dot ${leaveColor(l.type)}">${l.type}</span></td>
+          <td>${l.startDate} ~ ${l.endDate}</td>
+          <td>${esc(l.reason)||'—'}</td>
+          <td>${l.applyDate}</td>
+          <td><span class="badge-dot ${l.status==='通过'?'b-green':l.status==='驳回'?'b-red':'b-orange'}">${l.status}</span></td>
+          <td><div class="flex gap10">
+            ${l.status==='待审批'?`<button class="btn btn-primary btn-sm" onclick="approveLeave('${l.id}',true)">通过</button><button class="btn btn-danger btn-sm" onclick="approveLeave('${l.id}',false)">驳回</button>`:''}
+            <button class="btn btn-ghost btn-sm" onclick="delLeave('${l.id}')">删除</button>
+          </div></td>
+        </tr>`).join('') || '<tr><td colspan="7" class="empty">暂无申请记录</td></tr>'}
+      </tbody>
+    </table>
+  </div>`;
+}
+function leaveColor(t){return {事假:'b-gray',病假:'b-orange',年假:'b-blue',加班:'b-purple',出差:'b-green'}[t]||'b-gray';}
+function openLeaveModal(){
+  const names=[...new Set(data.employees.map(e=>e.name))];
+  openModal('发起考勤 / 请假申请',`
+    <div class="form-grid">
+      <div class="field"><label>申请人 *</label><select id="l_ap">${names.map(n=>`<option>${n}</option>`).join('')}</select></div>
+      <div class="field"><label>类型 *</label><select id="l_type">${['事假','病假','年假','加班','出差'].map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>开始日期 *</label><input type="date" id="l_sd" value="${fmtDate(today())}"></div>
+      <div class="field"><label>结束日期 *</label><input type="date" id="l_ed" value="${fmtDate(today())}"></div>
+      <div class="field full"><label>原因</label><input id="l_reason" placeholder="请填写事由"></div>
+    </div>
+    <p class="hint">提交后状态为「待审批」，可在列表一键通过 / 驳回。</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveLeave()">提交申请</button>`);
+}
+function saveLeave(){
+  const rec={id:uid(),applicant:$('#l_ap').value,type:$('#l_type').value,startDate:$('#l_sd').value,endDate:$('#l_ed').value,reason:$('#l_reason').value.trim(),status:'待审批',applyDate:fmtDate(today())};
+  if(rec.startDate>rec.endDate){toast('结束日期不能早于开始日期','err');return;}
+  data.leaves.push(rec);saveData();closeModal();renderLeave();toast('已提交，待审批','ok');
+}
+function approveLeave(id,ok){
+  const l=data.leaves.find(x=>x.id===id);l.status=ok?'通过':'驳回';saveData();renderLeave();toast(ok?'已通过':'已驳回','ok');
+}
+function delLeave(id){if(!confirm('确认删除该申请？'))return;data.leaves=data.leaves.filter(x=>x.id!==id);saveData();renderLeave();toast('已删除');}
+
+/* ============== 8.4 薪酬速算 ============== */
+function renderSalary(){
+  const tpl=data.salaryTemplate;
+  const slist=data.salaries;
+  const sum=slist.reduce((a,s)=>{const y=s.base+(s.commission||0)+(s.overtime||0)+(s.subsidy||0);const k=(s.insurance||0)+(s.tax||0);return {y:a.y+y,k:a.k+k,s:a.s+(y-k)};},{y:0,k:0,s:0});
+  $('#content').innerHTML=`
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openSalaryCalc()">🧮 薪酬速算</button>
+    <button class="btn btn-ghost" onclick="saveSalaryTemplate()">💾 存为模板</button>
+    <button class="btn btn-ghost" onclick="loadSalaryTemplate()">📥 取模板</button>
+    <button class="btn btn-ghost" onclick="exportSalaryCSV()">⬇ 导出薪酬 CSV</button>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <h3>薪酬汇总（${slist.length} 条工资条）</h3>
+    <div class="grid cols-3">
+      <div class="stat"><div class="label">应发合计</div><div class="value">¥${fmtMoney(sum.y)}</div></div>
+      <div class="stat"><div class="label">扣款合计</div><div class="value pay-red">¥${fmtMoney(sum.k)}</div></div>
+      <div class="stat"><div class="label">实发合计</div><div class="value pay-green">¥${fmtMoney(sum.s)}</div></div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>姓名</th><th>月份</th><th>底薪</th><th>提成/计件</th><th>加班费</th><th>补贴</th><th>社保公积金(扣)</th><th>个税(扣)</th><th>应发</th><th>实发</th></tr></thead>
+      <tbody>${slist.map(s=>{const y=s.base+(s.commission||0)+(s.overtime||0)+(s.subsidy||0);const k=(s.insurance||0)+(s.tax||0);return `
+        <tr>
+          <td><b>${esc(s.name)}</b></td><td>${s.month}</td><td>${s.base}</td><td>${s.commission||0}</td><td>${s.overtime||0}</td><td>${s.subsidy||0}</td>
+          <td class="pay-red">-${(s.insurance||0)}</td><td class="pay-red">-${(s.tax||0)}</td>
+          <td>${fmtMoney(y)}</td><td class="pay-green"><b>${fmtMoney(y-k)}</b></td>
+        </tr>`;}).join('') || '<tr><td colspan="10" class="empty">暂无工资条，点击「薪酬速算」计算并保存</td></tr>'}
+      </tbody>
+    </table>
+  </div>`;
+}
+function fmtMoney(n){return (n||0).toLocaleString('zh-CN',{maximumFractionDigits:0});}
+function openSalaryCalc(){
+  const names=[...new Set(data.employees.map(e=>e.name))];
+  const t=data.salaryTemplate||{};
+  openModal('薪酬速算',`
+    <div class="form-grid">
+      <div class="field"><label>员工 *</label><select id="s_name">${names.map(n=>`<option ${t.name===n?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="field"><label>月份</label><input type="month" id="s_month" value="${t.month||fmtDate(today()).slice(0,7)}"></div>
+      <div class="field"><label>底薪</label><input type="number" id="s_base" value="${t.base||0}"></div>
+      <div class="field"><label>提成/计件</label><input type="number" id="s_comm" value="${t.commission||0}"></div>
+      <div class="field"><label>加班费</label><input type="number" id="s_ot" value="${t.overtime||0}"></div>
+      <div class="field"><label>补贴</label><input type="number" id="s_sub" value="${t.subsidy||0}"></div>
+      <div class="field"><label>社保公积金(扣)</label><input type="number" id="s_ins" value="${t.insurance||0}"></div>
+      <div class="field"><label>个税(扣)</label><input type="number" id="s_tax" value="${t.tax||0}"></div>
+    </div>
+    <div id="s_result" style="margin-top:14px"></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-ghost" onclick="calcSalary(true)">计算实发</button><button class="btn btn-primary" onclick="saveSalary()">保存到工资条</button>`);
+  ['s_base','s_comm','s_ot','s_sub','s_ins','s_tax'].forEach(id=>$('#'+id).oninput=()=>calcSalary(false));
+  calcSalary(false);
+}
+function calcSalary(showToast){
+  const base=+($('#s_base').value||0),comm=+($('#s_comm').value||0),ot=+($('#s_ot').value||0),sub=+($('#s_sub').value||0),ins=+($('#s_ins').value||0),tax=+($('#s_tax').value||0);
+  const yingfa=base+comm+ot+sub, koukuan=ins+tax, shifa=yingfa-koukuan;
+  $('#s_result').innerHTML=`<div class="grid cols-3" style="gap:10px">
+    <div class="stat"><div class="label">应发</div><div class="value">${fmtMoney(yingfa)}</div></div>
+    <div class="stat"><div class="label">扣款</div><div class="value pay-red">${fmtMoney(koukuan)}</div></div>
+    <div class="stat"><div class="label">实发</div><div class="value pay-green">${fmtMoney(shifa)}</div></div>
+  </div>`;
+  if(showToast)toast('实发：¥'+fmtMoney(shifa),'ok');
+  return {base,comm,ot,sub,ins,tax,yingfa,koukuan,shifa};
+}
+function saveSalary(){
+  const r=calcSalary(false);
+  const rec={id:uid(),name:$('#s_name').value,month:$('#s_month').value,base:r.base,commission:r.comm,overtime:r.ot,subsidy:r.sub,insurance:r.ins,tax:r.tax};
+  data.salaries.push(rec);saveData();closeModal();renderSalary();toast('已保存到工资条','ok');
+}
+function saveSalaryTemplate(){
+  const r=calcSalary(false);
+  data.salaryTemplate={name:$('#s_name').value,month:$('#s_month').value,base:r.base,commission:r.comm,overtime:r.ot,subsidy:r.sub,insurance:r.ins,tax:r.tax};
+  saveData();toast('模板已保存','ok');
+}
+function loadSalaryTemplate(){if(!data.salaryTemplate){toast('暂无模板','err');return;}openSalaryCalc();toast('已载入模板到速算窗口','ok');}
+function exportSalaryCSV(){
+  const rows=[['姓名','月份','底薪','提成计件','加班费','补贴','社保公积金(扣)','个税(扣)','应发','实发']];
+  data.salaries.forEach(s=>{const y=s.base+(s.commission||0)+(s.overtime||0)+(s.subsidy||0);const k=(s.insurance||0)+(s.tax||0);rows.push([s.name,s.month,s.base,s.commission||0,s.overtime||0,s.subsidy||0,s.insurance||0,s.tax||0,y,y-k]);});
+  download('薪酬_'+fmtDate(today())+'.csv',csvBOM(rows),'text/csv;charset=utf-8');toast('已导出 CSV','ok');
+}
+
+/* ============== 8.5 合同到期预警 ============== */
+function contractAlertList(){
+  const t=today();const horizon=addDays(t,90);
+  return data.employees.filter(e=>{
+    if(data.ignoredContracts.includes(e.id))return false;
+    if(e.status==='离职')return false;
+    const d=new Date(e.contractEnd);
+    return d>=new Date(fmtDate(addDays(t,-1))) && d<=horizon;
+  }).map(e=>{
+    const days=daysBetween(fmtDate(t),e.contractEnd);
+    let tag = days<0?'已逾期': days<=30?'30天内': days<=60?'60天内':'60-90天';
+    return {...e,days,tag};
+  }).sort((a,b)=>a.days-b.days);
+}
+function renderContract(){
+  const list=contractAlertList();
+  const t=today();
+  const counts={已逾期:0,'30天内':0,'60天内':0,'60-90天':0};
+  list.forEach(c=>counts[c.tag]++);
+  $('#content').innerHTML=`
+  <div class="toolbar">
+    <div class="seg" id="cFilter">
+      <button class="on" data-f="all" onclick="cFilterSet('all')">全部 ${list.length}</button>
+      <button data-f="已逾期" onclick="cFilterSet('已逾期')">已逾期 ${counts['已逾期']}</button>
+      <button data-f="30天内" onclick="cFilterSet('30天内')">30天内 ${counts['30天内']}</button>
+      <button data-f="60天内" onclick="cFilterSet('60天内')">60天内 ${counts['60天内']}</button>
+    </div>
+    <div class="spacer"></div><span class="hint">范围：未来 90 天到期合同（不含已离职）</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>姓名</th><th>部门</th><th>用工类型</th><th>合同到期日</th><th>剩余</th><th>标签</th><th>操作</th></tr></thead>
+      <tbody id="cBody"></tbody>
+    </table>
+  </div>`;
+  window._cFilter='all';
+  renderContractBody();
+}
+function cFilterSet(f){
+  window._cFilter=f;
+  $$('#cFilter button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  renderContractBody();
+}
+function renderContractBody(){
+  const f=window._cFilter||'all';
+  const list=contractAlertList().filter(c=>f==='all'||c.tag===f);
+  const tagColor=t=>({已逾期:'b-red','30天内':'b-red','60天内':'b-orange','60-90天':'b-blue'}[t]);
+  $('#cBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><b>${esc(c.name)}</b></td><td>${esc(c.dept)}</td><td><span class="badge-dot ${typeColor(c.employType)}">${c.employType}</span></td>
+      <td>${c.contractEnd}</td>
+      <td class="${c.days<0?'pay-red':'muted'}">${c.days<0?('逾期 '+Math.abs(c.days)+' 天'):(c.days+' 天')}</td>
+      <td><span class="badge-dot ${tagColor(c.tag)}">${c.tag}</span></td>
+      <td><div class="flex gap10">
+        <button class="btn btn-primary btn-sm" onclick="renewContract('${c.id}')">续签 +1年</button>
+        <button class="btn btn-ghost btn-sm" onclick="ignoreContract('${c.id}')">忽略</button>
+      </div></td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty">该筛选下暂无预警合同</td></tr>';
+}
+function renewContract(id){
+  const e=data.employees.find(x=>x.id===id);
+  const nd=addDays(new Date(e.contractEnd),365);
+  e.contractEnd=fmtDate(nd);saveData();renderContract();toast('已续签至 '+e.contractEnd,'ok');
+}
+function ignoreContract(id){
+  if(!data.ignoredContracts.includes(id))data.ignoredContracts.push(id);
+  saveData();renderContract();toast('已从预警列表移除');
+}
+
+/* ============== 8.6 报表中心 ============== */
+function renderReport(){
+  const on=data.employees.filter(e=>e.status==='在职').length;
+  const trial=data.employees.filter(e=>e.status==='试用期').length;
+  const off=data.employees.filter(e=>e.status==='离职').length;
+  const cands=data.candidates.length;
+  const counts=STAGES.map(s=>data.candidates.filter(c=>c.stage===s).length);
+  const totalResume=counts[0]+counts[1]+counts[2]+counts[3];
+  const offerCnt=counts[2]+counts[3];
+  const conv1=totalResume?(offerCnt/totalResume*100).toFixed(0):0;
+  const conv2=counts[2]?(counts[3]/counts[2]*100).toFixed(0):0;
+  const ssum=data.salaries.reduce((a,s)=>{const y=s.base+(s.commission||0)+(s.overtime||0)+(s.subsidy||0);const k=(s.insurance||0)+(s.tax||0);return{y:a.y+y,k:a.k+k,s:a.s+(y-k)};},{y:0,k:0,s:0});
+  $('#content').innerHTML=`
+  <div class="toolbar">
+    <button class="btn btn-ghost" onclick="exportEmpCSV()">⬇ 花名册 CSV</button>
+    <button class="btn btn-ghost" onclick="exportRecruitCSV()">⬇ 招聘 CSV</button>
+    <button class="btn btn-ghost" onclick="exportSalaryCSV()">⬇ 薪酬 CSV</button>
+    <div class="spacer"></div><span class="hint">CSV 均带 UTF-8 BOM，Excel 直接打开不乱码</span>
+  </div>
+  <div class="grid cols-4">
+    <div class="stat"><div class="label">员工总数</div><div class="value">${data.employees.length}</div></div>
+    <div class="stat"><div class="label">在职 / 试用期 / 离职</div><div class="value" style="font-size:18px">${on} / ${trial} / ${off}</div></div>
+    <div class="stat"><div class="label">候选人</div><div class="value">${cands}</div></div>
+    <div class="stat"><div class="label">招聘转化率</div><div class="value">${conv1}<small>%</small></div></div>
+  </div>
+  <div class="grid cols-2" style="margin-top:14px">
+    <div class="card"><h3>招聘漏斗</h3><div class="funnel">
+      ${STAGES.map((s,i)=>`<div class="stage" style="background:${STAGE_COLOR[s]}">${s}<span>${counts[i]} 人</span></div>${i<STAGES.length-1?`<div class="conv">↓ ${counts[i+1]?(counts[i+1]/counts[i]*100).toFixed(0):0}%</div>`:''}`).join('')}
+      <div class="conv">Offer/简历 ${conv1}% · 入职/Offer ${conv2}%</div>
+    </div></div>
+    <div class="card"><h3>薪酬汇总</h3>
+      <div class="grid cols-3" style="gap:10px">
+        <div class="stat"><div class="label">应发</div><div class="value" style="font-size:20px">¥${fmtMoney(ssum.y)}</div></div>
+        <div class="stat"><div class="label">扣款</div><div class="value pay-red" style="font-size:20px">¥${fmtMoney(ssum.k)}</div></div>
+        <div class="stat"><div class="label">实发</div><div class="value pay-green" style="font-size:20px">¥${fmtMoney(ssum.s)}</div></div>
+      </div>
+      <div class="muted" style="margin-top:10px">部门人数分布见下方 ↓</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>部门人数分布</h3>${renderDeptBar()}</div>`;
+}
+function exportRecruitCSV(){
+  const rows=[['姓名','应聘岗位','渠道','阶段','面试日期','备注']];
+  data.candidates.forEach(c=>rows.push([c.name,c.position,c.channel,c.stage,c.interviewDate,c.note]));
+  download('招聘_'+fmtDate(today())+'.csv',csvBOM(rows),'text/csv;charset=utf-8');toast('已导出 CSV','ok');
+}
+
+/* ============== 8.7 审批配置 ============== */
+function renderApproval(){
+  const a=data.approval;
+  $('#content').innerHTML=`
+  <div class="card">
+    <h3>审批流模板配置 <span class="tag">本地保存 · 作为审批流参考</span></h3>
+    <div class="form-grid" style="margin-top:6px">
+      <div class="field"><label>请假审批人</label><input id="a_leave" value="${esc(a.leaveApprover)}" placeholder="如：孙丽"></div>
+      <div class="field"><label>转正审批节点</label><input id="a_regular" value="${esc(a.regularNode)}" placeholder="如：部门经理→HR复核"></div>
+      <div class="field"><label>加班审批人</label><input id="a_ot" value="${esc(a.overtimeApprover)}" placeholder="如：部门经理"></div>
+      <div class="field full"><label>离职审批流</label><input id="a_resign" value="${esc(a.resignFlow)}" placeholder="如：员工申请→部门审批→HR复核→总监批准"></div>
+      <div class="field full">
+        <label>是否启用多级审批</label>
+        <div class="seg" id="a_multi">
+          <button data-v="1" class="${a.multiLevel?'on':''}" onclick="setMulti(true)">启用</button>
+          <button data-v="0" class="${!a.multiLevel?'on':''}" onclick="setMulti(false)">不启用</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap10" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="saveApproval()">保存配置</button>
+      <button class="btn btn-ghost" onclick="resetApproval()">恢复默认</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>权限矩阵速览（HR 视角）</h3>
+    <div class="muted" style="line-height:1.8">
+      • 员工花名册：全量查看 / 编辑 / 导出<br>
+      • 招聘看板：全量管理（需求、简历、Offer、入职）<br>
+      • 考勤请假：全量审批 / 配置<br>
+      • 薪酬速算：核算 / 发放 / 导出<br>
+      • 合同预警：全量管理 / 续签<br>
+      • 报表中心：全部报表 / 导出<br>
+      • 审批配置：配置 / 管理<br>
+      <span class="pill">数据权限分级、字段级脱敏与操作日志详见 PRD 第三节，多角色扩展见第九节矩阵</span>
+    </div>
+  </div>`;
+}
+function setMulti(v){$$('#a_multi button').forEach(b=>b.classList.toggle('on',b.dataset.v==String(+v)));}
+function saveApproval(){
+  data.approval={
+    leaveApprover:$('#a_leave').value.trim(),regularNode:$('#a_regular').value.trim(),
+    overtimeApprover:$('#a_ot').value.trim(),resignFlow:$('#a_resign').value.trim(),
+    multiLevel:$('#a_multi .on').dataset.v==='1'
+  };
+  saveData();toast('审批配置已保存','ok');
+}
+function resetApproval(){
+  data.approval={leaveApprover:'孙丽',regularNode:'部门经理→HR复核',overtimeApprover:'部门经理',resignFlow:'员工申请→部门审批→HR复核→总监批准',multiLevel:true};
+  saveData();renderApproval();toast('已恢复默认');
+}
+
+/* ============== 全局检索 ============== */
+function doGlobalSearch(){
+  const q=$('#globalSearch').value.trim().toLowerCase();
+  if(!q){toast('请输入关键词');return;}
+  const res=[];
+  data.employees.forEach(e=>{if((e.name+e.dept+e.position+e.phone+e.employType+e.status).toLowerCase().includes(q))res.push({type:'员工',title:e.name,sub:`${e.dept} · ${e.position} · ${e.status}`,page:'emp'});});
+  data.candidates.forEach(c=>{if((c.name+c.position+c.channel+c.stage).toLowerCase().includes(q))res.push({type:'简历',title:c.name,sub:`${c.position} · ${c.channel} · ${c.stage}`,page:'recruit'});});
+  data.leaves.forEach(l=>{if((l.applicant+l.type+l.reason+l.status).toLowerCase().includes(q))res.push({type:'审批单',title:l.applicant+' · '+l.type,sub:`${l.status} · ${l.startDate}~${l.endDate}`,page:'leave'});});
+  data.employees.forEach(e=>{if((e.name+e.contractEnd).toLowerCase().includes(q))res.push({type:'合同',title:e.name,sub:'合同到期 '+e.contractEnd,page:'contract'});});
+  openModal('检索结果（'+res.length+'）',`<div class="search-results">${res.map(r=>`<div class="ri" onclick="navigate('${r.page}');closeModal()"><div class="rt">${esc(r.title)} <span class="pill">${r.type}</span></div><div class="rm">${esc(r.sub)}</div></div>`).join('')||'<div class="empty">未找到匹配结果</div>'}</div>`,`<button class="btn btn-ghost" onclick="closeModal()">关闭</button>`);
+}
+
+/* ============== 备份 / 恢复 ============== */
+function exportBackup(){
+  const payload={__type:'hr_workbench_backup',exportedAt:fmtDateTime(today()),data};
+  download('人事工作台备份_'+fmtDate(today())+'.json',JSON.stringify(payload,null,2),'application/json');
+  toast('已导出备份 JSON','ok');
+}
+function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const p=JSON.parse(reader.result);
+      if(p.__type!=='hr_workbench_backup'||!p.data)throw new Error('文件格式不正确');
+      data=p.data;saveData();renderNav();navigate(current);toast('备份已恢复','ok');
+    }catch(e){toast('恢复失败：'+e.message,'err');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+/* ============== 模态框 ============== */
+function openModal(title,body,foot){
+  $('#modalBox').innerHTML=`<div class="modal-head"><h3>${title}</h3><button class="x" onclick="closeModal()">×</button></div><div class="modal-body">${body}</div>${foot?`<div class="modal-foot">${foot}</div>`:''}`;
+  $('#modal').classList.add('show');
+}
+function closeModal(){$('#modal').classList.remove('show');}
+
+/* ============== 侧栏 & 时钟 ============== */
+function openSidebar(){$('#sidebar').classList.add('mobile-open');$('#overlay').classList.add('show');}
+function closeSidebar(){$('#sidebar').classList.remove('mobile-open');$('#overlay').classList.remove('show');}
+$('#hamburger').onclick=openSidebar;
+$('#overlay').onclick=closeSidebar;
+function tickClock(){$('#clock').textContent='北京时间 '+fmtDateTime(today());}
+
+/* ============== 启动 ============== */
+renderNav();
+navigate('home');
+tickClock();setInterval(tickClock,1000);
+</script>
+</body>
+</html>
