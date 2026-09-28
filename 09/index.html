@@ -116,7 +116,7 @@
   </div>
 
   <div class="note">
-    <b>转换说明：</b>本工具在浏览器本地用 PDF.js 提取文字与<b>基础排版格式</b>（加粗、字体颜色、字号、斜体），再用纯 JS 打包成标准 .docx（Word 可直接打开、可编辑）。
+    <b>转换说明：</b>本工具在浏览器本地用 PDF.js 提取文字与<b>基础排版格式</b>（加粗、字体颜色、字号、斜体、背景底纹），再用纯 JS 打包成标准 .docx（Word 可直接打开、可编辑）。
     适合<b>以文字为主的 PDF</b>（报告、论文、合同、说明文档）。扫描件 / 图片型 PDF 需先做 OCR 才能提取文字；
     复杂排版（多栏、表格转图、精确对齐）转换后可能需简单整理——这属于浏览器端纯文本提取的客观限制，并非转换失败。
   </div>
@@ -174,18 +174,20 @@ function makeZip(files){
 /* ============ 生成 .docx（保留加粗/颜色/字号/斜体） ============ */
 const enc=new TextEncoder();
 function xmlEsc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function styleKey(s){ if(!s) return "_"; return (s.bold?"B":"")+(s.italic?"I":"")+(s.color||"000000")+":"+(s.size||0); }
+function styleKey(s){ if(!s) return "_"; return (s.bold?"B":"")+(s.italic?"I":"")+(s.color||"000000")+":"+(s.size||0)+":"+(s.bg||""); }
 function styleEq(a,b){ return styleKey(a)===styleKey(b); }
-function runProps(s){
-  if(!s) return "";
+function runProps(s, charBg){
   let p="";
-  if(s.bold) p+='<w:b/>';
-  if(s.italic) p+='<w:i/>';
-  if(s.color && s.color!=="000000") p+='<w:color w:val="'+s.color+'"/>';
-  if(s.size && s.size>=16 && s.size<=200) p+='<w:sz w:val="'+s.size+'"/>';
+  if(s){
+    if(s.bold) p+='<w:b/>';
+    if(s.italic) p+='<w:i/>';
+    if(s.color && s.color!=="000000") p+='<w:color w:val="'+s.color+'"/>';
+    if(s.size && s.size>=16 && s.size<=200) p+='<w:sz w:val="'+s.size+'"/>';
+  }
+  if(charBg) p+='<w:shd w:val="clear" w:color="auto" w:fill="'+charBg+'"/>';
   return p?('<w:rPr>'+p+'</w:rPr>'):"";
 }
-function runXml(text,st){ return '<w:r>'+runProps(st)+'<w:t xml:space="preserve">'+xmlEsc(text)+'</w:t></w:r>'; }
+function runXml(text,st,charBg){ return '<w:r>'+runProps(st,charBg)+'<w:t xml:space="preserve">'+xmlEsc(text)+'</w:t></w:r>'; }
 function mergeRuns(runs){
   const out=[];
   for(const r of runs){
@@ -198,9 +200,18 @@ function mergeRuns(runs){
 function paraXml(runs){
   const m=mergeRuns(runs);
   if(!m.length) return '<w:p/>';
+  // 底纹：整段底色一致(且非空)→段落底纹；否则逐 run 字符底纹（如表格表头各列底色不同）
+  let pbg=null, allSame=true;
+  for(const r of m){
+    if(r.text==="") continue;
+    const b=(r.style&&r.style.bg)||"";
+    if(pbg===null) pbg=b; else if(b!==pbg){ allSame=false; break; }
+  }
+  if(!allSame) pbg=null;
   let inner="";
-  for(const r of m) inner+=runXml(r.text,r.style);
-  return '<w:p>'+inner+'</w:p>';
+  for(const r of m){ const cb=pbg?"":((r.style&&r.style.bg)||""); inner+=runXml(r.text,r.style,cb); }
+  const ppr = pbg ? ('<w:pPr><w:shd w:val="clear" w:color="auto" w:fill="'+pbg+'"/></w:pPr>') : "";
+  return '<w:p>'+ppr+inner+'</w:p>';
 }
 function buildDocx(pages, keepPageBreak){
   const files=[];
@@ -269,16 +280,21 @@ async function ensurePdf(){
   throw new Error("PDF 解析引擎加载失败，请检查网络后刷新重试");
 }
 
-/* ============ 样式提取：扫描操作列表，按 showText 顺序记录文字状态 ============ */
-function toHex2(c){
-  const v=Math.round(Math.max(0,Math.min(1,c))*255);
-  const h=v.toString(16);
-  return (h.length<2?"0":"")+h;
+/* ============ 颜色量纲（关键） ============
+   PDF.js 各颜色算子参数的量纲并不统一：
+   - setFill/StrokeRGBColor：0–255（与 PDF 内容流里的 rg 0–1 不同，PDF.js 已放大到 0–255）
+   - setFill/StrokeGray / CMYKColor：0–1（浮点）
+   之前对 RGB 也做了 *(夹到[0,1])*255，导致蓝色 (31,78,120) 被夹成 1,1,1 → 白色，
+   这就是「章节标题蓝色变白、灰色变白，而黑/白恰好正确」的根因。 */
+function hxByte(n){ n=Math.round(Math.max(0,Math.min(255,n))); const h=n.toString(16); return h.length<2?"0"+h:h; }
+function ch01(v){ return hxByte(Number(v)*255); }              // 0–1 → 十六进制字节
+function rgbToHex(a){                                          // 自适应 0–255 / 0–1 两种量纲
+  const r=Number(a[0])||0, g=Number(a[1])||0, b=Number(a[2])||0;
+  const s=Math.max(r,g,b)>1?1:255;
+  return hxByte(r*s)+hxByte(g*s)+hxByte(b*s);
 }
-/* ============ 颜色提取：扫描操作列表，记录每个 showText 的绘制坐标 + 当前填充色 ============ */
-function rgbToHex(a){ return toHex2(a[0])+toHex2(a[1])+toHex2(a[2]); }
-function grayToHex(g){ const h=toHex2(g); return h+h+h; }
-function cmykToHex(c,m,y,k){ return toHex2((1-c)*(1-k))+toHex2((1-m)*(1-k))+toHex2((1-y)*(1-k)); }
+function grayToHex(g){ const h=ch01(g); return h+h+h; }
+function cmykToHex(c,m,y,k){ return ch01((1-c)*(1-k))+ch01((1-m)*(1-k))+ch01((1-y)*(1-k)); }
 function matMul(m,n){
   return [
     m[0]*n[0]+m[2]*n[1], m[1]*n[0]+m[3]*n[1],
@@ -289,31 +305,48 @@ function matMul(m,n){
 function applyPt(m,x,y){ return [m[0]*x+m[2]*y+m[4], m[1]*x+m[3]*y+m[5]]; }
 function collectColorAnchors(opList, OPS){
   const fn=opList.fnArray||[], args=opList.argsArray||[];
-  let cur={color:"000000"};
-  let space="DeviceGray";
+  let fill="000000", stroke="000000", mode=0;
+  let space="DeviceGray", sspace="DeviceGray";
   let ctm=[1,0,0,1,0,0];
   let tm=[1,0,0,1,0,0];   // text matrix
   let tlm=[1,0,0,1,0,0];  // text line matrix
   let leading=0;
   const stack=[];
   const anchors=[];
+  // 文本可见色：多数情况取填充色；若是「白填充 + 彩色描边」的描边字，则取描边色
+  function visibleColor(){
+    const hasStroke=(mode&1)===1;
+    if(hasStroke && fill==="ffffff" && stroke!=="ffffff") return stroke;
+    return fill;
+  }
   for(let i=0;i<fn.length;i++){
     const op=fn[i], a=args[i];
-    if(op===OPS.save){ stack.push({ctm:ctm.slice(),tm:tm.slice(),tlm:tlm.slice(),leading,cur:{...cur},space}); }
-    else if(op===OPS.restore){ const s=stack.pop(); if(s){ctm=s.ctm;tm=s.tm;tlm=s.tlm;leading=s.leading;cur=s.cur;space=s.space;} }
+    if(op===OPS.save){ stack.push({ctm:ctm.slice(),tm:tm.slice(),tlm:tlm.slice(),leading,fill,stroke,space,sspace,mode}); }
+    else if(op===OPS.restore){ const s=stack.pop(); if(s){ctm=s.ctm;tm=s.tm;tlm=s.tlm;leading=s.leading;fill=s.fill;stroke=s.stroke;space=s.space;sspace=s.sspace;mode=s.mode;} }
     else if(op===OPS.concatMatrix){ if(a&&a.length>=6) ctm=matMul(ctm,[a[0],a[1],a[2],a[3],a[4],a[5]]); }
-    else if(op===OPS.setFillRGBColor){ if(a&&a.length>=3) cur.color=rgbToHex(a); }
-    else if(op===OPS.setFillGray){ if(a&&a.length>=1) cur.color=grayToHex(a[0]); }
-    else if(op===OPS.setFillCMYKColor){ if(a&&a.length>=4) cur.color=cmykToHex(a[0],a[1],a[2],a[3]); }
+    else if(op===OPS.setFillRGBColor){ if(a&&a.length>=3) fill=rgbToHex(a); }
+    else if(op===OPS.setFillGray){ if(a&&a.length>=1) fill=grayToHex(a[0]); }
+    else if(op===OPS.setFillCMYKColor){ if(a&&a.length>=4) fill=cmykToHex(a[0],a[1],a[2],a[3]); }
     else if(op===OPS.setFillColorSpace){ if(a&&a[0]) space=a[0]; }
     else if(op===OPS.setFillColor){
       if(a&&a.length){
-        if(space==="DeviceRGB"||space==="RGB"||space==="CalRGB"){ if(a.length>=3) cur.color=rgbToHex(a); }
-        else if(space==="DeviceGray"||space==="Gray"||space==="CalGray"){ cur.color=grayToHex(a[0]); }
-        else if(space==="DeviceCMYK"||space==="CMYK"){ if(a.length>=4) cur.color=cmykToHex(a[0],a[1],a[2],a[3]); }
-        // Separation/Indexed/Pattern 等不常见色彩空间：保留上一色
+        if(space==="DeviceRGB"||space==="RGB"||space==="CalRGB"){ if(a.length>=3) fill=rgbToHex(a); }
+        else if(space==="DeviceGray"||space==="Gray"||space==="CalGray"){ fill=grayToHex(a[0]); }
+        else if(space==="DeviceCMYK"||space==="CMYK"){ if(a.length>=4) fill=cmykToHex(a[0],a[1],a[2],a[3]); }
       }
     }
+    else if(op===OPS.setStrokeRGBColor){ if(a&&a.length>=3) stroke=rgbToHex(a); }
+    else if(op===OPS.setStrokeGray){ if(a&&a.length>=1) stroke=grayToHex(a[0]); }
+    else if(op===OPS.setStrokeCMYKColor){ if(a&&a.length>=4) stroke=cmykToHex(a[0],a[1],a[2],a[3]); }
+    else if(op===OPS.setStrokeColorSpace){ if(a&&a[0]) sspace=a[0]; }
+    else if(op===OPS.setStrokeColor){
+      if(a&&a.length){
+        if(sspace==="DeviceRGB"||sspace==="RGB"||sspace==="CalRGB"){ if(a.length>=3) stroke=rgbToHex(a); }
+        else if(sspace==="DeviceGray"||sspace==="Gray"||sspace==="CalGray"){ stroke=grayToHex(a[0]); }
+        else if(sspace==="DeviceCMYK"||sspace==="CMYK"){ if(a.length>=4) stroke=cmykToHex(a[0],a[1],a[2],a[3]); }
+      }
+    }
+    else if(op===OPS.textRenderingMode){ if(a&&a.length>=1) mode=a[0]; }
     else if(op===OPS.beginText){ tm=[1,0,0,1,0,0]; tlm=[1,0,0,1,0,0]; leading=0; }
     else if(op===OPS.setTextMatrix){ if(a&&a.length>=6){ tm=[a[0],a[1],a[2],a[3],a[4],a[5]]; tlm=tm.slice(); } }
     else if(op===OPS.setTextPosition){ if(a&&a.length>=2) tm=matMul(tlm,[1,0,0,1,a[0],a[1]]); }
@@ -321,37 +354,108 @@ function collectColorAnchors(opList, OPS){
     else if(op===OPS.nextLine){ tm=matMul(tlm,[1,0,0,1,0,leading]); }
     else if(op===OPS.showText||op===OPS.showSpacedText){
       const p=applyPt(ctm, tm[4], tm[5]);
-      anchors.push({x:p[0], y:p[1], color:cur.color});
+      anchors.push({x:p[0], y:p[1], color:visibleColor()});
     }
   }
   return anchors;
+}
+/* 字体样式表：PDF.js 的 textContent.fontName 只是内部代号(如 g_d0_f1)，
+   真实字体名(如 BCDEEE+MicrosoftYaHei-Bold)需通过 page.commonObjs 解析。
+   粗体/斜体一律以真实字体名为准——这是「粗体全丢」的根因修复。 */
+function buildFontStyleMap(page, opList, OPS){
+  const map={};
+  const fn=opList.fnArray||[], args=opList.argsArray||[];
+  const ids={};
+  for(let i=0;i<fn.length;i++){ if(fn[i]===OPS.setFont && args[i] && args[i][0]!=null) ids[args[i][0]]=1; }
+  const isBold=/bold|heavy|semibold|demi|black/i;
+  const isItalic=/italic|oblique/i;
+  for(const id in ids){
+    let nm="";
+    try{ const f=(page.commonObjs && typeof page.commonObjs.get==="function")?page.commonObjs.get(id):null; if(f&&f.name) nm=f.name; }catch(e){}
+    if(!nm){ try{ const f=(page.objs && typeof page.objs.get==="function")?page.objs.get(id):null; if(f&&f.name) nm=f.name; }catch(e){} }
+    map[id]={ name:nm, bold:isBold.test(nm)||isBold.test(id), italic:isItalic.test(nm)||isItalic.test(id) };
+  }
+  return map;
+}
+/* 背景底纹矩形：PDF 里「白字 + 深色底」这类表头/色带，靠填充矩形表达。
+   PDF.js 的 constructPath 参数为 [[路径指令],[x,y,w,h],[minX,maxX,minY,maxY]]，
+   填充指令(fill/eoFill)随后触发；只收集中等面积的非白矩形（排除 0.5pt 边框线）。 */
+function collectBackgrounds(opList, OPS){
+  const fn=opList.fnArray||[], args=opList.argsArray||[];
+  let fill="000000", space="DeviceGray";
+  let lastBox=null;
+  const rects=[];
+  const push=()=>{
+    if(!lastBox) return;
+    const w=lastBox[2]-lastBox[0], h=lastBox[3]-lastBox[1];
+    if(w>4 && h>4 && fill!=="ffffff") rects.push({x0:lastBox[0],y0:lastBox[1],x1:lastBox[2],y1:lastBox[3],color:fill});
+  };
+  for(let i=0;i<fn.length;i++){
+    const op=fn[i], a=args[i];
+    if(op===OPS.setFillRGBColor){ if(a&&a.length>=3) fill=rgbToHex(a); }
+    else if(op===OPS.setFillGray){ if(a&&a.length>=1) fill=grayToHex(a[0]); }
+    else if(op===OPS.setFillCMYKColor){ if(a&&a.length>=4) fill=cmykToHex(a[0],a[1],a[2],a[3]); }
+    else if(op===OPS.setFillColorSpace){ if(a&&a[0]) space=a[0]; }
+    else if(op===OPS.setFillColor){
+      if(a&&a.length){
+        if(space==="DeviceRGB"||space==="RGB"||space==="CalRGB"){ if(a.length>=3) fill=rgbToHex(a); }
+        else if(space==="DeviceGray"||space==="Gray"||space==="CalGray"){ fill=grayToHex(a[0]); }
+        else if(space==="DeviceCMYK"||space==="CMYK"){ if(a.length>=4) fill=cmykToHex(a[0],a[1],a[2],a[3]); }
+      }
+    }
+    else if(op===OPS.constructPath){
+      lastBox=null;
+      if(a && a.length){
+        const m=a[a.length-1];                       // [minX,maxX,minY,maxY]
+        if(m && m.length===4) lastBox=[Number(m[0]),Number(m[2]),Number(m[1]),Number(m[3])];
+        else { const r=a[1]; if(r&&r.length===4) lastBox=[Number(r[0]),Number(r[1]),Number(r[0])+Number(r[2]),Number(r[1])+Number(r[3])]; }
+      }
+    }
+    else if(op===OPS.fill||op===OPS.eoFill||op===OPS.fillStroke||op===OPS.eoFillStroke){ push(); }
+  }
+  return rects;
 }
 async function extractPageRuns(pdf, pageNum){
   const page=await pdf.getPage(pageNum);
   const [tc, opList]=await Promise.all([page.getTextContent(), page.getOperatorList()]);
   const OPS=pdfjsLib.OPS;
   const anchors=collectColorAnchors(opList, OPS);
+  const bgRects=collectBackgrounds(opList, OPS);
+  const fontMap=buildFontStyleMap(page, opList, OPS);
   const runs=[];
   for(const it of tc.items){
     if(it.str==null) continue;
     const t=it.str.replace(/\u0000/g,"").replace(/[\f]/g," ");
     if(t==="" && !it.hasEOL) continue;
-    // 粗细 / 斜体 / 字号：以 textContent 为准（粗体从字体名判断，比操作列表的内部代号可靠）
-    const fn=(it.fontName||"").toString();
-    const bold=/bold/i.test(fn);
-    const italic=/italic|oblique/i.test(fn);
+    // 粗细 / 斜体：textContent.fontName 是内部代号(g_d0_f1)，须解析成真实字体名才有 Bold/Italic
+    const fid=(it.fontName||"").toString();
+    const fst=fontMap[fid]||{ bold:/bold|heavy|semibold|demi|black/i.test(fid), italic:/italic|oblique/i.test(fid) };
+    const bold=!!fst.bold;
+    const italic=!!fst.italic;
     let sz=null;
     if(it.height && it.height>0) sz=Math.round(it.height*2);
     // 颜色：坐标最近邻匹配（与文字顺序彻底解耦，规避 opList 与 textContent 条目数不一致导致的错位）
+    const px=it.transform?it.transform[4]:0;
+    const py=it.transform?it.transform[5]:0;
     let color="000000";
     if(anchors.length){
-      const x=it.transform?it.transform[4]:0;
-      const y=it.transform?it.transform[5]:0;
       let best=null, bd=1e9;
-      for(const an of anchors){ const dx=an.x-x, dy=an.y-y; const d=dx*dx+dy*dy; if(d<bd){bd=d;best=an;} }
+      for(const an of anchors){ const dx=an.x-px, dy=an.y-py; const d=dx*dx+dy*dy; if(d<bd){bd=d;best=an;} }
       if(best && bd<=9) color=best.color; // 3pt 阈值
     }
-    runs.push({text:t, style:{color,bold,italic,size:sz}, eol:!!it.hasEOL});
+    // 背景底纹：文字坐标落在某个非白填充矩形内时，取面积最小者（最贴近的底色）
+    let bg="";
+    {
+      let best=null, bestA=1e18;
+      for(const rc of bgRects){
+        if(px>=rc.x0-1 && px<=rc.x1+1 && py>=rc.y0-1 && py<=rc.y1+1){
+          const area=(rc.x1-rc.x0)*(rc.y1-rc.y0);
+          if(area<bestA){ bestA=area; best=rc; }
+        }
+      }
+      if(best) bg=best.color;
+    }
+    runs.push({text:t, style:{color,bold,italic,size:sz,bg}, eol:!!it.hasEOL});
   }
   page.cleanup();
   return runs;
@@ -409,7 +513,7 @@ convert.addEventListener("click",async()=>{
     const zip=buildDocx(pages,keep);
     builtName=currentFile.name.replace(/\.pdf$/i,"")+".docx";
     builtBlob=new Blob([zip],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
-    resultLine.innerHTML="转换完成：共 <b>"+pdf.numPages+"</b> 页，提取文字 <b>"+totalChars.toLocaleString()+"</b> 字，文件大小 <b>"+fmtSize(builtBlob.size)+"</b>（已保留加粗/颜色/字号/斜体）";
+    resultLine.innerHTML="转换完成：共 <b>"+pdf.numPages+"</b> 页，提取文字 <b>"+totalChars.toLocaleString()+"</b> 字，文件大小 <b>"+fmtSize(builtBlob.size)+"</b>（已保留加粗/颜色/字号/斜体/底纹）";
     let plain="";
     for(const pg of pages){ for(const r of pg.runs) plain+=r.text+(r.eol?"\n":""); plain+="\n\n"; }
     preview.textContent=plain.slice(0,4000)+(totalChars>4000?"\n\n…（预览仅显示前 4000 字）":"");
