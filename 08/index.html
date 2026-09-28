@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+<!-- AI生成 -->
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -1163,6 +1164,8 @@
   </style>
 </head>
 <body>
+<p data-aigc-mark="1" style="margin:0 0 8px;font-size:10px;line-height:1.3;color:#6b6560;font-weight:400;">AI生成</p>
+
   <div id="loader">
     <div class="loader-ring"></div>
     <div style="font-size:0.8rem;color:rgba(255,255,255,0.6)">正在加载3D场景...</div>
@@ -2212,7 +2215,10 @@
     // 不够用就会成片闪。按层给固定偏置后，层次由 polygonOffset 保证，与距离无关。
     //   +4 最底层大面（草地 / 园区铺装）   -2 沥青面   -4 覆面 / 人行道   -6 标线涂装
     function groundMatFactory(cacheKey, tex, rx, ry, rough, metal, envI, po) {
-      if (MAT[cacheKey]) return MAT[cacheKey];
+      // 【抗闪烁】缓存键必须带上 po：同一套贴图铺贴密度可能被不同深度层次复用
+      // （例如广场铺装与人行道），若只按 rx/ry 缓存，后创建的那档 po 会被静默丢掉。
+      const key = cacheKey + '|' + po;
+      if (MAT[key]) return MAT[key];
       const m = new THREE.MeshStandardMaterial({
         map: tiled(tex, rx, ry), color: C('#ffffff'),
         roughness: rough, metalness: metal, envMapIntensity: envI
@@ -2222,7 +2228,7 @@
         m.polygonOffsetFactor = po > 0 ? 1.5 : -1.5;
         m.polygonOffsetUnits = po;
       }
-      MAT[cacheKey] = m;
+      MAT[key] = m;
       return m;
     }
     // 默认层次：沥青面 −2（压在最底层大面之上）、铺装/草地 −4（只有非"园区铺装"的
@@ -2647,29 +2653,33 @@
     }
 
     function createFactoryBuilding() {
-      // ===== 浦江园区北区：北侧长条厂房 + 中部主厂房 + 东侧厂房 + 南侧研发楼 + 入口广场 + 光伏车棚 + 水体 =====
-      // 北侧长条厂房（东西走向，三层，屋顶满铺光伏）
-      addWorkshop(-24, -34, 68, 20, 9);
-      // 中部主厂房（L形主体，四层，朝南主入口）
-      addFactoryMainHall(-15, -8, 48, 30, 12);
-      // 东侧连接厂房（南北走向，与主厂房东翼衔接）
-      addWorkshop(28, -8, 20, 42, 10);
-      // 南侧研发/办公楼（入口广场北侧，五层，水平长窗）
-      addOfficeBuilding(-8, 20, 22, 12, 5);
+      // ===== 浦江园区北区（对照卫星图 + 效果图重排体量）=====
+      // 效果图要点：中部两跨大体量厂房满铺蓝色光伏（视觉主体）、北侧沿河长条厂房、
+      // 东南多层玻璃办公楼、西侧运动场、南侧圆形广场+旗杆、东侧停车场/光伏车棚、北侧三鲁河。
+      // 北侧长条厂房（东西走向，沿河，屋顶满铺光伏）
+      addWorkshop(-18, -38, 76, 22, 10);
+      // 中部主厂房·北跨（效果图中最大的一跨，满铺光伏）
+      addFactoryMainHall(-10, -16, 58, 32, 13);
+      // 中部主厂房·南跨（与北跨并列，形成双跨大体量）
+      addWorkshop(-10, 10, 58, 18, 11);
+      // 东侧连接厂房（南北走向）
+      addWorkshop(34, -12, 22, 52, 11);
+      // 南侧研发/办公楼（效果图：东南角多层玻璃楼，比原尺寸更大）
+      addOfficeBuilding(-2, 26, 28, 14, 5);
       // 东侧光伏车棚（长条形，蓝色顶棚）
-      addSolarCarport(56, -6);
+      addSolarCarport(58, -4);
       // 东侧停车场
-      addParkingLot(60, 12);
+      addParkingLot(62, 18);
       // 入口广场 + 圆形环岛
-      addEntryPlaza(0, 40);
+      addEntryPlaza(0, 42);
       // 西侧运动场
-      addSportsCourt(-55, 5);
-      // 东侧水体（沿东围墙的河道）
+      addSportsCourt(-58, 0);
+      // 北侧水体（三鲁河，沿北围墙东西向河道）
       addWaterBody();
       // 南门岗
       addGateHouse(0, 50);
       // 东北角配电站
-      addSubstation(68, -45);
+      addSubstation(70, -48);
       // 园区围墙
       addPerimeterWall();
     }
@@ -2820,9 +2830,8 @@
       }
       // 屋顶前排设备带留空（原 3 台空调机组已按需求移除）
 
-      // 屋顶光伏（倾角 17°；原来按 d*0.18 反算实际约 38°，明显过陡像斜墙）
-      // 进深只铺 d-9，前后各留一条设备带，板阵与屋面设备互不穿插
-      addSolarRoof(g, w - 2.5, d - 9, h + 1.1, 17);
+      // 屋顶光伏（倾角 15°；效果图要求满铺，进深几乎占满屋面，前后只留窄设备带）
+      addSolarRoof(g, w - 1.5, d - 4, h + 1.1, 15);
 
       // 入口雨棚 / 门套 / 明门已并入下方 addMainEntrance()
       // （原 15.6m 宽 4.5m 深的整片大平板雨棚过于扁平，横贯整面山墙，
@@ -3177,7 +3186,7 @@
       cap.position.y = 0.45;
       cap.castShadow = true;
       top.add(cap);
-      addSolarRoof(top, w * 0.62, d * 0.62, 2.6, 14);
+      addSolarRoof(top, w * 0.72, d * 0.72, 2.6, 14);
       tagPick(top, { kind: 'floor', bld: 'office', f: floors - 1, key: 'office|' + (floors - 1) });
       const topU = regLift(top);
       g.add(top);
@@ -3271,8 +3280,8 @@
         g.add(vent);
       }
 
-      // 光伏避开后排通风器：进深收 6m，底部落到屋面板（h+0.1）上
-      addSolarRoof(g, w - 3.5, d - 6, h + 0.12, 18);
+      // 光伏满铺（效果图要求厂房顶几乎全是蓝板）：进深只收 3.5m，避开通风器即可
+      addSolarRoof(g, w - 2.0, d - 3.5, h + 0.12, 16);
 
       // ---- 【第26轮·剖切】同主厂房：整体搬进壳组，点击升起露出室内工位平面 ----
       var shade = addContactShade(g, w + 0.7, d + 0.7, 1.8);   // 接地阴影过渡带（留在地面）
@@ -4294,40 +4303,39 @@
       buildingGroup.add(g);
     }
 
-    // 东侧水体：沿东围墙南北向河道
+    // 北侧水体：沿北围墙东西向河道（三鲁河，对照卫星图/效果图）
     function addWaterBody() {
       const g = new THREE.Group();
-      // 主水面：分成两段并轻微错位，模拟自然河道
+      // 主水面：东西向河道，略带折弯
       const waterMat = new THREE.MeshStandardMaterial({
         color: 0x2ea5d8, roughness: 0.10, metalness: 0.12,
         transparent: true, opacity: 0.88
       });
-      const w1 = new THREE.Mesh(new THREE.PlaneGeometry(13, 48), waterMat);
+      const w1 = new THREE.Mesh(new THREE.PlaneGeometry(52, 13), waterMat);
       w1.rotation.x = -Math.PI / 2;
-      w1.position.set(75, 0.038, -25);
+      w1.position.set(-28, 0.038, -72);
       w1.receiveShadow = true;
       g.add(w1);
-      const w2 = new THREE.Mesh(new THREE.PlaneGeometry(12, 44), waterMat);
+      const w2 = new THREE.Mesh(new THREE.PlaneGeometry(48, 12), waterMat);
       w2.rotation.x = -Math.PI / 2;
-      w2.position.set(76, 0.038, 18);
+      w2.position.set(26, 0.038, -71);
       w2.receiveShadow = true;
       g.add(w2);
       // 水岸（混凝土护岸）
       for (const s of [-1, 1]) {
-        const bank1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 50), MAT.concrete);
-        bank1.position.set(75 + s * 6.5, 0.17, -26);
+        const bank1 = new THREE.Mesh(new THREE.BoxGeometry(54, 0.35, 0.8), MAT.concrete);
+        bank1.position.set(-28, 0.17, -72 + s * 6.5);
         bank1.castShadow = true; bank1.receiveShadow = true;
         g.add(bank1);
-        const bank2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 46), MAT.concrete);
-        bank2.position.set(76 + s * 6.2, 0.17, 19);
+        const bank2 = new THREE.Mesh(new THREE.BoxGeometry(50, 0.35, 0.8), MAT.concrete);
+        bank2.position.set(26, 0.17, -71 + s * 6.2);
         bank2.castShadow = true; bank2.receiveShadow = true;
         g.add(bank2);
       }
-      // 河岸行道树（沿河道西侧成列，避开车棚/停车场）
-      for (let z = -48; z <= 38; z += 8) {
-        if (z > -16 && z < 6) continue; // 避让车棚
-        if (z > 8 && z < 22) continue;  // 避让停车场
-        addTree(g, 68, z, rnd(0.85, 1.10), true, true);
+      // 河岸行道树（沿河道南侧成列）
+      for (let x = -62; x <= 58; x += 8) {
+        if (x > -20 && x < 8) continue;
+        addTree(g, x, -62, rnd(0.85, 1.10), true, true);
       }
       buildingGroup.add(g);
     }
@@ -4372,24 +4380,32 @@
     }
 
     // 入口广场：南门内圆形环岛 + 放射铺装 + 中心绿化
+    // 【抗闪烁】广场铺地原来与大门引道同为 y=0.054，两块大面完全共面 → 门口地面
+    // 出现斜向条纹状 z-fighting（相机一动就闪）。按深度栈拆开标高：
+    //   广场铺装 0.050 / po=+2（压在园区铺装之上、道路之下）
+    //   环岛草坪 0.052 / po=-1（只比广场高 2mm，弱偏置，不与引道抢层）
+    //   环岛车道 0.054 / po=-2（沥青面）
+    //   大门引道 0.058 / po=-2（createEnvironment，靠更高标高压住环道/草坪）
+    //   主干道   0.062 / po=-3
+    //   人行道   0.066 / po=-4
     function addEntryPlaza(x, z) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
-      // 广场铺地
-      const plaza = new THREE.Mesh(new THREE.PlaneGeometry(34, 20), pavingMat(6, 3));
+      // 广场铺地（大面铺装＝底层级，不要再用人行道那档 po=-4，否则会压到道路上）
+      const plaza = new THREE.Mesh(new THREE.PlaneGeometry(34, 20), pavingMat(6, 3, 2));
       plaza.rotation.x = -Math.PI / 2;
-      plaza.position.y = 0.054;
+      plaza.position.y = 0.050;
       plaza.receiveShadow = true;
       g.add(plaza);
-      // 圆形环岛
-      const ring = new THREE.Mesh(new THREE.CircleGeometry(7.5, 48), MAT.grassPatch);
+      // 圆形环岛（草坪是覆在广场上的色块，偏置要弱于道路，避免压住引道）
+      const ring = new THREE.Mesh(new THREE.CircleGeometry(7.5, 48), grassMat(6, 4, -1));
       ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.056;
+      ring.position.y = 0.052;
       g.add(ring);
-      // 环岛车道
-      const roadLoop = new THREE.Mesh(new THREE.RingGeometry(7.8, 11.2, 48), MAT.asphalt2);
+      // 环岛车道（与大门引道同属沥青层，靠标高 0.054 < 引道 0.058 让路）
+      const roadLoop = new THREE.Mesh(new THREE.RingGeometry(7.8, 11.2, 48), asphaltMat(5, 5, -2));
       roadLoop.rotation.x = -Math.PI / 2;
-      roadLoop.position.y = 0.055;
+      roadLoop.position.y = 0.054;
       g.add(roadLoop);
       // 中心花坛/雕塑基座
       const core = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.45, 24), MAT.concrete);
@@ -4473,11 +4489,14 @@
       // 大门引道：门洞（z=54）→ 主干道南边缘（z=43.5）
       // 【修正】原来门口与马路之间只有一块 10.5m 的空白铺装、主干道边线又通长不断，
       // 车出了大门根本"接不上马路"。现补一条与门洞等宽的沥青引道，并在边线上开口
+      // 【抗闪烁】引道原来 y=0.054，与入口广场铺地完全共面 → 门口地面斜纹闪烁。
+      // 现抬到 0.058（高于广场 0.050 / 环道 0.054），层次 −3（比普通沥青 −2 更靠前、
+      // 比主干道 −3 同级但标高更低），重叠带稳定显示引道。
       const DW = WALL.GATE;                       // 10.4（门洞半宽）
       const drive = new THREE.Mesh(
-        new THREE.PlaneGeometry(DW * 2, WALL.ZS - (R1.zc + R1.hw) + 0.5), asphaltMat(6, 3));
+        new THREE.PlaneGeometry(DW * 2, WALL.ZS - (R1.zc + R1.hw) + 0.5), asphaltMat(6, 3, -3));
       drive.rotation.x = -Math.PI / 2;
-      drive.position.set(0, Y_ROAD - 0.008, (WALL.ZS + R1.zc + R1.hw) / 2);
+      drive.position.set(0, Y_ROAD - 0.004, (WALL.ZS + R1.zc + R1.hw) / 2);
       drive.receiveShadow = true;
       buildingGroup.add(drive);
 
@@ -4507,9 +4526,10 @@
 
       // ---------- 人行道地面（岗亭西侧，行人全程与车流分开） ----------
       // 【本轮新增】行人与车分流：厂外引道 → 门洞 → 人行横道 → 园内人行道。
-      // 标高 0.066：比厂外引道（0.048）高 18mm、比车行引道（0.054）高 12mm，
+      // 标高 0.066：比厂外引道（0.048）高 18mm、比车行引道（0.058）高 8mm，
       // 既做出"人行道高出车行道一个路缘"的真实观感，又给远距离共面留足深度余量，
       // 不会像同高面片那样在远处 z-fighting 闪烁。
+      // 【抗闪烁】人行道用 po=-4（覆面档），比引道 po=-3 更靠前，重叠带永远显示人行道。
       const WALK_Y = 0.066;
       const PED_XC = (PED.X0 + PED.X1) / 2;
       const walk = new THREE.Mesh(new THREE.PlaneGeometry(PED.W, 14.25), pavingMat(1, 5));
