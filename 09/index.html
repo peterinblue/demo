@@ -96,7 +96,7 @@
     </div>
 
     <div class="row">
-      <label class="opt"><input type="checkbox" id="opt-page" checked> 保留分页符</label>
+      <label class="opt" title="默认关闭：内容连续排布，最省纸、无半页空白；勾选后严格按原 PDF 分页，页面下部可能留白"><input type="checkbox" id="opt-page"> 按原 PDF 分页（页面下部可能留白）</label>
       <button class="btn" id="convert" disabled>开始转换</button>
       <button class="btn ghost" id="reset">重新选择</button>
     </div>
@@ -118,7 +118,7 @@
   <div class="note">
     <b>转换说明：</b>本工具在浏览器本地用 PDF.js 提取文字与<b>排版格式</b>（加粗、字体颜色、字号、斜体、背景底纹、<b>表格还原、标题居中</b>），再用纯 JS 打包成标准 .docx（Word 可直接打开、可编辑）。
     适合<b>以文字为主的 PDF</b>（报告、论文、合同、说明文档）。扫描件 / 图片型 PDF 需先做 OCR 才能提取文字；
-    表格会按 PDF 的网格线还原为 Word 真表格（含表头底色）；多栏排版、表格转图等复杂版式转换后可能需简单整理——这属于浏览器端纯文本提取的客观限制，并非转换失败。
+    表格会按 PDF 的网格线还原为 Word 真表格（含表头底色）；正文按紧凑行距排布，默认<b>连续排布、不留半页空白</b>，如需严格按原 PDF 分页可勾选上方选项。多栏排版、表格转图等复杂版式转换后可能需简单整理——这属于浏览器端纯文本提取的客观限制，并非转换失败。
   </div>
 
   <footer>
@@ -308,23 +308,29 @@ function buildDocx(pages, keepPageBreak){
   files.push({name:"word/styles.xml",data:enc.encode(
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
-    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="SimSun"/><w:sz w:val="21"/></w:rPr></w:rPrDefault></w:docDefaults>'+
+    // 关键：必须显式关掉 Word 默认的"段后 8pt + 1.15 倍行距"，否则每行膨胀 → 页面装不下 → 大片空白
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="SimSun"/><w:sz w:val="21"/></w:rPr></w:rPrDefault>'+
+    '<w:pPrDefault><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'+
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'+
     '</w:styles>')});
 
   let body="";
   pages.forEach((pg,idx)=>{
-    if(idx>0 && keepPageBreak){ body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>'; }
+    // 分页符段落用"精确 1pt 行高"，避免它自己撑出一整行（旧版就是它把整页留空 + 显示成孤零零的回车符）
+    if(idx>0 && keepPageBreak){ body+='<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>'; }
     for(const blk of pg.blocks){
       if(blk.type==="table") body+=tableXml(blk);        // 真表格
       else body+=paraXml(blk.runs, blk.jc);              // 段落（可居中）
     }
   });
+  // 页面尺寸按原 PDF 首页设置（pt→twips），左右边距 90pt 贴合原文页边距，减少折行与错位
+  const p0=(pages&&pages[0])||{};
+  const pgW=pt2w(p0.pageW||612), pgH=pt2w(p0.pageH||792);
   const doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
     '<w:body>'+body+
-    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'+
-    '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>'+
+    '<w:sectPr><w:pgSz w:w="'+pgW+'" w:h="'+pgH+'"/>'+
+    '<w:pgMar w:top="1440" w:right="1800" w:bottom="1440" w:left="1800" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>'+
     '</w:body></w:document>';
   files.push({name:"word/document.xml",data:enc.encode(doc)});
   return makeZip(files);
@@ -674,7 +680,7 @@ async function extractPage(pdf, pageNum){
     }
   }
   page.cleanup();
-  return {blocks:blocks, pageW:vp.width};
+  return {blocks:blocks, pageW:vp.width, pageH:vp.height};
 }
 
 /* ============ UI 逻辑 ============ */
