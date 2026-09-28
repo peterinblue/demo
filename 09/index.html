@@ -116,9 +116,9 @@
   </div>
 
   <div class="note">
-    <b>转换说明：</b>本工具在浏览器本地用 PDF.js 提取文字，再用纯 JS 打包成标准 .docx（Word 可直接打开、可编辑）。
+    <b>转换说明：</b>本工具在浏览器本地用 PDF.js 提取文字与<b>基础排版格式</b>（加粗、字体颜色、字号、斜体），再用纯 JS 打包成标准 .docx（Word 可直接打开、可编辑）。
     适合<b>以文字为主的 PDF</b>（报告、论文、合同、说明文档）。扫描件 / 图片型 PDF 需先做 OCR 才能提取文字；
-    复杂排版（多栏、表格转图）转换后可能需简单整理——这属于浏览器端纯文本提取的客观限制，并非转换失败。
+    复杂排版（多栏、表格转图、精确对齐）转换后可能需简单整理——这属于浏览器端纯文本提取的客观限制，并非转换失败。
   </div>
 
   <footer>
@@ -171,9 +171,37 @@ function makeZip(files){
   return concat([...parts,cb,end]);
 }
 
-/* ============ 生成 .docx ============ */
+/* ============ 生成 .docx（保留加粗/颜色/字号/斜体） ============ */
 const enc=new TextEncoder();
 function xmlEsc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function styleKey(s){ if(!s) return "_"; return (s.bold?"B":"")+(s.italic?"I":"")+(s.color||"000000")+":"+(s.size||0); }
+function styleEq(a,b){ return styleKey(a)===styleKey(b); }
+function runProps(s){
+  if(!s) return "";
+  let p="";
+  if(s.bold) p+='<w:b/>';
+  if(s.italic) p+='<w:i/>';
+  if(s.color && s.color!=="000000") p+='<w:color w:val="'+s.color+'"/>';
+  if(s.size && s.size>=16 && s.size<=200) p+='<w:sz w:val="'+s.size+'"/>';
+  return p?('<w:rPr>'+p+'</w:rPr>'):"";
+}
+function runXml(text,st){ return '<w:r>'+runProps(st)+'<w:t xml:space="preserve">'+xmlEsc(text)+'</w:t></w:r>'; }
+function mergeRuns(runs){
+  const out=[];
+  for(const r of runs){
+    const last=out[out.length-1];
+    if(last && styleEq(last.style,r.style) && r.text!==""){ last.text+=r.text; }
+    else if(r.text!=="") out.push({text:r.text,style:r.style});
+  }
+  return out;
+}
+function paraXml(runs){
+  const m=mergeRuns(runs);
+  if(!m.length) return '<w:p/>';
+  let inner="";
+  for(const r of m) inner+=runXml(r.text,r.style);
+  return '<w:p>'+inner+'</w:p>';
+}
 function buildDocx(pages, keepPageBreak){
   const files=[];
   files.push({name:"[Content_Types].xml",data:enc.encode(
@@ -202,13 +230,14 @@ function buildDocx(pages, keepPageBreak){
     '</w:styles>')});
 
   let body="";
-  pages.forEach((text,idx)=>{
+  pages.forEach((pg,idx)=>{
     if(idx>0 && keepPageBreak){ body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>'; }
-    const lines=text.split("\n");
-    for(const ln of lines){
-      const t=xmlEsc(ln.length?ln:" ");
-      body+='<w:p><w:r><w:t xml:space="preserve">'+t+'</w:t></w:r></w:p>';
+    let cur=[];
+    for(const r of pg.runs){
+      cur.push(r);
+      if(r.eol){ body+=paraXml(cur); cur=[]; }
     }
+    if(cur.length) body+=paraXml(cur);
   });
   const doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
@@ -240,23 +269,63 @@ async function ensurePdf(){
   throw new Error("PDF 解析引擎加载失败，请检查网络后刷新重试");
 }
 
-/* ============ 文字重建 ============ */
-function reconstruct(tc){
-  let lines=[],cur="",lastY=null;
+/* ============ 样式提取：扫描操作列表，按 showText 顺序记录文字状态 ============ */
+function toHex2(c){
+  const v=Math.round(Math.max(0,Math.min(1,c))*255);
+  const h=v.toString(16);
+  return (h.length<2?"0":"")+h;
+}
+function collectStyles(opList, OPS){
+  const fn=opList.fnArray, args=opList.argsArray;
+  let cur={color:"000000",bold:false,italic:false,sizePt:0};
+  let space="DeviceGray";
+  const out=[];
+  for(let i=0;i<fn.length;i++){
+    const op=fn[i], a=args[i]; if(!a) continue;
+    if(op===OPS.setFillRGBColor){
+      cur.color=toHex2(a[0])+toHex2(a[1])+toHex2(a[2]);
+    } else if(op===OPS.setFillGray){
+      const g=toHex2(a[0]); cur.color=g+g+g;
+    } else if(op===OPS.setFillCMYKColor){
+      const c=a[0],m=a[1],y=a[2],k=a[3];
+      cur.color=toHex2((1-c)*(1-k))+toHex2((1-m)*(1-k))+toHex2((1-y)*(1-k));
+    } else if(op===OPS.setFillColorSpace){
+      space=(a&&a[0])||space;
+    } else if(op===OPS.setFillColor){
+      if(space==="DeviceRGB"||space==="RGB"||space==="CalRGB"){ cur.color=toHex2(a[0])+toHex2(a[1])+toHex2(a[2]); }
+      else if(space==="DeviceGray"||space==="Gray"||space==="CalGray"){ const g=toHex2(a[0]); cur.color=g+g+g; }
+      else if(space==="DeviceCMYK"&&a.length>=4){ const c=a[0],m=a[1],y=a[2],k=a[3]; cur.color=toHex2((1-c)*(1-k))+toHex2((1-m)*(1-k))+toHex2((1-y)*(1-k)); }
+    } else if(op===OPS.setFont){
+      const font=a[0]; const sizePt=a[1]||0; cur.sizePt=sizePt;
+      const n=(font&&font.name)||"";
+      cur.bold=/bold/i.test(n);
+      cur.italic=/italic|oblique/i.test(n);
+    } else if(op===OPS.showText||op===OPS.showSpacedText){
+      out.push({color:cur.color,bold:cur.bold,italic:cur.italic,sizePt:cur.sizePt});
+    }
+  }
+  return out;
+}
+async function extractPageRuns(pdf, pageNum){
+  const page=await pdf.getPage(pageNum);
+  const [tc, opList]=await Promise.all([page.getTextContent(), page.getOperatorList()]);
+  const OPS=pdfjsLib.OPS;
+  const styles=collectStyles(opList, OPS);
+  let si=0;
+  const runs=[];
   for(const it of tc.items){
     if(it.str==null) continue;
-    const y=it.transform?it.transform[5]:null;
-    if(lastY!==null && y!==null && Math.abs(y-lastY)>2){
-      if(cur.trim()) lines.push(cur.trim()); cur="";
-    }
-    if(it.str){
-      if(cur && !cur.endsWith(" ") && !it.str.startsWith(" ") && it.str!=="") cur+=" ";
-      cur+=it.str;
-    }
-    if(y!==null) lastY=y;
+    const st=styles.length?styles[Math.min(si,styles.length-1)]:{color:"000000",bold:false,italic:false,sizePt:0};
+    si++;
+    let t=it.str.replace(/\u0000/g,"").replace(/[\f]/g," ");
+    if(t==="" && !it.hasEOL) continue;
+    let sz=null;
+    if(it.height && it.height>0) sz=Math.round(it.height*2);
+    else if(st.sizePt>0) sz=Math.round(st.sizePt*2);
+    runs.push({text:t, style:{color:st.color,bold:st.bold,italic:st.italic,size:sz}, eol:!!it.hasEOL});
   }
-  if(cur.trim()) lines.push(cur.trim());
-  return lines.join("\n");
+  page.cleanup();
+  return runs;
 }
 
 /* ============ UI 逻辑 ============ */
@@ -301,20 +370,20 @@ convert.addEventListener("click",async()=>{
     const pdf=await lib.getDocument({data:buf}).promise;
     const pages=[]; let totalChars=0;
     for(let i=1;i<=pdf.numPages;i++){
-      const page=await pdf.getPage(i);
-      const tc=await page.getTextContent();
-      const txt=reconstruct(tc);
-      pages.push(txt); totalChars+=txt.length;
+      const runs=await extractPageRuns(pdf,i);
+      pages.push({runs});
+      for(const r of runs) totalChars+=r.text.length;
       bar.style.width=Math.round(i/pdf.numPages*100)+"%";
       barTip.textContent="已处理 "+i+" / "+pdf.numPages+" 页";
-      page.cleanup();
     }
     const keep=optPage.checked;
     const zip=buildDocx(pages,keep);
     builtName=currentFile.name.replace(/\.pdf$/i,"")+".docx";
     builtBlob=new Blob([zip],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
-    resultLine.innerHTML="转换完成：共 <b>"+pdf.numPages+"</b> 页，提取文字 <b>"+totalChars.toLocaleString()+"</b> 字，文件大小 <b>"+fmtSize(builtBlob.size)+"</b>";
-    preview.textContent=pages.join("\n\n").slice(0,4000)+(totalChars>4000?"\n\n…（预览仅显示前 4000 字）":"");
+    resultLine.innerHTML="转换完成：共 <b>"+pdf.numPages+"</b> 页，提取文字 <b>"+totalChars.toLocaleString()+"</b> 字，文件大小 <b>"+fmtSize(builtBlob.size)+"</b>（已保留加粗/颜色/字号）";
+    let plain="";
+    for(const pg of pages){ for(const r of pg.runs) plain+=r.text+(r.eol?"\n":""); plain+="\n\n"; }
+    preview.textContent=plain.slice(0,4000)+(totalChars>4000?"\n\n…（预览仅显示前 4000 字）":"");
     result.classList.add("show");
     bar.style.width="100%"; barTip.textContent="转换完成 ✓";
   }catch(e){
