@@ -3510,26 +3510,25 @@
         registerNightLight(gl, 3.6, 0.45);
       }
 
-      // 双向道闸（大门左侧＝南侧车道）：两根停车杆，与门岗左右互换
-      const bz = 5.0;                       // 车道中心偏南（左半幅）
+      // 双向道闸（大门左侧＝南侧车道）：当中一个接地立柱，左右两杆平均分配
+      const bz = 5.0;                       // 车道中心（左半幅）
       const bx = PX + 3.2;
-      // 两根停车杆：一根拦入、一根拦出
-      for (const armZ of [bz - 3.6, bz + 3.6]) {
+      {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
-        post.position.set(bx, 0.78, armZ);
+        post.position.set(bx, 0.78, bz);
         post.castShadow = true; post.receiveShadow = true;
         g.add(post);
         const postCap = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.14, 0.74), MAT.chargerTop);
-        postCap.position.set(bx, 1.62, armZ);
+        postCap.position.set(bx, 1.62, bz);
         g.add(postCap);
-        // 闸杆沿 z 向伸展（对准西门洞车道），红黄相间
+        // 左右两杆：各 3.75m（4 段×1.25），从中柱向两侧均分
         for (const side of [-1, 1]) {
           for (let k = 0; k < 3; k++) {
             const seg = new THREE.Mesh(
               new THREE.BoxGeometry(0.36, 0.34, 1.25),
               (k % 2 === 0) ? MAT.warn : MAT.warnRed
             );
-            seg.position.set(bx, 1.15, armZ + side * (0.625 + 1.25 * k));
+            seg.position.set(bx, 1.15, bz + side * (0.625 + 1.25 * k));
             seg.castShadow = true;
             g.add(seg);
           }
@@ -3569,13 +3568,15 @@
         led.position.set(cx + 0.34, 1.19, cz);
         g.add(led);
       }
-      // 翼闸挡板：每条通道左右各一片（闭合位），深色玻璃翼板（沿 x 向伸展，拦人行）
+      // 翼闸挡板：默认打开（挡板收起贴柱），人行通道默认畅通
       for (let i = 0; i < PED_N - 1; i++) {
         const laneC = (pedPx[i] + pedPx[i + 1]) / 2;
         for (const s of [-1, 1]) {
           const flap = new THREE.Mesh(
             new THREE.BoxGeometry(0.05, 0.70, PED_LANE / 2 - 0.02), MAT.glassDeep);
-          flap.position.set(PX + 2.2 + s * (PED_LANE / 4), 0.68, laneC);
+          // 默认打开：挡板沿 x 向收到立柱旁（不再拦在通道中间）
+          flap.position.set(PX + 2.2 + s * (PED_LANE / 2 + 0.12), 0.68, laneC);
+          flap.rotation.y = s * Math.PI / 2;   // 旋转 90°，贴在立柱侧面
           flap.castShadow = true;
           g.add(flap);
         }
@@ -4331,18 +4332,21 @@
         car.rotation.y = (i % 2 === 0) ? 0 : Math.PI;
         g.add(car);
         if (opts.chargers) {
+          // 充电桩靠车辆背面（车尾一侧），不是固定南面
+          // 车头朝向：i%2===0 时车头朝 -x（rotation.y=0），车尾在 +x 侧；反之车尾在 -x 侧
+          const rearSign = (i % 2 === 0) ? 1 : -1;
+          const chgX = cx + rearSign * (W / BAYS) * 0.38;
           // 西侧 2 个车位：大箱子快充；其余：简易桩
           const isBig = (i < 2);
           const charging = (i === 1 || i === 3 || i === 5);
-          const chg = addCharger(g, cx + (W / BAYS) * 0.38, D / 2 - 1.4, charging, i % 3);
+          const chg = addCharger(g, chgX, 0, charging, i % 3);
           if (isBig) {
-            // 大快充箱体（盖住简易桩外形，做高箱）
             const box = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.9, 0.9), MAT.charger);
-            box.position.set(cx + (W / BAYS) * 0.38, 1.05, D / 2 - 1.4);
+            box.position.set(chgX, 1.05, 0);
             box.castShadow = true; box.receiveShadow = true;
             g.add(box);
             const boxCap = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.12, 0.98), charging ? MAT.chargeCapGlow[i % 3] : MAT.chargerTop);
-            boxCap.position.set(cx + (W / BAYS) * 0.38, 2.05, D / 2 - 1.4);
+            boxCap.position.set(chgX, 2.05, 0);
             g.add(boxCap);
             if (charging && !CHARGE_GLOW[i % 3]) {
               CHARGE_GLOW[i % 3] = { cap: MAT.chargeCapGlow[i % 3], led: MAT.chargeLedGlow[i % 3], ph: (i % 3) * 2.0944 };
@@ -4383,11 +4387,17 @@
       g.add(canopy);
 
       const lift = regLift(canopy);
+      // 顶盖右移补间：点击后沿 +x 移开约 1.2 个车棚宽，完全露出车位
+      const drift = regTween(function (k) {
+        canopy.position.x = (W + 10) * k;
+      }, 3.2);
+      drift.target = 0;
       tagPick(canopy, { kind: 'carport', idx: CARPORTS.length, key: (opts.id || 'carport') + '|lift' });
       CARPORTS.push({
         id: opts.id || ('carport' + CARPORTS.length),
         label: opts.chargers ? '北侧光伏车棚' : '南侧光伏车棚',
         lift: lift,
+        drift: drift,
         canopy: canopy,
         chargers: !!opts.chargers
       });
@@ -4788,26 +4798,28 @@
       //   灯臂一律朝北（ry=π/2 → -Z），照向建筑背后的作业面，不朝墙打。
       //   真假光分配：背面 5 盏里 4 盏挂真实点光源（x=72 那盏是远景，只留光晕/光锥/光斑），
       //   全园实光仍为 11 盏，与上一版持平，移动端帧率不受影响。
-      // 照明：厂房内不设路灯；按参考图红圈位置布置
-      // 红圈主要分布在：南侧道路沿线、东侧道路、北侧道路、大门附近、车棚旁
+      // 照明：只在园区围墙内侧一圈布灯（不占车棚、不占车行通道），厂房内无灯
       const LAMPS = [
-        // 南侧道路沿线（红圈一排）
-        [-45, 42, Math.PI / 2],
-        [-22, 42, Math.PI / 2],
-        [2, 42, Math.PI / 2],
-        [26, 42, Math.PI / 2],
-        [48, 42, Math.PI / 2],
-        // 东侧道路
-        [52, 18, -Math.PI / 2],
-        [52, -8, -Math.PI / 2],
-        [46, -32, -Math.PI / 2],
-        // 北侧道路（10 号楼后）
-        [-28, -70, Math.PI / 2],
-        [0, -72, Math.PI / 2],
-        [28, -70, Math.PI / 2],
-        // 西侧 / 大门附近
-        [-48, 8, Math.PI / 2],
-        [-52, 36, Math.PI / 2]
+        // 南墙内侧
+        [-44, 68, Math.PI / 2],
+        [-20, 68, Math.PI / 2],
+        [4, 68, Math.PI / 2],
+        [28, 68, Math.PI / 2],
+        [48, 68, Math.PI / 2],
+        // 东墙内侧
+        [52, 40, -Math.PI / 2],
+        [52, 10, -Math.PI / 2],
+        [52, -20, -Math.PI / 2],
+        [52, -50, -Math.PI / 2],
+        // 北墙内侧
+        [-40, -72, Math.PI / 2],
+        [-12, -72, Math.PI / 2],
+        [16, -72, Math.PI / 2],
+        [42, -72, Math.PI / 2],
+        // 西墙内侧（避开大门洞）
+        [-52, -40, -Math.PI / 2],
+        [-52, -10, -Math.PI / 2],
+        [-52, 55, -Math.PI / 2]
       ];
       LAMPS.forEach(function (L) {
         addLampPost(buildingGroup, L[0], L[1], L[2], L[3] !== false);
@@ -5752,7 +5764,7 @@
       // 车棚抬起状态收回
       for (var ci = 0; ci < CARPORTS.length; ci++) {
         var cp = CARPORTS[ci];
-        if (cp && cp.lift) cp.lift.target = 0;
+        if (cp && cp.lift) { cp.lift.target = 0; if (cp.drift) cp.drift.target = 0; }
       }
       pickState = null;
       hideAreaPanel();          // 第30轮：收起时同步关闭右侧信息面板
@@ -5793,10 +5805,15 @@
       } else if (info.kind === 'carport') {
         var cp = CARPORTS[info.idx];
         if (!cp) return;
-        if (cp.lift) cp.lift.target = (cp.lift.target > 0.1) ? 0 : 5.2;
+        if (cp.lift) {
+          // 点击顶盖右移（+x），完全让开车棚，露出车位与充电桩
+          const t = (cp.lift.target > 0.1) ? 0 : 1;
+          cp.lift.target = t;
+          if (cp.drift) cp.drift.target = t;
+        }
         pickState = (cp.lift && cp.lift.target > 0.1) ? { key: info.key } : null;
         showTip((cp.label || '光伏车棚') + (cp.lift && cp.lift.target > 0.1 ?
-          '　·　已抬起，露出车位与车辆　·　再次点击放下' : '　·　已放下'), true);
+          '　·　顶盖已右移，露出车位与充电桩　·　再次点击收回' : '　·　已收回'), true);
         return;
       } else {
         var sh = SHELLS[info.bld];
@@ -6890,15 +6907,15 @@
         { axis: 'h', fix: [-156, -126], walk: [-110, 110], skip: 26 }  // 北侧
       ];
       spec.forEach(function (s) {
-        for (let t = s.walk[0]; t <= s.walk[1]; t += crange(26, 38)) {
+        // 【修正】高楼数量砍半、高度压低（原来 20~46m 太多太高）
+        for (let t = s.walk[0]; t <= s.walk[1]; t += crange(42, 62)) {
           if (s.skip && Math.abs(t) < s.skip) continue;
-          const h = crange(20, 46);
-          const wide = crange(18, 30);
-          const deep = crange(20, 26);
-          // 进深先定，再在「区间扣掉半个进深」的范围内取中心 —— 必然落在带内，不浪费抽样
+          const h = crange(10, 22);
+          const wide = crange(16, 26);
+          const deep = crange(18, 24);
           const fixC = crange(s.fix[0] + deep / 2, s.fix[1] - deep / 2);
-          if (s.axis === 'v') group.add(cityBuilding(fixC, t, deep, wide, h, (crnd() * 4) | 0));
-          else group.add(cityBuilding(t, fixC, wide, deep, h, (crnd() * 4) | 0));
+          if (s.axis === 'v') group.add(cityBuilding(fixC, t, deep, wide, h, (crnd() * 2) | 0));
+          else group.add(cityBuilding(t, fixC, wide, deep, h, (crnd() * 2) | 0));
         }
       });
     }
@@ -7231,11 +7248,15 @@
         for (var ci = 0; ci < CARPORTS.length; ci++) {
           var cp = CARPORTS[ci];
           if (!cp || !cp.lift) continue;
-          cp.lift.target = (cp.id === v.liftCarport) ? 5.2 : 0;
+          var on = (cp.id === v.liftCarport);
+          cp.lift.target = on ? 1 : 0;
+          if (cp.drift) cp.drift.target = on ? 1 : 0;
         }
       } else {
         for (var cj = 0; cj < CARPORTS.length; cj++) {
-          if (CARPORTS[cj] && CARPORTS[cj].lift) CARPORTS[cj].lift.target = 0;
+          if (!CARPORTS[cj] || !CARPORTS[cj].lift) continue;
+          CARPORTS[cj].lift.target = 0;
+          if (CARPORTS[cj].drift) CARPORTS[cj].drift.target = 0;
         }
       }
       const startPos = camera.position.clone();
@@ -7344,6 +7365,9 @@
       NIGHT_DIM.forEach(function (d) {
         d.mat.color.copy(d.mat.userData.dayColor).multiplyScalar(night ? d.k : 1);
       });
+      // ⑥ 车灯：晚间大灯亮起（自发光提亮），白天几乎不发光
+      if (MAT.headLight) MAT.headLight.emissiveIntensity = night ? 2.6 : 0.40;
+      if (MAT.tailLight) MAT.tailLight.emissiveIntensity = night ? 1.8 : 0.30;
     }
 
     function updateThemeBtn() {
