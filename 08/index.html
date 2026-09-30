@@ -2670,12 +2670,52 @@
       // 车棚南侧预留大片绿地（不放建筑）
       // 6 实验室 —— 东北角，靠外
       addSubstation(44, -70);
-      // 4 门卫 —— 左侧（西），大门开口朝西
-      addGateHouse(-52, 56);
+      // 4 门卫 —— 左侧（西），大门开口朝西；组原点放在门洞中心
+      addGateHouse(-52, WALL.GATE_Z);
+      // 楼栋标注（7/8/9/10/11 号楼）
+      addBuildingLabel(-14, 19.5, 2, '8号楼');
+      addBuildingLabel(16, 19.5, 2, '7号楼');
+      addBuildingLabel(4, 8.2, -30, '9号楼');
+      addBuildingLabel(-4, 16.2, -62, '10号楼');
+      addBuildingLabel(44, 5.2, -70, '11号楼');
       // 水系：东侧河道（平面图「河」）
       addWaterBody();
       // 园区围墙
       addPerimeterWall();
+    }
+
+    // 楼栋名称标注：贴在屋顶上方的立体字牌（面向相机的 Sprite）
+    function addBuildingLabel(x, y, z, text) {
+      const c = canvas2d(512, 128);
+      const ctx = c.ctx;
+      ctx.clearRect(0, 0, 512, 128);
+      // 底板
+      ctx.fillStyle = 'rgba(12, 28, 48, 0.82)';
+      const r = 18;
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.lineTo(512 - r, 0); ctx.quadraticCurveTo(512, 0, 512, r);
+      ctx.lineTo(512, 128 - r); ctx.quadraticCurveTo(512, 128, 512 - r, 128);
+      ctx.lineTo(r, 128); ctx.quadraticCurveTo(0, 128, 0, 128 - r);
+      ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0); ctx.closePath();
+      ctx.fill();
+      // 边框
+      ctx.strokeStyle = 'rgba(95, 208, 255, 0.85)';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      // 文字
+      ctx.fillStyle = '#eaf7ff';
+      ctx.font = 'bold 64px "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 68);
+      const tex = new THREE.CanvasTexture(c.c);
+      tex.needsUpdate = true;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false });
+      const sp = new THREE.Sprite(mat);
+      sp.position.set(x, y, z);
+      sp.scale.set(10, 2.5, 1);
+      sp.renderOrder = 20;
+      buildingGroup.add(sp);
     }
 
     // 主厂房：钢结构大跨厂房，金属墙板 + 玻璃腰带 + 满铺光伏
@@ -3407,8 +3447,8 @@
     }
 
     /* ---- 园区围墙尺寸（门岗与围墙共用，保证大门柱子与墙体对齐咬合） ---- */
-    // GATE_Z：大门中心 z（平面图主入口在最左下角，开口朝西，故取南端西侧）
-    const WALL = { X: 58, ZS: 80, ZN: -80, H: 2.5, T: 0.34, GATE: 10.4, GATE_Z: 52 };
+    // GATE_Z：大门中心 z（西向大门，正对主干道 z=36，车流直接汇入主干道）
+    const WALL = { X: 58, ZS: 80, ZN: -80, H: 2.5, T: 0.34, GATE: 10.4, GATE_Z: 36 };
 
     /* ---- 人行通道（岗亭西侧，与车行闸机同一条门线 z=53.2） ----
        原来岗亭紧贴西侧门柱基座（柱基到亭壁净距只剩 0.45m），行人根本挤不过去；
@@ -3420,32 +3460,28 @@
     function addGateHouse(x, z) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
+      // 西墙内表面在组内的局部 x（负值 = 靠墙）
+      const PX = -WALL.X - x;
 
-      // 门卫亭（置于车道左侧墙内侧，不再堵住门洞正中；再往内让开大门柱）
-      // 【本轮调整】东移 2.6m（-6.8 → -4.2）：原来亭子紧贴西侧门柱基座，两者净距
-      // 只剩 0.45m，行人无处可走。东移后亭子正好夹在"人行通道"与"车行闸机"之间，
-      // 值守视野同时覆盖两侧；西侧让出的 3.0m 通道内布置翼闸（见本函数末尾）。
-      const BOOTH_X = PED.X1 + 2.1;                            // -4.20
+      // 门卫亭（西门洞内侧偏南，不堵门洞正中）
+      const BOOTH_X = PX + 5.5;                            // 墙内侧 5.5m
       const booth = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.6, 3.8), MAT.concrete);
-      booth.position.set(BOOTH_X, 1.8, 1.0);
+      booth.position.set(BOOTH_X, 1.8, 14.0);
       booth.castShadow = true; booth.receiveShadow = true;
       g.add(booth);
 
       const win = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 4.0), MAT.glass);
-      win.position.set(BOOTH_X, 2.1, 1.0);
+      win.position.set(BOOTH_X, 2.1, 14.0);
       g.add(win);
 
-      // 雨棚挑檐由 5.2m 收到 4.8m：西侧挑出人行道 0.3m 作遮蔽，
-      // 东侧檐口（-1.8）正好止于闸杆端头（-1.6）之内，不压到栏杆上
       const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.45, 4.6), MAT.alu);
-      roofSlab.position.set(BOOTH_X, 3.85, 1.0);
+      roofSlab.position.set(BOOTH_X, 3.85, 14.0);
       roofSlab.castShadow = true;
       g.add(roofSlab);
 
       // 门柱（柱脚基座 + 柱身 + 压顶 + 柱顶灯）
-      // 西侧门洞：柱心沿 z 向落在 GATE_Z±GATE，x 贴西墙内侧
-      const pz = 0;                       // 组原点已在门洞中心，柱位用局部 z=±WALL.GATE
-      const PX = WALL.X - x;              // 西墙内表面在组内的局部 x
+      // 西侧门洞：柱心沿 z 向落在 GATE_Z±GATE，x 贴西墙内侧（PX 已在函数开头定义）
+      const pz = 0;                        // 柱位沿局部 z = ±GATE
       const PH = 5.80;
       for (const side of [-1, 1]) {
         const baseP = new THREE.Mesh(new THREE.BoxGeometry(2.10, 0.80, 2.10), MAT.fenceCap);
@@ -3477,11 +3513,10 @@
         registerNightLight(gl, 3.6, 0.45);
       }
 
-      // 双向道闸：闸机立柱 + 左右两条短杆（各 5.0m）
-      // 位置贴在围墙门洞线上（z=+3.2），否则会被 2.5m 围墙完全遮挡、外侧看不见
-      // bx：整组右移，让开左侧门卫亭（原居中时左杆端头顶在岗亭上）
-      const bz = 3.2;
-      const bx = 3.4;
+      // 双向道闸：闸机立柱 + 左右两条短杆
+      // 西向大门：车流沿 x 向，闸杆沿 z 向拦住门洞；立柱在门洞中心、靠园内一侧
+      const bz = 0;
+      const bx = PX + 3.2;                 // 门洞内侧 3.2m
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
       post.position.set(bx, 0.78, bz);
       post.castShadow = true; post.receiveShadow = true;
@@ -3491,72 +3526,71 @@
       g.add(postCap);
 
       for (const side of [-1, 1]) {
-        // 闸杆拆成 4 段红黄相间（整根同色在浅色路面上太细看不清）
+        // 闸杆沿 z 向伸展（对准西门洞，拦东西向车流），红黄相间
         for (let k = 0; k < 4; k++) {
           const seg = new THREE.Mesh(
-            new THREE.BoxGeometry(1.25, 0.34, 0.36),
+            new THREE.BoxGeometry(0.36, 0.34, 1.25),
             (k % 2 === 0) ? MAT.warn : MAT.warnRed
           );
-          seg.position.set(bx + side * (0.625 + 1.25 * k), 1.15, bz);
+          seg.position.set(bx, 1.15, bz + side * (0.625 + 1.25 * k));
           seg.castShadow = true;
           g.add(seg);
         }
       }
 
-      /* ---------- 人行通道 + 翼闸（岗亭西侧，与车行闸机同一道门线） ----------
-         原来门口只有车行闸机、没有行人通道：岗亭紧贴西侧门柱基座（净距 0.45m），
-         行人只能贴着车流走。本轮岗亭东移让出 3.0m 人行通道，通道内布置
-         三立柱两通道翼闸（一进一出），立柱顶配读卡器与通行状态灯。 */
-      const PED_ZL = PED.Z - z;                    // 门线在组内的局部 z（= 3.2）
-      const PED_PW = 0.30;                         // 单根立柱宽
-      const PED_N = 3;                             // 立柱数（3 根 = 2 通道）
-      const PED_LANE = (PED.W - PED_PW * PED_N) / 2;   // 单通道净宽 1.05
+      /* ---------- 人行通道 + 翼闸（西门洞内侧偏南，车行闸机同门线） ---------- */
+      // 西向大门：翼闸沿 z 向排布（拦人行东西向通行），立柱在门洞内侧
+      const PED_ZL = 10.5;                   // 门洞内侧偏南
+      const PED_PW = 0.30;                   // 单根立柱宽
+      const PED_N = 3;                       // 立柱数（3 根 = 2 通道）
+      const PED_LANE = 1.05;                 // 单通道净宽
       const pedPx = [];
       for (let i = 0; i < PED_N; i++) {
-        const cx = PED.X0 + PED_PW / 2 + i * (PED_PW + PED_LANE);
-        pedPx.push(cx);
+        const cx = PX + 2.2;                 // 靠墙内侧
+        const cz = PED_ZL + (i - 1) * (PED_PW + PED_LANE);
+        pedPx.push(cz);
 
         // 闸机柱身（不锈钢拉丝面）
         const body = new THREE.Mesh(new THREE.BoxGeometry(PED_PW, 1.05, 1.30), MAT.alu);
-        body.position.set(cx, 0.525, PED_ZL);
+        body.position.set(cx, 0.525, cz);
         body.castShadow = true; body.receiveShadow = true;
         g.add(body);
 
         // 顶盖（深色件）
         const cap = new THREE.Mesh(new THREE.BoxGeometry(PED_PW + 0.06, 0.09, 1.34), MAT.chargerTop);
-        cap.position.set(cx, 1.10, PED_ZL);
+        cap.position.set(cx, 1.10, cz);
         cap.castShadow = true;
         g.add(cap);
 
-        // 读卡器面板（面向园内一侧，进出各刷一次）
+        // 读卡器面板（面向园内一侧）
         const reader = new THREE.Mesh(new THREE.BoxGeometry(PED_PW - 0.06, 0.05, 0.34), MAT.chargerTop);
-        reader.position.set(cx, 1.16, PED_ZL - 0.34);
+        reader.position.set(cx + 0.34, 1.16, cz);
         g.add(reader);
 
         // 通行状态灯（绿 = 允许通行）
         const led = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 0.15), MAT.chargeLed);
-        led.position.set(cx, 1.19, PED_ZL - 0.34);
+        led.position.set(cx + 0.34, 1.19, cz);
         g.add(led);
       }
-      // 翼闸挡板：每条通道左右各一片（闭合位），深色玻璃翼板
+      // 翼闸挡板：每条通道左右各一片（闭合位），深色玻璃翼板（沿 x 向伸展，拦人行）
       for (let i = 0; i < PED_N - 1; i++) {
         const laneC = (pedPx[i] + pedPx[i + 1]) / 2;
         for (const s of [-1, 1]) {
           const flap = new THREE.Mesh(
-            new THREE.BoxGeometry(PED_LANE / 2 - 0.02, 0.70, 0.05), MAT.glassDeep);
-          flap.position.set(laneC + s * (PED_LANE / 4), 0.68, PED_ZL);
+            new THREE.BoxGeometry(0.05, 0.70, PED_LANE / 2 - 0.02), MAT.glassDeep);
+          flap.position.set(PX + 2.2 + s * (PED_LANE / 4), 0.68, laneC);
           flap.castShadow = true;
           g.add(flap);
         }
       }
-      // 外侧（墙外一侧）导流护栏：把排队人流限制在通道内，不漫到车道上
+      // 导流护栏：把排队人流限制在通道内
       for (const s of [0, 1]) {
-        const railX = (s === 0) ? PED.X0 + 0.06 : PED.X1 - 0.06;
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 3.4), MAT.alu);
-        rail.position.set(railX, 1.02, PED_ZL - 1.55);
+        const railZ = PED_ZL + (s === 0 ? -1.7 : 1.7);
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.06, 0.05), MAT.alu);
+        rail.position.set(PX + 3.9, 1.02, railZ);
         g.add(rail);
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.05, 0.05), MAT.alu);
-        post.position.set(railX, 0.525, PED_ZL - 3.20);
+        post.position.set(PX + 5.6, 0.525, railZ);
         g.add(post);
       }
 
@@ -4277,7 +4311,7 @@
       const BAYS = Math.max(4, Math.round(W / 4));
 
       // 车棚地坪（不随抬起移动）
-      const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3, D + 3), MAT.asphalt2);
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3, D + 3), asphaltMat(5, 5, -2));
       pad.rotation.x = -Math.PI / 2;
       pad.position.y = 0.052;
       pad.receiveShadow = true;
@@ -4512,63 +4546,54 @@
       // 次干道 / 引道比主干道低几毫米，交叉处让主干道压在上面（同高会 z-fighting）
       const Y_ROAD = 0.062, Y_MK = 0.070;
 
-      // 主干道（东西向）：z 28.5~43.5，正对南大门
-      // 【修正】原来只铺到 x±75，距围墙（x±80）还差 4.8m，俯视看就是"半截路悬在铺装中间"。
-      // 现两端延到 x±79.6（墙内表面 79.83），道路通到东西厂界，端头被围墙收住
-      // 【第23轮·修正】上一版把两端一直铺到 x±79.6（贴到墙内表面）—— 用户反馈"马路尽头顶着围墙"
-      // 不合理。现两端各退回 7.6m 到 x±72，退出来的这条环带用来做围墙内侧绿化（绿带 + 乔木）。
-      const R1 = { zc: 36, hw: 7.5, x0: -72, x1: 72 };
+      // 主干道（东西向）：z 28.5~43.5
+      // 【修正】路幅控制在围墙内（x±58），两端留出绿化带，不穿墙
+      const R1 = { zc: 36, hw: 7.5, x0: -48, x1: 48 };
       // 主干道层次给 −3（其余沥青面是 −2）：它是全场最高的路面（0.062），
       // 而停车场进车道（0.052）与大门引道（0.054）都跟它有 0.25~0.45m 的搭接重叠。
       // 两者只差 8~10mm，拉远后同样会翻；给主干道更靠前的一档，重叠带永远显示主干道。
       const road1 = new THREE.Mesh(
-        new THREE.PlaneGeometry(R1.x1 - R1.x0, R1.hw * 2), asphaltMat(28, 3, -3));
+        new THREE.PlaneGeometry(R1.x1 - R1.x0, R1.hw * 2), asphaltMat(6, 3, -3));
       road1.rotation.x = -Math.PI / 2;
       road1.position.set((R1.x0 + R1.x1) / 2, Y_ROAD, R1.zc);
       road1.receiveShadow = true;
       buildingGroup.add(road1);
 
-      // 次干道（南北向）：x -76~-64
-      // 【修正1】原为 x=-58 宽 15（x -65.5~-50.5），而储罐区防火堤一直伸到 x=-58.6，
-      //          防火堤把西侧 8m 路面整个压掉；东移会撞主厂房，故西移到 x=-70、宽 12
-      // 【修正2】原南端一直伸到 z=50，距南墙内表面（53.83）只剩 3.8m，形成"断头路顶着墙"。
-      //          现改为 T 字口：南端止于主干道北边线（z=28.5），汇入主干道
-      // 【第23轮·修正2】北端 z-58 → -52：同样不再顶到北墙；
-      //          半宽 6 → 5（x -75~-65）：西侧 x-77 要放围墙内侧树池，路面不能压到树池上
-      const R2 = { xc: -70, hw: 5, z0: -52, z1: R1.zc - R1.hw };
+      // 次干道（南北向）：西环路，控制在围墙内，不穿墙
+      const R2 = { xc: -40, hw: 5, z0: -52, z1: R1.zc - R1.hw };
       const road2 = new THREE.Mesh(
-        new THREE.PlaneGeometry(R2.hw * 2, R2.z1 - R2.z0), asphaltMat(3, 22));
+        new THREE.PlaneGeometry(R2.hw * 2, R2.z1 - R2.z0), asphaltMat(6, 3));
       road2.rotation.x = -Math.PI / 2;
       road2.position.set(R2.xc, Y_ROAD - 0.006, (R2.z0 + R2.z1) / 2);
       road2.receiveShadow = true;
       buildingGroup.add(road2);
 
-      // 大门引道：西门洞（x=-80）→ 主干道（东西向，z 28.5~43.5）
-      // 西向大门：引道沿 x 向东接主干道
+      // 大门引道：西门洞（x=-58）→ 主干道西端（x=-48）
+      // 西向大门：引道沿 x 向东接主干道；宽度=门洞宽，长度约 12m，不穿墙
+      // 【修正】全园道路统一 asphaltMat(6,3) 纹理密度，颜色保持一致
       const DW = WALL.GATE;                       // 10.4（门洞半宽）
-      const GZ = WALL.GATE_Z;                     // 门洞中心 z（西南主入口）
+      const GZ = WALL.GATE_Z;                     // 门洞中心 z
       const drive = new THREE.Mesh(
-        new THREE.PlaneGeometry(WALL.X - (R1.x0) + 0.5, DW * 2), asphaltMat(3, 6, -3));
+        new THREE.PlaneGeometry(12, DW * 2), asphaltMat(6, 3, -3));
       drive.rotation.x = -Math.PI / 2;
-      drive.position.set((-WALL.X + R1.x0) / 2, Y_ROAD - 0.004, GZ);
+      drive.position.set(-WALL.X + 6, Y_ROAD - 0.004, GZ);
       drive.receiveShadow = true;
       buildingGroup.add(drive);
 
       // 厂外进厂引道：大门外一小段铺装，让"车从哪进来"有着落
       const APRON_Y = Y_ROAD - 0.014;                        // 0.048
       const apron = new THREE.Mesh(
-        new THREE.PlaneGeometry(14, DW * 2 + 3.2), asphaltMat(4, 7));
+        new THREE.PlaneGeometry(14, DW * 2 + 3.2), asphaltMat(6, 3));
       apron.rotation.x = -Math.PI / 2;
       apron.position.set(-WALL.X - 7.25, APRON_Y, GZ);
       apron.receiveShadow = true;
       buildingGroup.add(apron);
 
-      // 【修正】厂外进厂道路：上一轮只补了门外 14m 的一块引道，它在草地里戛然而止，
-      // 俯视看就是"草地中间孤零零铺了一块沥青"，仍看不出"车是从哪条路开进来的"。
       // 厂外进厂道路：大门外向西接远处道路（西向大门）
-      const ORD_LEN = 100;
+      // 【修正】材质与园区沥青一致（asphaltMat 同纹理密度），避免东/西侧路面颜色不统一
+      const ORD_LEN = 60;
       const oroad = new THREE.Mesh(
-        new THREE.PlaneGeometry(ORD_LEN, 13), asphaltMat(30, 4));
+        new THREE.PlaneGeometry(ORD_LEN, 13), asphaltMat(6, 3, -2));
       oroad.rotation.x = -Math.PI / 2;
       oroad.position.set(-WALL.X - 14.25 - ORD_LEN / 2, APRON_Y - 0.002, GZ);
       oroad.receiveShadow = true;
@@ -4610,37 +4635,32 @@
         });
       }
 
-      const GATE_GAP = [GZ - DW, GZ + DW];                  // 大门引道开口（随门洞中心 z）
-      const XING_GAP_X = [R2.xc - R2.hw, R2.xc + R2.hw];   // 西侧 T 字口（x 区间）
-      // 停车场进车道开口：停车场在 (50,18)、场坪宽 24 → 东端 x=62，进车道宽 6 → x 62~68。
-      // 【要点】凡是道路边线遇到出入口，必须断开——否则白线会横着画在入口上，
-      // 看上去就是"线画错了"。（边线断、中心虚线不断，符合让行规则）
-      const PARK_GAP = [62, 68];
+      const XING_GAP_X = [R2.xc - R2.hw, R2.xc + R2.hw];   // 次干道 T 字口（x 区间）
+      const PARK_GAP = [30, 38];                            // 停车场进车道开口
 
-      // 主干道北侧边线：次干道汇入的 T 字口 + 大门引道处断开 + 停车场进车道处断开
+      // 主干道北侧边线：次干道汇入的 T 字口 + 停车场进车道处断开
+      // 【修正】西向大门的引道开口在 x 方向（西端），不再是 z 区间，GATE_GAP 不参与东西向边线
       paintLine('x', R1.zc - (R1.hw - 0.45), R1.x0 + 0.6, R1.x1 - 0.6,
-        [XING_GAP_X, GATE_GAP, PARK_GAP], 0.16);
-      // 主干道南侧边线：只在大门引道处断开（次干道止于北侧边线，不越到南半幅）
+        [XING_GAP_X, PARK_GAP], 0.16);
+      // 主干道南侧边线
       paintLine('x', R1.zc + (R1.hw - 0.45), R1.x0 + 0.6, R1.x1 - 0.6,
-        [GATE_GAP], 0.16);
+        [], 0.16);
       for (let x = R1.x0 + 3; x < R1.x1 - 3; x += 7.2) {
         const mid = x + 1.6;
         if (mid > XING_GAP_X[0] - 1.6 && mid < XING_GAP_X[1] + 1.6) continue;
-        if (mid > GATE_GAP[0] - 1.6 && mid < GATE_GAP[1] + 1.6) continue;
         paint(3.2, 0.24, mid, R1.zc);
       }
-      // 次干道：两侧边线 + 中心虚线（南端止于 T 字口，不穿过主干道，无需断口）
+      // 次干道：两侧边线 + 中心虚线
       for (const s of [1, -1]) {
         paintLine('z', R2.xc + s * (R2.hw - 0.45), R2.z0 + 0.6, R2.z1 - 0.6, [], 0.16);
       }
       for (let z = R2.z0 + 3; z < R2.z1 - 3; z += 7.2) {
         paint(0.24, 3.2, R2.xc, z + 1.6);
       }
-      // 引道：两侧边线（沿门洞两侧，把"进门路线"框出来）+ 出园车道停止线
+      // 引道：两侧边线（沿门洞上下边缘，把"进门路线"框出来）
       for (const s of [1, -1]) {
-        paintLine('z', s * (DW - 0.28), R1.zc + R1.hw + 0.5, WALL.ZS - 0.5, [], 0.16);
+        paintLine('x', GZ + s * (DW - 0.28), -WALL.X + 0.5, -WALL.X + 12, [], 0.16);
       }
-      paint(7.2, 0.4, 4.4, R1.zc + R1.hw + 1.3);
 
       // 人行横道（斑马线）已按需求移除（光伏车棚左侧不留斑马线）
 
