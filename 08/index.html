@@ -2024,7 +2024,7 @@
         hemiSky: '#a2c0e0', hemiGround: '#3a4450', hemiI: 0.42,
         sunI: 2.85, ambI: 0.06, exposure: 0.92,
         cloud: 0.92, cloudColor: '#ffffff',
-        ground: '#8e9a86', pad: '#aab2b9', grid1: '#8fc0e4', grid2: '#3d6b96', gridOp: 0.09
+        ground: '#8e9a86', pad: '#9a9a9a', grid1: '#8fc0e4', grid2: '#3d6b96', gridOp: 0.09
       },
       // 晚间（原"黑色"）：真正入夜 —— 天光压到最低，照明改由路灯 / 楼体房间灯承担
       black: {
@@ -2044,7 +2044,7 @@
         hemiSky: '#cfe3ff', hemiGround: '#8f9aa4', hemiI: 0.74,
         sunI: 3.00, ambI: 0.18, exposure: 0.92,
         cloud: 0.95, cloudColor: '#ffffff',
-        ground: '#c6d4be', pad: '#e0e6eb', grid1: '#8fb0cc', grid2: '#bbccda', gridOp: 0.26
+        ground: '#c6d4be', pad: '#d0d0d0', grid1: '#8fb0cc', grid2: '#bbccda', gridOp: 0.26
       }
     };
 
@@ -3460,19 +3460,19 @@
       // 西墙内表面在组内的局部 x（负值 = 靠墙）
       const PX = -WALL.X - x;
 
-      // 门卫亭（西门洞内侧偏南，不堵门洞正中）
-      const BOOTH_X = PX + 5.5;                            // 墙内侧 5.5m
+      // 门卫亭（大门左侧＝南侧，紧贴人行通道）
+      const BOOTH_X = PX + 5.5;
       const booth = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.6, 3.8), MAT.concrete);
-      booth.position.set(BOOTH_X, 1.8, 14.0);
+      booth.position.set(BOOTH_X, 1.8, 9.5);
       booth.castShadow = true; booth.receiveShadow = true;
       g.add(booth);
 
       const win = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 4.0), MAT.glass);
-      win.position.set(BOOTH_X, 2.1, 14.0);
+      win.position.set(BOOTH_X, 2.1, 9.5);
       g.add(win);
 
       const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.45, 4.6), MAT.alu);
-      roofSlab.position.set(BOOTH_X, 3.85, 14.0);
+      roofSlab.position.set(BOOTH_X, 3.85, 9.5);
       roofSlab.castShadow = true;
       g.add(roofSlab);
 
@@ -3510,10 +3510,9 @@
         registerNightLight(gl, 3.6, 0.45);
       }
 
-      // 双向道闸（右半幅车道）：两根停车杆，拦双向车流
-      // 西向大门分两部分：左（z 局部 -）＝人行闸机，右（z 局部 +）＝双向车道
-      const bz = -3.2;                      // 车道中心偏北（右半幅）
-      const bx = PX + 3.2;                  // 门洞内侧
+      // 双向道闸（大门右侧＝北侧车道）：两根停车杆
+      const bz = -5.0;                      // 车道中心偏北（右半幅）
+      const bx = PX + 3.2;
       // 两根停车杆：一根拦入、一根拦出
       for (const armZ of [bz - 3.6, bz + 3.6]) {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
@@ -3537,9 +3536,9 @@
         }
       }
 
-      /* ---------- 人行通道 + 翼闸（大门左半幅，z 局部 + 侧） ---------- */
-      // 西向大门分两部分：左＝人行闸机通道，右＝双向车道
-      const PED_ZL = 4.5;                    // 人行通道中心（局部 z，偏南）
+      /* ---------- 人行通道 + 翼闸（大门左侧，紧贴门岗） ---------- */
+      // 参考图：门岗在左，旁边是人行闸机；右侧是双向车道
+      const PED_ZL = 6.2;                    // 人行通道中心（局部 z，南侧＝左）
       const PED_PW = 0.30;
       const PED_N = 3;
       const PED_LANE = 1.05;
@@ -4392,43 +4391,9 @@
       buildingGroup.add(g);
     }
 
-    // 东侧水体：沿东围墙南北向河道（平面图「河」在东侧）
+    // 水体已按需求移除（东侧不留蓝色区域，地面颜色与铺装统一）
     function addWaterBody() {
-      const g = new THREE.Group();
-      // 主水面：分成两段并轻微错位，模拟自然河道
-      // 【修正】颜色改为深青灰蓝（不是浅蓝马路色），窄一点，明确是河不是路
-      const waterMat = new THREE.MeshStandardMaterial({
-        color: 0x3a6a7a, roughness: 0.18, metalness: 0.10,
-        transparent: true, opacity: 0.92
-      });
-      const w1 = new THREE.Mesh(new THREE.PlaneGeometry(9, 48), waterMat);
-      w1.rotation.x = -Math.PI / 2;
-      w1.position.set(51, 0.052, -30);
-      w1.receiveShadow = true;
-      g.add(w1);
-      const w2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 44), waterMat);
-      w2.rotation.x = -Math.PI / 2;
-      w2.position.set(52, 0.052, 22);
-      w2.receiveShadow = true;
-      g.add(w2);
-      // 水岸（混凝土护岸）
-      for (const s of [-1, 1]) {
-        const bank1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 50), MAT.concrete);
-        bank1.position.set(50 + s * 6.5, 0.17, -31);
-        bank1.castShadow = true; bank1.receiveShadow = true;
-        g.add(bank1);
-        const bank2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 46), MAT.concrete);
-        bank2.position.set(51 + s * 6.2, 0.17, 23);
-        bank2.castShadow = true; bank2.receiveShadow = true;
-        g.add(bank2);
-      }
-      // 河岸行道树（沿河道西侧成列）
-      for (let z = -56; z <= 46; z += 8) {
-        if (z > -16 && z < 6) continue;
-        if (z > 8 && z < 22) continue;
-        addTree(g, 42, z, rnd(0.85, 1.10), true, true);
-      }
-      buildingGroup.add(g);
+      return;
     }
 
     // 西侧运动场：篮球场 / 网球场
@@ -4559,23 +4524,50 @@
       road1.receiveShadow = true;
       buildingGroup.add(road1);
 
-      // 西环次干道（南北向）
-      const R2 = { xc: -40, hw: 5, z0: -52, z1: R1.zc - R1.hw };
-      const road2 = new THREE.Mesh(
-        new THREE.PlaneGeometry(R2.hw * 2, R2.z1 - R2.z0), asphaltMat(6, 3));
-      road2.rotation.x = -Math.PI / 2;
-      road2.position.set(R2.xc, Y_ROAD - 0.006, (R2.z0 + R2.z1) / 2);
-      road2.receiveShadow = true;
-      buildingGroup.add(road2);
-
       // 东环次干道（南北向，环形闭合）
-      const R3 = { xc: 40, hw: 5, z0: -52, z1: R1.zc - R1.hw };
+      const R3 = { xc: 40, hw: 5, z0: -72, z1: R1.zc - R1.hw };
       const road3 = new THREE.Mesh(
         new THREE.PlaneGeometry(R3.hw * 2, R3.z1 - R3.z0), asphaltMat(6, 3));
       road3.rotation.x = -Math.PI / 2;
       road3.position.set(R3.xc, Y_ROAD - 0.006, (R3.z0 + R3.z1) / 2);
       road3.receiveShadow = true;
       buildingGroup.add(road3);
+
+      // 北环：10 号楼（研发楼 z=-62）北侧道路，东西向接东西环
+      const R4 = { zc: -72, hw: 5, x0: -40, x1: 40 };
+      const road4 = new THREE.Mesh(
+        new THREE.PlaneGeometry(R4.x1 - R4.x0, R4.hw * 2), asphaltMat(6, 3));
+      road4.rotation.x = -Math.PI / 2;
+      road4.position.set((R4.x0 + R4.x1) / 2, Y_ROAD - 0.006, R4.zc);
+      road4.receiveShadow = true;
+      buildingGroup.add(road4);
+
+      // 中环：10 号楼与 9 号楼之间（z≈-52）东西向道路，接东西环
+      const R5 = { zc: -52, hw: 5, x0: -40, x1: 40 };
+      const road5 = new THREE.Mesh(
+        new THREE.PlaneGeometry(R5.x1 - R5.x0, R5.hw * 2), asphaltMat(6, 3));
+      road5.rotation.x = -Math.PI / 2;
+      road5.position.set((R5.x0 + R5.x1) / 2, Y_ROAD - 0.006, R5.zc);
+      road5.receiveShadow = true;
+      buildingGroup.add(road5);
+
+      // 南环：9 号楼（主生产车间 z=-30）南侧道路（z≈-8），接主干道
+      const R6 = { zc: -8, hw: 5, x0: -40, x1: 40 };
+      const road6 = new THREE.Mesh(
+        new THREE.PlaneGeometry(R6.x1 - R6.x0, R6.hw * 2), asphaltMat(6, 3));
+      road6.rotation.x = -Math.PI / 2;
+      road6.position.set((R6.x0 + R6.x1) / 2, Y_ROAD - 0.006, R6.zc);
+      road6.receiveShadow = true;
+      buildingGroup.add(road6);
+
+      // 西环次干道（南北向，延伸到北环）
+      const R2 = { xc: -40, hw: 5, z0: -72, z1: R1.zc - R1.hw };
+      const road2 = new THREE.Mesh(
+        new THREE.PlaneGeometry(R2.hw * 2, R2.z1 - R2.z0), asphaltMat(6, 3));
+      road2.rotation.x = -Math.PI / 2;
+      road2.position.set(R2.xc, Y_ROAD - 0.006, (R2.z0 + R2.z1) / 2);
+      road2.receiveShadow = true;
+      buildingGroup.add(road2);
 
       // 大门引道：西门洞（x=-58）→ 主干道西端（x=-48）
       // 西向大门：引道沿 x 向东接主干道；宽度=门洞宽，长度约 12m，不穿墙
