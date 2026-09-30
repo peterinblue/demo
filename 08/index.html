@@ -2660,8 +2660,8 @@
       addOfficeBuilding(16, 2, 52, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
       // 5 光伏车棚 —— 南侧两排；东端与综合楼东边缘(x=42)对齐，西段去掉
       // 西端 x=-2，东端 x=42 → 宽 44，中心 x=20
-      addSolarCarport(20, 38, { id: 'carn', chargers: true, w: 44 });
-      addSolarCarport(20, 50, { id: 'cars', chargers: false, w: 44 });
+      addSolarCarport(20, 38, { id: 'carn', chargers: true, w: 44, tilt: -0.12 });
+      addSolarCarport(20, 50, { id: 'cars', chargers: false, w: 44, tilt: 0.12 });
       // 东端 x = 20+22 = 42，与 7 号楼东缘(16+26=42)对齐
       // 车棚南侧预留大片绿地（不放建筑）
       // 6 实验室 —— 东北角，靠外
@@ -3460,19 +3460,19 @@
       // 西墙内表面在组内的局部 x（负值 = 靠墙）
       const PX = -WALL.X - x;
 
-      // 门卫亭（大门左侧＝南侧，紧贴人行通道）
+      // 门卫亭（大门右侧＝北侧，与停车杆左右互换）
       const BOOTH_X = PX + 5.5;
       const booth = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.6, 3.8), MAT.concrete);
-      booth.position.set(BOOTH_X, 1.8, 9.5);
+      booth.position.set(BOOTH_X, 1.8, -9.5);
       booth.castShadow = true; booth.receiveShadow = true;
       g.add(booth);
 
       const win = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 4.0), MAT.glass);
-      win.position.set(BOOTH_X, 2.1, 9.5);
+      win.position.set(BOOTH_X, 2.1, -9.5);
       g.add(win);
 
       const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.45, 4.6), MAT.alu);
-      roofSlab.position.set(BOOTH_X, 3.85, 9.5);
+      roofSlab.position.set(BOOTH_X, 3.85, -9.5);
       roofSlab.castShadow = true;
       g.add(roofSlab);
 
@@ -3510,8 +3510,8 @@
         registerNightLight(gl, 3.6, 0.45);
       }
 
-      // 双向道闸（大门右侧＝北侧车道）：两根停车杆
-      const bz = -5.0;                      // 车道中心偏北（右半幅）
+      // 双向道闸（大门左侧＝南侧车道）：两根停车杆，与门岗左右互换
+      const bz = 5.0;                       // 车道中心偏南（左半幅）
       const bx = PX + 3.2;
       // 两根停车杆：一根拦入、一根拦出
       for (const armZ of [bz - 3.6, bz + 3.6]) {
@@ -3536,9 +3536,8 @@
         }
       }
 
-      /* ---------- 人行通道 + 翼闸（大门左侧，紧贴门岗） ---------- */
-      // 参考图：门岗在左，旁边是人行闸机；右侧是双向车道
-      const PED_ZL = 6.2;                    // 人行通道中心（局部 z，南侧＝左）
+      /* ---------- 人行通道 + 翼闸（大门右侧＝北侧，紧贴门岗） ---------- */
+      const PED_ZL = -6.2;                   // 人行通道中心（局部 z，北侧＝右，与门岗同侧）
       const PED_PW = 0.30;
       const PED_N = 3;
       const PED_LANE = 1.05;
@@ -4353,18 +4352,23 @@
         }
       }
 
-      // 可抬起的顶棚组：支柱 + 横梁 + 光伏板
+      // 可抬起的顶棚组：支柱 + 横梁 + 光伏板（可整体倾斜）
+      // opts.tilt：南棚 +0.12（北高南低）、北棚 -0.12（南高北低）
       const canopy = new THREE.Group();
+      const TILT = opts.tilt || 0;
       for (let i = 0; i < 5; i++) {
         const px = -W / 2 + W / 4 * i;
         for (const s of [-1, 1]) {
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, H, 0.22), MAT.alu);
-          post.position.set(px, H / 2, s * (D / 2 - 0.5));
+          // 倾斜时支柱高度按 z 向微调，保持落地
+          const postH = H + TILT * s * (D / 2 - 0.5);
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, Math.max(1, postH), 0.22), MAT.alu);
+          post.position.set(px, Math.max(1, postH) / 2, s * (D / 2 - 0.5));
           post.castShadow = true; post.receiveShadow = true;
           canopy.add(post);
         }
         const beam = new THREE.Mesh(new THREE.BoxGeometry(W / 4 + 0.3, 0.22, D - 0.4), MAT.alu);
         beam.position.set(px, H - 0.11, 0);
+        beam.rotation.x = TILT;
         beam.castShadow = true;
         canopy.add(beam);
       }
@@ -4372,7 +4376,7 @@
         const pw = W / 6 - 0.2;
         const panel = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.10, D - 1.2), MAT.solar);
         panel.position.set(-W / 2 + pw / 2 + i * (W / 6), H, 0);
-        panel.rotation.x = 0.05;
+        panel.rotation.x = TILT;
         panel.castShadow = true; panel.receiveShadow = true;
         canopy.add(panel);
       }
@@ -4784,13 +4788,26 @@
       //   灯臂一律朝北（ry=π/2 → -Z），照向建筑背后的作业面，不朝墙打。
       //   真假光分配：背面 5 盏里 4 盏挂真实点光源（x=72 那盏是远景，只留光晕/光锥/光斑），
       //   全园实光仍为 11 盏，与上一版持平，移动端帧率不受影响。
-      // 照明：只保留环路必要点位（中间只留一盏），围墙外一律不设路灯
+      // 照明：厂房内不设路灯；按参考图红圈位置布置
+      // 红圈主要分布在：南侧道路沿线、东侧道路、北侧道路、大门附近、车棚旁
       const LAMPS = [
-        [-40, 46, Math.PI / 2],
-        [0, 21, Math.PI / 2],                 // 中间唯一一盏（主厂房南广场）
-        [40, 46, Math.PI / 2],
-        [-22, -28, Math.PI / 2],
-        [24, -28, Math.PI / 2]
+        // 南侧道路沿线（红圈一排）
+        [-45, 42, Math.PI / 2],
+        [-22, 42, Math.PI / 2],
+        [2, 42, Math.PI / 2],
+        [26, 42, Math.PI / 2],
+        [48, 42, Math.PI / 2],
+        // 东侧道路
+        [52, 18, -Math.PI / 2],
+        [52, -8, -Math.PI / 2],
+        [46, -32, -Math.PI / 2],
+        // 北侧道路（10 号楼后）
+        [-28, -70, Math.PI / 2],
+        [0, -72, Math.PI / 2],
+        [28, -70, Math.PI / 2],
+        // 西侧 / 大门附近
+        [-48, 8, Math.PI / 2],
+        [-52, 36, Math.PI / 2]
       ];
       LAMPS.forEach(function (L) {
         addLampPost(buildingGroup, L[0], L[1], L[2], L[3] !== false);
