@@ -2653,25 +2653,25 @@
     }
 
     function createFactoryBuilding() {
-      // ===== 浦江园区北区 · 按《楼栋总平面图》重排 =====
-      // 图例：1综合办公楼(地上5层·长条形) 2主生产车间(单层高跨·屋面光伏阵列)
-      //      3研发楼(地上4层) 4门卫(贴墙) 5光伏车棚(两排) 6实验室(约2间配电间大小)
-      // 方位：上北(-z) 下南(+z) 左西(-x) 右东(+x)；水系在东，主入口/门卫在西南
-      // 3 研发楼 —— 北侧居中偏西
-      addWorkshop(-4, -48, 55, 13, 14);
-      // 2 主生产车间 —— 中部最大体量
-      addFactoryMainHall(8, -18, 82, 38, 13);
-      // 1 综合办公楼 —— 主生产车间以南，长条形
-      addOfficeBuilding(8, 13, 82, 15, 5);
-      // 5 光伏车棚 —— 南侧两排
-      addSolarCarport(-12, 34);
-      addSolarCarport(28, 34);
-      addSolarCarport(-12, 45);
-      addSolarCarport(28, 45);
-      // 6 实验室 —— 东北角（约2间配电间大小）
-      addSubstation(50, -46);
-      // 4 门卫 —— 西南角，贴南墙（主入口）
-      addGateHouse(-50, 50);
+      // ===== 浦江园区北区 · 按《楼栋总平面图》+ 用户调整重排 =====
+      // 方位：上北(-z) 下南(+z) 左西(-x) 右东(+x)；水系在东，大门在西南角、开口朝西
+      // 楼栋紧贴环路、彼此间距拉宽；车棚南侧预留大块绿地
+      // 3 研发楼 —— 最北，地上4层，点击楼层抽拉（往北抽出）
+      addOfficeBuilding(-6, -52, 46, 14, 4, { bld: 'rd', label: '研发楼', dir: -1, axis: 'z', floorsName: ['研发一层', '研发二层', '研发三层', '研发四层'] });
+      // 2 主生产车间 —— 中部，高度减半
+      addFactoryMainHall(6, -22, 74, 30, 6.5);
+      // 1 综合办公楼 —— 主生产车间以南，拆成 8 号楼(西1/3) + 7 号楼(东2/3)，相连
+      // 8 号楼：往西抽拉；7 号楼：往东抽拉
+      addOfficeBuilding(-16, 8, 26, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1 });
+      addOfficeBuilding(16, 8, 52, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
+      // 5 光伏车棚 —— 南侧两排，缩短1/3（去掉西段），可点击抬起露出车辆
+      addSolarCarport(10, 32, { id: 'carn', chargers: true });
+      addSolarCarport(10, 42, { id: 'cars', chargers: false });
+      // 车棚南侧预留大片绿地（不放建筑）
+      // 6 实验室 —— 东北角，再往外靠
+      addSubstation(62, -52);
+      // 4 门卫 —— 最左下角（西南），大门开口朝西
+      addGateHouse(-72, 48);
       // 水系：东侧河道（平面图「河」）
       addWaterBody();
       // 园区围墙
@@ -3003,7 +3003,12 @@
        平面图不会被腰线压住；腰线在世界坐标里的位置与改造前逐一致（f*floorH, f=1..floors-1）。
        平面图默认 visible=false 且懒生成 —— 一是省性能（9 层全建约 700 个网格），
        二是未展开时它与上层 core 空间重叠，隐藏才能保证外观与改造前 100% 相同。 */
-    function addOfficeBuilding(x, z, w, d, floors) {
+    // opts: { bld:'bld7'|'bld8'|'rd', label, dir:+1/-1, axis:'x'|'z', floorsName:[] }
+    function addOfficeBuilding(x, z, w, d, floors, opts) {
+      opts = opts || {};
+      const BLD = opts.bld || 'office';
+      const DIR = (opts.dir === -1) ? -1 : 1;          // 抽拉方向：+1 东/右，-1 西/左
+      const AXIS = (opts.axis === 'z') ? 'z' : 'x';    // 抽拉轴向
       const g = new THREE.Group();
       g.position.set(x, 0, z);
       const floorH = 3.4;
@@ -3137,7 +3142,7 @@
         plan.visible = false;
         dg.add(plan);
 
-        tagPick(fl, { kind: 'floor', bld: 'office', f: f, key: 'office|' + f });
+        tagPick(fl, { kind: 'floor', bld: BLD, f: f, key: BLD + '|' + f });
         const u = regLift(fl);
 
         // 【第28轮】抽屉补间：向右抽出 → 垂直定位到统一展示标高 → 放大 2.0 倍（三段式，见上方参数区注释）
@@ -3148,16 +3153,18 @@
           var xk = eio(k / 0.60);                       // ① 平移段 0 → 0.60（向右抽出）
           var yk = eio((k - 0.46) / 0.36);              // ② 垂直段 0.46 → 0.82（升/降到统一展示标高）
           var sk = back((k - 0.64) / 0.36, 0.9);        // ③ 放大段 0.64 → 1.0（放大 2.0 倍，轻微回弹）
-          var wind = Math.sin(Math.min(1, k / 0.14) * Math.PI) * 0.45;   // 起势预备
+          var wind = Math.sin(Math.min(1, k / 0.14) * Math.PI) * 0.45 * DIR;
           var dy = DRAWER_CLEAR - f * floorH;
-          dg.position.x = DRAWER_OUT * xk - wind;
-          dg.position.y = dy * yk;   // 【第31轮】不再夹到 0：6F 以上也一起降到 17m 展示标高，各层悬停高度统一
+          if (AXIS === 'z') {
+            dg.position.z = DIR * DRAWER_OUT * xk - wind;
+            dg.position.x = 0;
+          } else {
+            dg.position.x = DIR * DRAWER_OUT * xk - wind;
+            dg.position.z = 0;
+          }
+          dg.position.y = dy * yk;
           var sc = 1 + DRAWER_S * sk;
           dg.scale.set(sc, sc, sc);
-          // 【第33轮】底座压薄：只动 sbase.scale.y（楼板 + 幕墙 + 腰线一起收薄），
-          // 平面图同步降到压扁后的板面。ys 与放大段共用同一个 sk 驱动 ——
-          // sk=0（未抽出）时 ys=1，sbase 就是 identity，几何与改动前完全一致；
-          // sk 末端有轻微过冲，于是底座会"多压一点再弹回来"，顺手带出一点回弹手感。
           var ys = 1 - (1 - DRAWER_BASE) * sk;
           sbase.scale.y = ys;
           plan.position.y = floorH * ys;
@@ -3165,7 +3172,7 @@
         }, 2.2, { dur: 3.0 });
         dr.target = 0;
         units.push({ u: u, f: f, plan: plan, dg: dg, sbase: sbase, built: false, dr: dr,
-                     name: OFFICE_FLOORS[f % OFFICE_FLOORS.length] });
+                     name: (opts.floorsName && opts.floorsName[f]) || OFFICE_FLOORS[f % OFFICE_FLOORS.length] });
         g.add(fl);
       }
 
@@ -3181,7 +3188,7 @@
       cap.castShadow = true;
       top.add(cap);
       addSolarRoof(top, w * 0.72, d * 0.72, 2.6, 14);
-      tagPick(top, { kind: 'floor', bld: 'office', f: floors - 1, key: 'office|' + (floors - 1) });
+      tagPick(top, { kind: 'floor', bld: BLD, f: floors - 1, key: BLD + '|' + (floors - 1) });
       const topU = regLift(top);
       g.add(top);
 
@@ -3194,7 +3201,13 @@
             addContactShade(g, w + 1.1, d + 1.1, 2.0);   // 接地阴影过渡带（办公楼·勒脚外扩 0.5）
 
       LIFT_OFFICE = floorH * 1.3;
-      OFFICE = { w: w, d: d, floors: floors, floorH: floorH, units: units, top: topU };
+      if (!OFFICES[BLD]) {
+        OFFICES[BLD] = { bld: BLD, label: opts.label || BLD, w: w, d: d, floors: floors, floorH: floorH, units: units, top: topU, dir: DIR, axis: AXIS };
+      } else {
+        // 同一 bld 只保留第一份（理论上不会重复调用）
+        OFFICES[BLD].units = units; OFFICES[BLD].top = topU;
+      }
+      if (!OFFICE) OFFICE = OFFICES[BLD];   // 兼容旧调试出口
       PICK_ROOTS.push(g);
       buildingGroup.add(g);
     }
@@ -3394,8 +3407,8 @@
     }
 
     /* ---- 园区围墙尺寸（门岗与围墙共用，保证大门柱子与墙体对齐咬合） ---- */
-    // GATE_X：大门中心 x（平面图主入口/门卫在西南角，故取 -50）
-    const WALL = { X: 80, ZS: 54, ZN: -62, H: 2.5, T: 0.34, GATE: 10.4, GATE_X: -50 };
+    // GATE_Z：大门中心 z（平面图主入口在最左下角，开口朝西，故取南端西侧）
+    const WALL = { X: 80, ZS: 54, ZN: -62, H: 2.5, T: 0.34, GATE: 10.4, GATE_Z: 40 };
 
     /* ---- 人行通道（岗亭西侧，与车行闸机同一条门线 z=53.2） ----
        原来岗亭紧贴西侧门柱基座（柱基到亭壁净距只剩 0.45m），行人根本挤不过去；
@@ -3403,7 +3416,7 @@
        x 范围下限取 -9.30：西侧门柱基座（2.10 宽）外沿在 -9.35，留 0.05 收口。 */
     const PED = { X0: -9.30, X1: -6.30, W: 3.0, Z: 53.2 };
 
-    // 门岗 / 大门
+    // 门岗 / 大门（西侧开口，组原点放在门洞中心；柱位局部 x=±GATE 对齐西墙洞）
     function addGateHouse(x, z) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
@@ -3430,37 +3443,37 @@
       g.add(roofSlab);
 
       // 门柱（柱脚基座 + 柱身 + 压顶 + 柱顶灯）
-      // 【关键】柱心正对围墙门洞端头。组原点已放在 GATE_X，柱位用局部 x=±WALL.GATE
-      // 即可对齐墙洞（GATE_X±GATE），不要再叠加 GATE_X（会双重偏移）。
-      const pz = WALL.ZS - z;
-      const PH = 5.80;                    // 柱身高（无门楣后回调，6.6 会显得像两根杆子）
+      // 西侧门洞：柱心沿 z 向落在 GATE_Z±GATE，x 贴西墙内侧
+      const pz = 0;                       // 组原点已在门洞中心，柱位用局部 z=±WALL.GATE
+      const PX = WALL.X - x;              // 西墙内表面在组内的局部 x
+      const PH = 5.80;
       for (const side of [-1, 1]) {
         const baseP = new THREE.Mesh(new THREE.BoxGeometry(2.10, 0.80, 2.10), MAT.fenceCap);
-        baseP.position.set(side * WALL.GATE, 0.40, pz);
+        baseP.position.set(PX, 0.40, side * WALL.GATE);
         baseP.castShadow = true; baseP.receiveShadow = true;
         g.add(baseP);
 
         const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.50, PH, 1.50), MAT.concrete);
-        pillar.position.set(side * WALL.GATE, PH / 2, pz);
+        pillar.position.set(PX, PH / 2, side * WALL.GATE);
         pillar.castShadow = true; pillar.receiveShadow = true;
         g.add(pillar);
 
         const capP = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.36, 1.98), MAT.fenceCap);
-        capP.position.set(side * WALL.GATE, PH + 0.18, pz);
+        capP.position.set(PX, PH + 0.18, side * WALL.GATE);
         capP.castShadow = true;
         g.add(capP);
 
         const lampBall = new THREE.Mesh(new THREE.SphereGeometry(0.44, 16, 12), MAT.lampGlass);
-        lampBall.position.set(side * WALL.GATE, PH + 0.95, pz);
+        lampBall.position.set(PX, PH + 0.95, side * WALL.GATE);
         g.add(lampBall);
 
         const gl = new THREE.PointLight(S('#ffd9a0').getHex(), 0.9, 22, 2);
-        gl.position.set(side * WALL.GATE, PH + 0.85, pz);
+        gl.position.set(PX, PH + 0.85, side * WALL.GATE);
         g.add(gl);
 
         // 夜间：灯球光晕 + 门口地面光斑（让大门口在晚间成为最亮的地方）
-        nightGlow(g, side * WALL.GATE, PH + 0.95, pz, 3.0, 0.95);
-        nightPool(g, side * WALL.GATE, 0.090, pz + 3.4, 6.2, 0.52);
+        nightGlow(g, PX, PH + 0.95, side * WALL.GATE, 3.0, 0.95);
+        nightPool(g, PX + 3.4, 0.090, side * WALL.GATE, 6.2, 0.52);
         registerNightLight(gl, 3.6, 0.45);
       }
 
@@ -4253,48 +4266,96 @@
 
     // ===== 浦江园区北区新增设施 =====
 
-    // 光伏车棚：东侧长条形，顶棚满铺蓝色光伏板
-    function addSolarCarport(x, z) {
+    // 光伏车棚：两排，可点击向上抬起露出车位/车辆；北排带充电桩（西侧2个大快充 + 其余简易桩）
+    // opts: { id, chargers: bool }
+    function addSolarCarport(x, z, opts) {
+      opts = opts || {};
       const g = new THREE.Group();
       g.position.set(x, 0, z);
-      const W = 36, D = 9, H = 4.2;
-      // 车棚地坪
+      // 缩短 1/3：原 W=36 → 24（去掉西段）
+      const W = 24, D = 9, H = 4.2;
+      const BAYS = 6;
+
+      // 车棚地坪（不随抬起移动）
       const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3, D + 3), MAT.asphalt2);
       pad.rotation.x = -Math.PI / 2;
       pad.position.y = 0.052;
       pad.receiveShadow = true;
       g.add(pad);
-      // 支柱（两侧各一排）
-      for (let i = 0; i < 6; i++) {
-        const px = -W / 2 + W / 5 * i;
+
+      // 车位白线
+      for (let i = 0; i <= BAYS; i++) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.12, D - 1), MAT.marking);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(-W / 2 + i * (W / BAYS), 0.060, 0);
+        g.add(line);
+      }
+
+      // 车辆 + 充电桩（北排有桩，南排无桩）
+      const kinds = ['sedan', 'suv', 'hatch', 'mpv', 'sedan', 'pickup'];
+      for (let i = 0; i < BAYS; i++) {
+        const cx = -W / 2 + (W / BAYS) * (i + 0.5);
+        const car = makeVehicle(kinds[i % kinds.length], MAT.carBody[i % MAT.carBody.length]);
+        car.position.set(cx, 0.052, 0);
+        car.rotation.y = (i % 2 === 0) ? 0 : Math.PI;
+        g.add(car);
+        if (opts.chargers) {
+          // 西侧 2 个车位：大箱子快充；其余：简易桩
+          const isBig = (i < 2);
+          const charging = (i === 1 || i === 3 || i === 5);
+          const chg = addCharger(g, cx + (W / BAYS) * 0.38, D / 2 - 1.4, charging, i % 3);
+          if (isBig) {
+            // 大快充箱体（盖住简易桩外形，做高箱）
+            const box = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.9, 0.9), MAT.charger);
+            box.position.set(cx + (W / BAYS) * 0.38, 1.05, D / 2 - 1.4);
+            box.castShadow = true; box.receiveShadow = true;
+            g.add(box);
+            const boxCap = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.12, 0.98), charging ? MAT.chargeCapGlow[i % 3] : MAT.chargerTop);
+            boxCap.position.set(cx + (W / BAYS) * 0.38, 2.05, D / 2 - 1.4);
+            g.add(boxCap);
+            if (charging && !CHARGE_GLOW[i % 3]) {
+              CHARGE_GLOW[i % 3] = { cap: MAT.chargeCapGlow[i % 3], led: MAT.chargeLedGlow[i % 3], ph: (i % 3) * 2.0944 };
+            }
+          }
+          void chg;
+        }
+      }
+
+      // 可抬起的顶棚组：支柱 + 横梁 + 光伏板
+      const canopy = new THREE.Group();
+      for (let i = 0; i < 5; i++) {
+        const px = -W / 2 + W / 4 * i;
         for (const s of [-1, 1]) {
           const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, H, 0.22), MAT.alu);
           post.position.set(px, H / 2, s * (D / 2 - 0.5));
           post.castShadow = true; post.receiveShadow = true;
-          g.add(post);
+          canopy.add(post);
         }
-        // 顶部横梁
-        const beam = new THREE.Mesh(new THREE.BoxGeometry(W / 5 + 0.3, 0.22, D - 0.4), MAT.alu);
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(W / 4 + 0.3, 0.22, D - 0.4), MAT.alu);
         beam.position.set(px, H - 0.11, 0);
         beam.castShadow = true;
-        g.add(beam);
+        canopy.add(beam);
       }
-      // 蓝色光伏顶棚（分段铺设）
-      for (let i = 0; i < 9; i++) {
-        const pw = W / 9 - 0.2;
+      for (let i = 0; i < 6; i++) {
+        const pw = W / 6 - 0.2;
         const panel = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.10, D - 1.2), MAT.solar);
-        panel.position.set(-W / 2 + pw / 2 + i * (W / 9), H, 0);
+        panel.position.set(-W / 2 + pw / 2 + i * (W / 6), H, 0);
         panel.rotation.x = 0.05;
         panel.castShadow = true; panel.receiveShadow = true;
-        g.add(panel);
+        canopy.add(panel);
       }
-      // 车位白线
-      for (let i = 0; i <= 6; i++) {
-        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.12, D - 1), MAT.marking);
-        line.rotation.x = -Math.PI / 2;
-        line.position.set(-W / 2 + i * (W / 6), 0.060, 0);
-        g.add(line);
-      }
+      g.add(canopy);
+
+      const lift = regLift(canopy);
+      tagPick(canopy, { kind: 'carport', idx: CARPORTS.length, key: (opts.id || 'carport') + '|lift' });
+      CARPORTS.push({
+        id: opts.id || ('carport' + CARPORTS.length),
+        label: opts.chargers ? '北侧光伏车棚' : '南侧光伏车棚',
+        lift: lift,
+        canopy: canopy,
+        chargers: !!opts.chargers
+      });
+      PICK_ROOTS.push(g);
       buildingGroup.add(g);
     }
 
@@ -4482,42 +4543,34 @@
       road2.receiveShadow = true;
       buildingGroup.add(road2);
 
-      // 大门引道：门洞（z=54）→ 主干道南边缘（z=43.5）
-      // 【修正】原来门口与马路之间只有一块 10.5m 的空白铺装、主干道边线又通长不断，
-      // 车出了大门根本"接不上马路"。现补一条与门洞等宽的沥青引道，并在边线上开口
-      // 【抗闪烁】引道原来 y=0.054，与入口广场铺地完全共面 → 门口地面斜纹闪烁。
-      // 现抬到 0.058（高于广场 0.050 / 环道 0.054），层次 −3（比普通沥青 −2 更靠前、
-      // 比主干道 −3 同级但标高更低），重叠带稳定显示引道。
+      // 大门引道：西门洞（x=-80）→ 主干道（东西向，z 28.5~43.5）
+      // 西向大门：引道沿 x 向东接主干道
       const DW = WALL.GATE;                       // 10.4（门洞半宽）
-      const GX = WALL.GATE_X;                     // 门洞中心 x（西南主入口）
+      const GZ = WALL.GATE_Z;                     // 门洞中心 z（西南主入口）
       const drive = new THREE.Mesh(
-        new THREE.PlaneGeometry(DW * 2, WALL.ZS - (R1.zc + R1.hw) + 0.5), asphaltMat(6, 3, -3));
+        new THREE.PlaneGeometry(WALL.X - (R1.x0) + 0.5, DW * 2), asphaltMat(3, 6, -3));
       drive.rotation.x = -Math.PI / 2;
-      drive.position.set(GX, Y_ROAD - 0.004, (WALL.ZS + R1.zc + R1.hw) / 2);
+      drive.position.set((-WALL.X + R1.x0) / 2, Y_ROAD - 0.004, GZ);
       drive.receiveShadow = true;
       buildingGroup.add(drive);
 
       // 厂外进厂引道：大门外一小段铺装，让"车从哪进来"有着落
-      // 注意：这段在围墙外，地面上不画任何标线（白线一律不出围墙）
       const APRON_Y = Y_ROAD - 0.014;                        // 0.048
       const apron = new THREE.Mesh(
-        new THREE.PlaneGeometry(DW * 2 + 3.2, 14), asphaltMat(7, 4));
+        new THREE.PlaneGeometry(14, DW * 2 + 3.2), asphaltMat(4, 7));
       apron.rotation.x = -Math.PI / 2;
-      apron.position.set(GX, APRON_Y, WALL.ZS + 7.25);        // z 54.25~68.25
+      apron.position.set(-WALL.X - 7.25, APRON_Y, GZ);
       apron.receiveShadow = true;
       buildingGroup.add(apron);
 
       // 【修正】厂外进厂道路：上一轮只补了门外 14m 的一块引道，它在草地里戛然而止，
       // 俯视看就是"草地中间孤零零铺了一块沥青"，仍看不出"车是从哪条路开进来的"。
-      // 现往南再接一条 13m 宽的道路，一直铺到远处树林带之前（z 68.2~170），
-      // 大门口因此真正"接在一条路上"。同样：围墙外一律不画任何标线。
-      // 标高比引道低 2mm，且两段严格首尾相接（z=68.25 处不多不少重叠一毫米都不留），
-      // 避免"共面 + 远距离深度精度不足"引起的 z-fighting 闪烁。
-      const ORD_Z0 = WALL.ZS + 14.25, ORD_Z1 = 170;          // z 68.25 ~ 170
+      // 厂外进厂道路：大门外向西接远处道路（西向大门）
+      const ORD_LEN = 100;
       const oroad = new THREE.Mesh(
-        new THREE.PlaneGeometry(13, ORD_Z1 - ORD_Z0), asphaltMat(4, 30));
+        new THREE.PlaneGeometry(ORD_LEN, 13), asphaltMat(30, 4));
       oroad.rotation.x = -Math.PI / 2;
-      oroad.position.set(GX, APRON_Y - 0.002, (ORD_Z0 + ORD_Z1) / 2);
+      oroad.position.set(-WALL.X - 14.25 - ORD_LEN / 2, APRON_Y - 0.002, GZ);
       oroad.receiveShadow = true;
       buildingGroup.add(oroad);
 
@@ -4580,7 +4633,7 @@
         });
       }
 
-      const GATE_GAP = [GX - DW, GX + DW];                  // 大门引道开口（随门洞中心）
+      const GATE_GAP = [GZ - DW, GZ + DW];                  // 大门引道开口（随门洞中心 z）
       const XING_GAP_X = [R2.xc - R2.hw, R2.xc + R2.hw];   // 西侧 T 字口（x 区间）
       // 停车场进车道开口：停车场在 (50,18)、场坪宽 24 → 东端 x=62，进车道宽 6 → x 62~68。
       // 【要点】凡是道路边线遇到出入口，必须断开——否则白线会横着画在入口上，
@@ -4810,14 +4863,14 @@
         }
       }
 
-      // 南墙（大门两侧）→ 东墙 → 北墙 → 西墙（闭合）
-      // 注意：南墙必须避开大门洞（GATE_X±GATE），否则会横跨门洞把大门封死
-      const G0 = WALL.GATE_X - GATE, G1 = WALL.GATE_X + GATE;
-      if (G0 > -WX) run(-WX, ZS, G0, ZS);
-      if (G1 < WX) run(G1, ZS, WX, ZS);
+      // 南墙 → 东墙 → 北墙 → 西墙（大门两侧，开口朝西）
+      // 注意：西墙必须避开大门洞（GATE_Z±GATE），否则会横跨门洞把大门封死
+      run(-WX, ZS, WX, ZS);
       run(WX, ZS, WX, ZN);
       run(-WX, ZN, WX, ZN);
-      run(-WX, ZN, -WX, ZS);
+      const G0 = WALL.GATE_Z - GATE, G1 = WALL.GATE_Z + GATE;
+      if (G0 > ZN) run(-WX, ZN, -WX, G0);
+      if (G1 < ZS) run(-WX, G1, -WX, ZS);
 
       buildingGroup.add(g);
     }
@@ -5509,7 +5562,9 @@
     var TWEENS = [];           // 通用补间单元 {k, target, apply}（第27轮：楼层抽屉抽出+放大）
     var CHARGE_GLOW = [];      // 充电桩发光材质，按相位稀疏登记 {cap, led, ph}
     var CHARGE_T = 0;          // 闪烁相位累计时间（秒）
-    var OFFICE = null;         // 办公楼配置
+    var OFFICE = null;         // 兼容旧调试出口（指向第一栋）
+    var OFFICES = {};          // 多楼栋：bld7 / bld8 / rd
+    var CARPORTS = [];         // 光伏车棚：{id,label,lift,canopy}
     var SHELLS = {};           // 厂房 / 车间的壳体配置
     var pickState = null;      // 当前展开状态 {key}
     var LIFT_OFFICE = 4.42;    // 楼层抬升量（addOfficeBuilding 里按真实层高覆盖）
@@ -5662,20 +5717,35 @@
     function hideTip() { showTip(''); }
 
     function hintOf(info) {
-      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层向右抽出 · 放大 2.0 倍）';
+      if (info.kind === 'floor') {
+        var OB = OFFICES[info.bld] || OFFICE;
+        var dirTxt = (OB && OB.axis === 'z') ? (OB.dir < 0 ? '向北' : '向南') : (OB && OB.dir < 0 ? '向西' : '向东');
+        return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层' + dirTxt + '抽出 · 放大 2.0 倍）';
+      }
+      if (info.kind === 'carport') return '点击向上抬起光伏车棚，露出车位与车辆';
       var sh = SHELLS[info.bld];
       return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + ' 并向右移开，完整露出室内平面';
     }
 
     function collapseAll() {
-      if (OFFICE) {
-        for (var i = 0; i < OFFICE.units.length; i++) {
-          var iu = OFFICE.units[i];
+      for (var b in OFFICES) {
+        if (!OFFICES.hasOwnProperty(b)) continue;
+        var OB = OFFICES[b];
+        for (var i = 0; i < OB.units.length; i++) {
+          var iu = OB.units[i];
           setLift(iu.u, 0);
-          // 【第27轮】平面图不再在这里瞬间隐藏 —— 改由抽屉补间在 k 回到 0 那一刻隐藏，
-          // 否则"抽回去"的动画跑到一半，平面图会先凭空消失。
           if (iu.dr) iu.dr.target = 0;
           else iu.plan.visible = false;
+        }
+        setLift(OB.top, 0);
+      }
+      // 兼容：若只初始化了单栋 OFFICE
+      if (OFFICE && !OFFICES[OFFICE.bld]) {
+        for (var i2 = 0; i2 < OFFICE.units.length; i2++) {
+          var iu2 = OFFICE.units[i2];
+          setLift(iu2.u, 0);
+          if (iu2.dr) iu2.dr.target = 0;
+          else iu2.plan.visible = false;
         }
         setLift(OFFICE.top, 0);
       }
@@ -5684,6 +5754,11 @@
         setLift(SHELLS[k].unit, 0);
         if (SHELLS[k].dr) SHELLS[k].dr.target = 0;   // 第28轮：屋盖右移同步收回（走同一套补间，不瞬移）
         SHELLS[k].plan.visible = false;
+      }
+      // 车棚抬起状态收回
+      for (var ci = 0; ci < CARPORTS.length; ci++) {
+        var cp = CARPORTS[ci];
+        if (cp && cp.lift) cp.lift.target = 0;
       }
       pickState = null;
       hideAreaPanel();          // 第30轮：收起时同步关闭右侧信息面板
@@ -5698,27 +5773,37 @@
       collapseAll();
 
       if (info.kind === 'floor') {
-        if (!OFFICE) return;
-        for (var i = 0; i < OFFICE.units.length; i++) {
-          var it = OFFICE.units[i];
+        var OB = OFFICES[info.bld] || OFFICE;
+        if (!OB) return;
+        for (var i = 0; i < OB.units.length; i++) {
+          var it = OB.units[i];
           setLift(it.u, it.f > info.f ? LIFT_OFFICE : 0);
           // 被点中的这层抽屉拉到 1（抽出+放大），其余拉回 0 —— 全部走同一套插值动画
           if (it.dr) it.dr.target = (it.f === info.f) ? 1 : 0;
         }
-        setLift(OFFICE.top, LIFT_OFFICE);               // 顶部机房/女儿墙/光伏随之上移
-        var cur = OFFICE.units[info.f];
+        setLift(OB.top, LIFT_OFFICE);               // 顶部机房/女儿墙/光伏随之上移
+        var cur = OB.units[info.f];
         if (cur) {
           if (!cur.built) {
-            buildOfficePlan(cur.plan, OFFICE.w, OFFICE.d, info.f);
+            buildOfficePlan(cur.plan, OB.w, OB.d, info.f);
             cur.built = true;
             // 平面图是"点开才生成"的，生成时补一次拾取标记 —— 否则点在平面图内部收不起来
-            tagPick(cur.plan, { kind: 'floor', bld: 'office', f: info.f, key: info.key });
+            tagPick(cur.plan, { kind: 'floor', bld: info.bld, f: info.f, key: info.key });
           }
           cur.plan.visible = true;
         }
         showAreaPanel('office', info.f);          // 第30轮：右侧信息面板（位置 + 用能 + 趋势）
-        showTip((info.f + 1) + 'F ' + (cur && cur.name ? cur.name : '') +
-                '　·　已向右抽出 · 放大 2.0 倍 · 悬停展示　·　再次点击或点空白收回', true);
+        var dirTxt = (OB.axis === 'z') ? (OB.dir < 0 ? '向北抽出' : '向南抽出') : (OB.dir < 0 ? '向西抽出' : '向东抽出');
+        showTip((OB.label || '') + ' ' + (info.f + 1) + 'F ' + (cur && cur.name ? cur.name : '') +
+                '　·　已' + dirTxt + ' · 放大 2.0 倍 · 悬停展示　·　再次点击或点空白收回', true);
+      } else if (info.kind === 'carport') {
+        var cp = CARPORTS[info.idx];
+        if (!cp) return;
+        if (cp.lift) cp.lift.target = (cp.lift.target > 0.1) ? 0 : 5.2;
+        pickState = (cp.lift && cp.lift.target > 0.1) ? { key: info.key } : null;
+        showTip((cp.label || '光伏车棚') + (cp.lift && cp.lift.target > 0.1 ?
+          '　·　已抬起，露出车位与车辆　·　再次点击放下' : '　·　已放下'), true);
+        return;
       } else {
         var sh = SHELLS[info.bld];
         if (!sh) return;
