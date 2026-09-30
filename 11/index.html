@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -154,9 +154,9 @@
       background-size: 180px 180px;
     }
     body.light #grade {
-      background: radial-gradient(ellipse 82% 72% at 50% 46%, rgba(0,0,0,0) 46%, rgba(28,50,76,0.24) 100%);
+      background: radial-gradient(ellipse 88% 80% at 50% 48%, rgba(0,0,0,0) 52%, rgba(70,80,90,0.12) 100%);
     }
-    body.light #grade::after { opacity: 0.035; }
+    body.light #grade::after { opacity: 0.022; }
 
     /* 面板基础 */
     .panel {
@@ -974,8 +974,8 @@
 
     body.light #app {
       background:
-        radial-gradient(circle at 50% 0%, rgba(0,160,200,0.10) 0%, transparent 45%),
-        linear-gradient(180deg, #eaf2fb 0%, #d7e3f2 100%);
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.35) 0%, transparent 50%),
+        linear-gradient(180deg, #c8d4dc 0%, #dce4ea 55%, #c4ccd2 100%);
     }
 
     body.light .header {
@@ -1512,7 +1512,7 @@
     /* 【第34轮】场景双模式：solo = 独立园区（园区坐落在草坪上，默认）；full = 完整园区（园区嵌在城市里） */
     let cityGroup = null, cityGround = null, farTreeGroup = null;
     let sceneMode = 'solo';
-    let currentTheme = 'dark';
+    let currentTheme = 'light';   // 【写实风格】默认白天：浅灰天空 + 柔光建筑可视化
     let themeManual = false;      // 用户手动点过切换按钮后，本次会话不再按时间自动跟随
 
     /* ---------- 昼夜三模式：白天 / 傍晚 / 晚间 ---------- */
@@ -1723,40 +1723,40 @@
       return t;
     }
 
-    // 清水混凝土 / 装饰面
+    // 清水混凝土 / 装饰面 —— 写实暖白
     function texConcrete() {
       const N = 256;
       const o = canvas2d(N, N), ctx = o.ctx;
-      ctx.fillStyle = '#cfd3d8'; ctx.fillRect(0, 0, N, N);
-      blotches(ctx, N, N, [166, 172, 180], 26, 46, 0.30);
-      blotches(ctx, N, N, [232, 236, 240], 18, 38, 0.34);
-      ctx.strokeStyle = 'rgba(146,154,164,0.50)'; ctx.lineWidth = 1.6;
+      ctx.fillStyle = '#e0ddd8'; ctx.fillRect(0, 0, N, N);
+      blotches(ctx, N, N, [186, 182, 176], 26, 46, 0.28);
+      blotches(ctx, N, N, [236, 234, 230], 18, 38, 0.30);
+      ctx.strokeStyle = 'rgba(166,162,156,0.45)'; ctx.lineWidth = 1.6;
       for (let i = 1; i < 4; i++) {
         ctx.beginPath(); ctx.moveTo(i * N / 4, 0); ctx.lineTo(i * N / 4, N); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i * N / 4); ctx.lineTo(N, i * N / 4); ctx.stroke();
       }
-      weathering(ctx, N, N, 22, [104, 112, 122], 0.16);
+      weathering(ctx, N, N, 22, [128, 124, 118], 0.14);
       grain(ctx, N, N, 15);
       return finishTexture(o.c, 1, 1);
     }
 
-    // 压型金属墙板（竖向肋条）
+    // 压型金属墙板（竖向肋条）—— 浅暖白写实墙板
     function texMetalWall() {
       const N = 256;
       const o = canvas2d(N, N), ctx = o.ctx;
-      ctx.fillStyle = '#e2e7ec'; ctx.fillRect(0, 0, N, N);
+      ctx.fillStyle = '#e8e4de'; ctx.fillRect(0, 0, N, N);
       const rib = 16;
       for (let x = 0; x < N; x += rib) {
         const g = ctx.createLinearGradient(x, 0, x + rib, 0);
-        g.addColorStop(0.00, 'rgba(255,255,255,0.60)');
-        g.addColorStop(0.32, 'rgba(255,255,255,0.12)');
-        g.addColorStop(0.62, 'rgba(118,128,140,0.30)');
-        g.addColorStop(1.00, 'rgba(150,160,172,0.38)');
+        g.addColorStop(0.00, 'rgba(255,255,255,0.55)');
+        g.addColorStop(0.32, 'rgba(255,255,255,0.10)');
+        g.addColorStop(0.62, 'rgba(160,154,148,0.28)');
+        g.addColorStop(1.00, 'rgba(180,174,168,0.32)');
         ctx.fillStyle = g; ctx.fillRect(x, 0, rib, N);
       }
-      ctx.fillStyle = 'rgba(148,158,170,0.42)';
+      ctx.fillStyle = 'rgba(170,164,158,0.38)';
       for (let y = 0; y < N; y += 64) ctx.fillRect(0, y, N, 2);
-      weathering(ctx, N, N, 20, [108, 118, 130], 0.20);
+      weathering(ctx, N, N, 20, [130, 126, 120], 0.18);
       grain(ctx, N, N, 9);
       return finishTexture(o.c, 1, 1);
     }
@@ -1846,22 +1846,23 @@
         return finishTexture(o.c, 1, 1);
       }
 
-      ctx.fillStyle = opt.frame || '#b6c0cb'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = opt.frame || '#c8b8a8'; ctx.fillRect(0, 0, W, H);
       const lit = opt.lit == null ? 0.18 : opt.lit;
       for (let r = 0; r < rows; r++) {
         for (let k = 0; k < cols; k++) {
           const x = k * cw, y = r * ch;
           const t = srnd();
           let col;
-          if (t < lit) col = 'rgba(255,238,196,0.95)';
-          else if (t < lit + 0.18) col = 'rgba(158,196,228,0.92)';
-          else col = 'rgba(38,70,102,0.95)';
+          // 写实窗格：暖调窗框 + 深色玻璃 + 少量室内暖光
+          if (t < lit) col = 'rgba(255,232,190,0.92)';
+          else if (t < lit + 0.16) col = 'rgba(148,172,196,0.88)';
+          else col = 'rgba(48,62,78,0.92)';
           ctx.fillStyle = col;
           ctx.fillRect(x + 2, y + 3, cw - 4, ch - 6);
           const g = ctx.createLinearGradient(x, y + 3, x, y + ch - 3);
-          g.addColorStop(0.00, 'rgba(255,255,255,0.30)');
+          g.addColorStop(0.00, 'rgba(255,255,255,0.28)');
           g.addColorStop(0.42, 'rgba(255,255,255,0.04)');
-          g.addColorStop(1.00, 'rgba(0,0,0,0.24)');
+          g.addColorStop(1.00, 'rgba(0,0,0,0.22)');
           ctx.fillStyle = g;
           ctx.fillRect(x + 2, y + 3, cw - 4, ch - 6);
         }
@@ -1870,25 +1871,25 @@
       return finishTexture(o.c, 1, 1);
     }
 
-    // 沥青路面
+    // 沥青路面 —— 写实中灰
     function texAsphalt() {
       const N = 256;
       const o = canvas2d(N, N), ctx = o.ctx;
-      ctx.fillStyle = '#4a525b'; ctx.fillRect(0, 0, N, N);
-      blotches(ctx, N, N, [44, 49, 56], 34, 44, 0.34);
-      blotches(ctx, N, N, [118, 126, 134], 22, 34, 0.26);
+      ctx.fillStyle = '#6a7078'; ctx.fillRect(0, 0, N, N);
+      blotches(ctx, N, N, [58, 62, 68], 34, 44, 0.30);
+      blotches(ctx, N, N, [128, 134, 140], 22, 34, 0.24);
       grain(ctx, N, N, 24);
       return finishTexture(o.c, 1, 1);
     }
 
-    // 园区石材铺装
+    // 园区石材铺装 —— 写实浅暖灰
     function texPaving() {
       const N = 256;
       const o = canvas2d(N, N), ctx = o.ctx;
-      ctx.fillStyle = '#959da4'; ctx.fillRect(0, 0, N, N);
-      blotches(ctx, N, N, [112, 120, 128], 28, 44, 0.34);
-      blotches(ctx, N, N, [176, 183, 190], 16, 32, 0.24);
-      ctx.strokeStyle = 'rgba(96,104,112,0.70)'; ctx.lineWidth = 1.4;
+      ctx.fillStyle = '#b0b4b8'; ctx.fillRect(0, 0, N, N);
+      blotches(ctx, N, N, [128, 132, 136], 28, 44, 0.28);
+      blotches(ctx, N, N, [188, 192, 196], 16, 32, 0.22);
+      ctx.strokeStyle = 'rgba(120,124,128,0.55)'; ctx.lineWidth = 1.4;
       const step = N / 8;
       for (let i = 0; i <= 8; i++) {
         ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, N); ctx.stroke();
@@ -1898,16 +1899,16 @@
       return finishTexture(o.c, 1, 1);
     }
 
-    // 草地（低饱和，偏自然草甸色）
+    // 草地（写实自然草甸色）
     function texGrass() {
       const N = 256;
       const o = canvas2d(N, N), ctx = o.ctx;
-      ctx.fillStyle = '#4a6340'; ctx.fillRect(0, 0, N, N);
-      blotches(ctx, N, N, [56, 78, 48], 44, 48, 0.40);
-      blotches(ctx, N, N, [104, 128, 76], 26, 36, 0.24);
+      ctx.fillStyle = '#5a7848'; ctx.fillRect(0, 0, N, N);
+      blotches(ctx, N, N, [68, 92, 52], 44, 48, 0.36);
+      blotches(ctx, N, N, [118, 142, 78], 26, 36, 0.22);
       for (let i = 0; i < 1500; i++) {
         const x = srnd() * N, y = srnd() * N;
-        ctx.strokeStyle = 'rgba(' + (58 + srnd() * 52 | 0) + ',' + (86 + srnd() * 52 | 0) + ',' + (44 + srnd() * 34 | 0) + ',' + (0.22 + srnd() * 0.36).toFixed(2) + ')';
+        ctx.strokeStyle = 'rgba(' + (68 + srnd() * 52 | 0) + ',' + (98 + srnd() * 52 | 0) + ',' + (48 + srnd() * 34 | 0) + ',' + (0.22 + srnd() * 0.36).toFixed(2) + ')';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -1969,27 +1970,27 @@
       return finishTexture(o.c, 1, 1);
     }
 
-    // 园区围墙：清水混凝土板 + 竖向分缝 + 压顶（一张贴图代表 4m × 2.4m 墙段）
+    // 园区围墙：清水混凝土板 + 竖向分缝 + 压顶（一张贴图代表 4m × 2.4m 墙段）——写实暖白
     function texFence() {
       const W = 512, H = 256;
       const o = canvas2d(W, H), ctx = o.ctx;
-      ctx.fillStyle = '#ccd0d3'; ctx.fillRect(0, 0, W, H);
-      blotches(ctx, W, H, [160, 166, 172], 26, 62, 0.32);
-      blotches(ctx, W, H, [232, 236, 239], 18, 48, 0.34);
+      ctx.fillStyle = '#d8d4ce'; ctx.fillRect(0, 0, W, H);
+      blotches(ctx, W, H, [180, 176, 170], 26, 62, 0.28);
+      blotches(ctx, W, H, [236, 232, 228], 18, 48, 0.30);
       // 竖向分缝（每 128px = 1m 一块板）
-      ctx.strokeStyle = 'rgba(108,116,124,0.75)'; ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(130,126,120,0.65)'; ctx.lineWidth = 3;
       for (let x = 0; x <= W; x += 128) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
       }
-      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.40)'; ctx.lineWidth = 1;
       for (let x = 0; x <= W; x += 128) {
         ctx.beginPath(); ctx.moveTo(x + 3, 0); ctx.lineTo(x + 3, H); ctx.stroke();
       }
       // 压顶分界 + 底部勒脚
-      ctx.fillStyle = 'rgba(104,112,120,0.60)'; ctx.fillRect(0, 0, W, 5);
-      ctx.fillStyle = 'rgba(124,130,136,0.55)'; ctx.fillRect(0, H - 30, W, 4);
-      ctx.fillStyle = 'rgba(92,98,105,0.34)'; ctx.fillRect(0, H - 26, W, 26);
-      weathering(ctx, W, H, 28, [100, 108, 118], 0.15);
+      ctx.fillStyle = 'rgba(130,126,120,0.50)'; ctx.fillRect(0, 0, W, 5);
+      ctx.fillStyle = 'rgba(148,144,138,0.45)'; ctx.fillRect(0, H - 30, W, 4);
+      ctx.fillStyle = 'rgba(118,114,108,0.28)'; ctx.fillRect(0, H - 26, W, 26);
+      weathering(ctx, W, H, 28, [120, 116, 110], 0.13);
       grain(ctx, W, H, 10);
       return finishTexture(o.c, 1, 1);
     }
@@ -2003,8 +2004,8 @@
       TEX.grass = texGrass();
       TEX.solar = texSolar();
       TEX.steel = texSteel();
-      TEX.facadeHall = texFacade(16, 24, { lit: 0.20, frame: '#aab5c1' });  // 主厂房幕墙
-      TEX.facadeOffice = texFacade(12, 26, { lit: 0.28, frame: '#c4cdd7' }); // 办公楼层间
+      TEX.facadeHall = texFacade(16, 24, { lit: 0.20, frame: '#c4b8a8' });  // 主厂房幕墙（暖灰窗框）
+      TEX.facadeOffice = texFacade(12, 26, { lit: 0.28, frame: '#d0c4b4' }); // 办公楼层间（暖米色窗框）
       // 晚间版（房间灯亮起，同时用作自发光贴图）
       // 【第 17 轮】夜间亮灯数量降到三分之一：厂房高侧窗那一条玻璃带原来一律按默认 0.68 点亮，
       // 夜里就是一条横在建筑上部的亮带（"灯都集中在上半部分"的主要来源之一）。
@@ -2017,35 +2018,36 @@
 
     /* ============ 2. 天空穹顶 + PMREM 环境反射 ============ */
     const THEME_LOOK = {
-      // 傍晚（原"蓝色"）：蓝色时刻，天顶深蓝、地平线转暖，太阳压低
+      // 傍晚：暖灰调写实暮色（不是霓虹蓝，是建筑可视化里的 soft dusk）
       dark: {
-        zenith: '#0a2547', mid: '#2a6298', horizon: '#d6c3a6', bottom: '#3d4a58',
-        sunHex: '#ffdcaa', sunDir: [0.70, 0.44, -0.70],
-        fogHex: '#c2c8cc', fogNear: 150, fogFar: 500,
-        hemiSky: '#a2c0e0', hemiGround: '#3a4450', hemiI: 0.42,
-        sunI: 2.85, ambI: 0.06, exposure: 0.92,
-        cloud: 0.92, cloudColor: '#ffffff',
-        ground: '#8e9a86', pad: '#aab2b9', grid1: '#8fc0e4', grid2: '#3d6b96', gridOp: 0.09
+        zenith: '#6a84a0', mid: '#b8c4ce', horizon: '#e8d9c4', bottom: '#8a9298',
+        sunHex: '#ffe0b0', sunDir: [0.62, 0.38, -0.68],
+        fogHex: '#c8c4bc', fogNear: 130, fogFar: 460,
+        hemiSky: '#c4d0da', hemiGround: '#7a8088', hemiI: 0.72,
+        sunI: 2.40, ambI: 0.22, exposure: 1.00,
+        cloud: 0.70, cloudColor: '#f0e6dc',
+        ground: '#8a9a78', pad: '#b0b6bc', grid1: '#a0b0bc', grid2: '#c0c8d0', gridOp: 0.05
       },
-      // 晚间（原"黑色"）：真正入夜 —— 天光压到最低，照明改由路灯 / 楼体房间灯承担
+      // 晚间：柔和月夜，仍保留写实材质质感
       black: {
-        zenith: '#01030a', mid: '#071527', horizon: '#17324c', bottom: '#04080e',
-        sunHex: '#b9cdea', sunDir: [0.58, 0.62, -0.58],           // 月光（高角度、冷白）
-        fogHex: '#08141f', fogNear: 88, fogFar: 330,
-        hemiSky: '#1c3a5e', hemiGround: '#04070c', hemiI: 0.12,
-        sunI: 0.30, ambI: 0.025, exposure: 1.18,
-        cloud: 0.30, cloudColor: '#16243a',
-        ground: '#1b241f', pad: '#242c34', grid1: '#5fd0ff', grid2: '#1b3a5c', gridOp: 0.13
+        zenith: '#0a1422', mid: '#1a2c42', horizon: '#3a4a5c', bottom: '#121820',
+        sunHex: '#c8d4e8', sunDir: [0.55, 0.58, -0.60],
+        fogHex: '#1a2430', fogNear: 90, fogFar: 340,
+        hemiSky: '#2a4060', hemiGround: '#101820', hemiI: 0.18,
+        sunI: 0.38, ambI: 0.04, exposure: 1.15,
+        cloud: 0.35, cloudColor: '#2a3848',
+        ground: '#243028', pad: '#2c343c', grid1: '#4a7aaa', grid2: '#2a4060', gridOp: 0.08
       },
-      // 白天（原"白色"）：正午白光
+      // 白天（写实建筑可视化）：浅灰白天空 + 高环境光 + 柔和阴影
+      // 参考：Archviz 日景 —— 天空近白、太阳偏暖但不刺眼、地面/墙体高漫反射
       light: {
-        zenith: '#2b6ab8', mid: '#88b9e2', horizon: '#e6f0fa', bottom: '#9dabb7',
-        sunHex: '#fffaec', sunDir: [0.66, 0.52, -0.55],
-        fogHex: '#dcebf7', fogNear: 160, fogFar: 520,
-        hemiSky: '#cfe3ff', hemiGround: '#8f9aa4', hemiI: 0.74,
-        sunI: 3.00, ambI: 0.18, exposure: 0.92,
-        cloud: 0.95, cloudColor: '#ffffff',
-        ground: '#c6d4be', pad: '#e0e6eb', grid1: '#8fb0cc', grid2: '#bbccda', gridOp: 0.26
+        zenith: '#b8c8d8', mid: '#d0dbe4', horizon: '#e8eef2', bottom: '#c4ccd2',
+        sunHex: '#fff6e8', sunDir: [0.52, 0.62, -0.58],
+        fogHex: '#d4dce2', fogNear: 140, fogFar: 500,
+        hemiSky: '#e4ecf2', hemiGround: '#b8c0c8', hemiI: 0.92,
+        sunI: 2.20, ambI: 0.38, exposure: 1.05,
+        cloud: 0.48, cloudColor: '#f4f6f8',
+        ground: '#8eae78', pad: '#c8ced4', grid1: '#b0bcc8', grid2: '#d0d8e0', gridOp: 0.04
       }
     };
 
@@ -2130,14 +2132,14 @@
         depthWrite: false,
         fog: false,
         uniforms: {
-          uZenith: { value: S(THEME_LOOK.dark.zenith) },
-          uMid: { value: S(THEME_LOOK.dark.mid) },
-          uHorizon: { value: S(THEME_LOOK.dark.horizon) },
-          uBottom: { value: S(THEME_LOOK.dark.bottom) },
-          uSunDir: { value: new THREE.Vector3(0.62, 0.44, 0.65).normalize() },
-          uSunColor: { value: S(THEME_LOOK.dark.sunHex) },
-          uCloudColor: { value: S(THEME_LOOK.dark.cloudColor) },
-          uCloud: { value: THEME_LOOK.dark.cloud }
+          uZenith: { value: S(THEME_LOOK.light.zenith) },
+          uMid: { value: S(THEME_LOOK.light.mid) },
+          uHorizon: { value: S(THEME_LOOK.light.horizon) },
+          uBottom: { value: S(THEME_LOOK.light.bottom) },
+          uSunDir: { value: new THREE.Vector3(0.52, 0.62, -0.58).normalize() },
+          uSunColor: { value: S(THEME_LOOK.light.sunHex) },
+          uCloudColor: { value: S(THEME_LOOK.light.cloudColor) },
+          uCloud: { value: THEME_LOOK.light.cloud }
         },
         vertexShader: [
           'varying vec3 vDir;',
@@ -2190,8 +2192,8 @@
           '  }',
           '',
           '  float s = max(dot(d, normalize(uSunDir)), 0.0);',
-          '  col += uSunColor * pow(s, 320.0) * 2.2;',
-          '  col += uSunColor * pow(s, 8.0) * 0.20;',
+          '  col += uSunColor * pow(s, 320.0) * 1.2;',
+          '  col += uSunColor * pow(s, 8.0) * 0.12;',
           '  gl_FragColor = vec4(col, 1.0);',
           '}'
         ].join('\n')
@@ -2227,13 +2229,13 @@
     }
     // 默认层次：沥青面 −2（压在最底层大面之上）、铺装/草地 −4（只有非"园区铺装"的
     // 铺装才会走默认值，例如罐区铺装 0.060 与人行道 0.066）
-    function asphaltMat(rx, ry, po) { return groundMatFactory('asphalt_' + rx + '_' + ry, TEX.asphalt, rx, ry, 0.94, 0.03, 0.45, po == null ? -2 : po); }
-    function pavingMat(rx, ry, po) { return groundMatFactory('paving_' + rx + '_' + ry, TEX.paving, rx, ry, 0.68, 0.06, 0.80, po == null ? -4 : po); }
-    function grassMat(rx, ry, po) { return groundMatFactory('grass_' + rx + '_' + ry, TEX.grass, rx, ry, 0.96, 0.00, 0.42, po == null ? -4 : po); }
+    function asphaltMat(rx, ry, po) { return groundMatFactory('asphalt_' + rx + '_' + ry, TEX.asphalt, rx, ry, 0.96, 0.00, 0.28, po == null ? -2 : po); }
+    function pavingMat(rx, ry, po) { return groundMatFactory('paving_' + rx + '_' + ry, TEX.paving, rx, ry, 0.78, 0.02, 0.42, po == null ? -4 : po); }
+    function grassMat(rx, ry, po) { return groundMatFactory('grass_' + rx + '_' + ry, TEX.grass, rx, ry, 0.97, 0.00, 0.25, po == null ? -4 : po); }
     // 围墙墙面材质（按墙段长度决定横向铺贴次数，贴图 = 4m 一段）
     function fenceMat(len) {
       const rx = Math.max(1, Math.round(len / 4));
-      return groundMatFactory('fence_' + rx, TEX.fence, rx, 1, 0.86, 0.03, 0.55);
+      return groundMatFactory('fence_' + rx, TEX.fence, rx, 1, 0.90, 0.00, 0.32);
     }
     function solarMatFor(pw, ph) {
       const rx = Math.max(1, Math.round(pw / 5)), ry = Math.max(1, Math.round(ph / 5));
@@ -2249,68 +2251,68 @@
     }
 
     function initMaterials() {
-      // 清水混凝土（墙体 / 基座）
+      // 清水混凝土（墙体 / 基座）——写实暖白，低反射
       MAT.concrete = new THREE.MeshStandardMaterial({
-        map: tiled(TEX.concrete, 2, 2), color: C('#ffffff'),
-        roughness: 0.88, metalness: 0.02, envMapIntensity: 0.55
+        map: tiled(TEX.concrete, 2, 2), color: C('#f2f0ec'),
+        roughness: 0.92, metalness: 0.00, envMapIntensity: 0.42
       });
-      // 压型金属墙板
+      // 压型金属墙板 —— 浅暖白（参考图工业厂房浅色墙）
       MAT.wallPanel = new THREE.MeshStandardMaterial({
-        map: tiled(TEX.metalWall, 3, 2), color: C('#cfd8e1'),
-        roughness: 0.44, metalness: 0.50, envMapIntensity: 1.00
+        map: tiled(TEX.metalWall, 3, 2), color: C('#e8e4de'),
+        roughness: 0.58, metalness: 0.18, envMapIntensity: 0.55
       });
-      // 屋面（浅灰金属）
+      // 屋面（深灰，写实建筑深色屋顶）
       MAT.roof = new THREE.MeshStandardMaterial({
-        color: C('#b9c2cb'), roughness: 0.62, metalness: 0.38, envMapIntensity: 0.80
+        color: C('#4a5058'), roughness: 0.78, metalness: 0.12, envMapIntensity: 0.45
       });
-      // 铝合金（腰线 / 支架 / 框料）
+      // 铝合金（腰线 / 支架 / 框料）——暖灰铝，不过亮
       MAT.alu = new THREE.MeshStandardMaterial({
-        color: C('#c9d1d9'), roughness: 0.34, metalness: 0.80, envMapIntensity: 1.15
+        color: C('#b8b4ae'), roughness: 0.48, metalness: 0.55, envMapIntensity: 0.70
       });
       // 深色金属（门 / 格栅）
       MAT.darkMetal = new THREE.MeshStandardMaterial({
-        color: C('#4a5560'), roughness: 0.48, metalness: 0.72, envMapIntensity: 0.95
+        color: C('#3a4048'), roughness: 0.58, metalness: 0.45, envMapIntensity: 0.55
       });
-      // 不锈钢（罐体 / 管道）
+      // 不锈钢（罐体 / 管道）——柔和金属
       MAT.steel = new THREE.MeshStandardMaterial({
-        map: tiled(TEX.steel, 1, 1), color: C('#eef2f6'),
-        roughness: 0.24, metalness: 0.94, envMapIntensity: 1.35
+        map: tiled(TEX.steel, 1, 1), color: C('#d8dce0'),
+        roughness: 0.38, metalness: 0.72, envMapIntensity: 0.85
       });
-      // 建筑玻璃（高反射 + 清漆层）
+      // 建筑玻璃（写实深色玻璃，低金属性）
       MAT.glass = new THREE.MeshPhysicalMaterial({
-        color: C('#2b4d72'), roughness: 0.07, metalness: 0.52,
-        clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 1.75
+        color: C('#4a6078'), roughness: 0.18, metalness: 0.15,
+        clearcoat: 0.55, clearcoatRoughness: 0.18, envMapIntensity: 0.95
       });
-      // 入口幕墙玻璃（比常规建筑玻璃更深，保证门厅在浅色墙面上有足够对比）
+      // 入口幕墙玻璃
       MAT.glassDeep = new THREE.MeshPhysicalMaterial({
-        color: C('#132a44'), roughness: 0.06, metalness: 0.55,
-        clearcoat: 1.0, clearcoatRoughness: 0.04, envMapIntensity: 1.60
+        color: C('#2a3a4c'), roughness: 0.16, metalness: 0.18,
+        clearcoat: 0.60, clearcoatRoughness: 0.15, envMapIntensity: 0.90
       });
-      // 大门门楣名牌底板（深藏青）+ 冷白发光字带 / 灯箱面
+      // 大门门楣名牌底板
       MAT.gatePanel = new THREE.MeshStandardMaterial({
-        color: C('#12283f'), roughness: 0.42, metalness: 0.45, envMapIntensity: 0.95
+        color: C('#2a3440'), roughness: 0.55, metalness: 0.25, envMapIntensity: 0.55
       });
       MAT.signGlow = new THREE.MeshStandardMaterial({
-        color: C('#eaf7ff'), emissive: S('#7fd8ff'), emissiveIntensity: 2.1,
-        roughness: 0.30, metalness: 0.05, envMapIntensity: 0.70
+        color: C('#eef4f8'), emissive: S('#a0c8e0'), emissiveIntensity: 0.85,
+        roughness: 0.40, metalness: 0.05, envMapIntensity: 0.45
       });
-      // 幕墙贴图（主厂房）
+      // 幕墙贴图（主厂房）——降低金属性，偏写实
       MAT.facadeHall = new THREE.MeshStandardMaterial({
-        map: TEX.facadeHall, color: C('#ffffff'),
-        roughness: 0.11, metalness: 0.50, envMapIntensity: 1.55
+        map: TEX.facadeHall, color: C('#f0ece6'),
+        roughness: 0.28, metalness: 0.12, envMapIntensity: 0.70
       });
       // 幕墙贴图（办公楼）
       MAT.facadeOffice = new THREE.MeshStandardMaterial({
-        map: TEX.facadeOffice, color: C('#ffffff'),
-        roughness: 0.09, metalness: 0.52, envMapIntensity: 1.65
+        map: TEX.facadeOffice, color: C('#f0ece6'),
+        roughness: 0.26, metalness: 0.12, envMapIntensity: 0.75
       });
       // 幕墙进入昼夜系统：晚间换成"亮灯"贴图并让窗格自发光（＝大楼房间灯打开）
       registerFacade(MAT.facadeHall, TEX.facadeHall, TEX.facadeHallN);
       registerFacade(MAT.facadeOffice, TEX.facadeOffice, TEX.facadeOfficeN);
-      // 光伏组件（中等粗糙度，浅蓝深色，避免过深过黑）
+      // 光伏组件（写实深蓝灰）
       MAT.solar = new THREE.MeshStandardMaterial({
-        map: TEX.solar, color: C('#ffffff'),
-        roughness: 0.26, metalness: 0.38, envMapIntensity: 1.00
+        map: TEX.solar, color: C('#d0d8e0'),
+        roughness: 0.32, metalness: 0.28, envMapIntensity: 0.70
       });
       registerNightDim(MAT.solar, 0.42);   // 晚间光伏板不再反天光，压暗
       // 地面材质按铺贴次数缓存，避免创建重复材质
@@ -2326,106 +2328,106 @@
       // 几毫米，会与路面/地坪反复翻转 —— 表现为白线一段段闪。用一个固定负向 polygonOffset
       // 把它稳定压到地面之前，就不再靠运气的深度比较了。
       MAT.marking = new THREE.MeshStandardMaterial({
-        color: C('#e8ecef'), roughness: 0.70, metalness: 0.02, envMapIntensity: 0.60,
+        color: C('#e4e8ec'), roughness: 0.78, metalness: 0.00, envMapIntensity: 0.35,
         polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
       // 平贴地面的深灰石材收边（路侧绿带 / 树池压边）
       // 【关键】地面上的"线"必须是零厚度的面片：原来用 BoxGeometry 做路缘石，
       // 高出路面 0.34m，在俯视角度看就是一条"凸起的白线"，还带投影
       MAT.curbFlat = new THREE.MeshStandardMaterial({
-        color: C('#79818a'), roughness: 0.88, metalness: 0.02, envMapIntensity: 0.42,
+        color: C('#8a9098'), roughness: 0.90, metalness: 0.00, envMapIntensity: 0.28,
         polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
       // 警示黄
       MAT.warn = new THREE.MeshStandardMaterial({
-        color: C('#e8b93a'), roughness: 0.45, metalness: 0.30, envMapIntensity: 0.85
+        color: C('#d4a840'), roughness: 0.58, metalness: 0.12, envMapIntensity: 0.50
       });
       // 警示红
       MAT.warnRed = new THREE.MeshStandardMaterial({
-        color: C('#c8433f'), roughness: 0.55, metalness: 0.10, envMapIntensity: 0.70
+        color: C('#b84840'), roughness: 0.65, metalness: 0.05, envMapIntensity: 0.40
       });
       // 树皮
       MAT.bark = new THREE.MeshStandardMaterial({
-        color: C('#6a5138'), roughness: 0.95, metalness: 0.00, envMapIntensity: 0.35
+        color: C('#6a5240'), roughness: 0.96, metalness: 0.00, envMapIntensity: 0.22
       });
-      // 树冠（多色变体，避免整片树同色的塑料感）
+      // 树冠（多色变体，写实自然绿）
       function leafMat(hex) {
         return new THREE.MeshStandardMaterial({
-          color: C(hex), roughness: 0.93, metalness: 0.00, envMapIntensity: 0.38
+          color: C(hex), roughness: 0.94, metalness: 0.00, envMapIntensity: 0.28
         });
       }
-      MAT.leafVariants = [leafMat('#4a7c3c'), leafMat('#3d6b34'), leafMat('#577f42'), leafMat('#446f38')];
+      MAT.leafVariants = [leafMat('#4a7a3c'), leafMat('#3d6834'), leafMat('#5a8844'), leafMat('#6a9048')];
       // 灌木
       MAT.bush = new THREE.MeshStandardMaterial({
-        color: C('#547f45'), roughness: 0.93, metalness: 0.00, envMapIntensity: 0.38
+        color: C('#4a7a42'), roughness: 0.94, metalness: 0.00, envMapIntensity: 0.28
       });
       // 植被 / 光伏：晚间必须压暗。否则月光与半球光一照，夜里树还是白天那种亮绿，
       // 一眼就"假"，路灯的照明对比也显不出来。
       MAT.leafVariants.forEach(function (m) { registerNightDim(m, 0.20); });
       registerNightDim(MAT.bush, 0.20);
       registerNightDim(MAT.grassPatch, 0.26);
-      // 车漆（带清漆层，反射环境）
+      // 车漆（柔和清漆，写实）
       function carPaint(hex) {
         return new THREE.MeshPhysicalMaterial({
-          color: C(hex), roughness: 0.16, metalness: 0.55,
-          clearcoat: 1.0, clearcoatRoughness: 0.04, envMapIntensity: 1.35
+          color: C(hex), roughness: 0.28, metalness: 0.25,
+          clearcoat: 0.70, clearcoatRoughness: 0.12, envMapIntensity: 0.75
         });
       }
-      MAT.carBody = [carPaint('#dce3ea'), carPaint('#37414d'), carPaint('#9aa6b2'), carPaint('#5c6b7a')];
+      MAT.carBody = [carPaint('#d8dce0'), carPaint('#3a424c'), carPaint('#8a929c'), carPaint('#6a7480')];
       // 【第27轮】座舱玻璃：原色 #16202c 与深色车漆（carBody[1] #37414d）几乎同色，
       // 车顶一盖、座舱就"化"进车身里，车型轮廓全糊掉。改成蓝调高反射玻璃，
       // 不论车身是白、深灰还是蓝灰都能一眼分出"哪块是玻璃"。
       MAT.carGlass = new THREE.MeshStandardMaterial({
-        color: C('#33485e'), roughness: 0.045, metalness: 0.80, envMapIntensity: 2.30
+        color: C('#2a3848'), roughness: 0.12, metalness: 0.35, envMapIntensity: 1.10
       });
       MAT.tire = new THREE.MeshStandardMaterial({
-        color: C('#1b1e22'), roughness: 0.92, metalness: 0.02, envMapIntensity: 0.30
+        color: C('#24282c'), roughness: 0.94, metalness: 0.00, envMapIntensity: 0.18
       });
-      // 灯具自发光
+      // 灯具自发光（白天微亮即可）
       MAT.lampGlass = new THREE.MeshStandardMaterial({
-        color: C('#fff4d8'), emissive: S('#ffd9a0'), emissiveIntensity: 1.6,
-        roughness: 0.35, metalness: 0.10, envMapIntensity: 0.60
+        color: C('#f0e8d8'), emissive: S('#ffd9a0'), emissiveIntensity: 0.55,
+        roughness: 0.45, metalness: 0.05, envMapIntensity: 0.35
       });
       // 汽车底部包围 / 塑料饰件
       MAT.carTrim = new THREE.MeshStandardMaterial({
-        color: C('#2a2f36'), roughness: 0.74, metalness: 0.10, envMapIntensity: 0.55
+        color: C('#2a3038'), roughness: 0.80, metalness: 0.05, envMapIntensity: 0.30
       });
-      // 前大灯（微自发光）
+      // 前大灯
       MAT.headLight = new THREE.MeshStandardMaterial({
-        color: C('#e6edf4'), emissive: S('#cfe2f4'), emissiveIntensity: 0.40,
-        roughness: 0.12, metalness: 0.30, envMapIntensity: 1.40
+        color: C('#e0e8f0'), emissive: S('#c0d0e0'), emissiveIntensity: 0.18,
+        roughness: 0.22, metalness: 0.15, envMapIntensity: 0.80
       });
       // 尾灯
       MAT.tailLight = new THREE.MeshStandardMaterial({
-        color: C('#8e2b28'), emissive: S('#5e1512'), emissiveIntensity: 0.30,
-        roughness: 0.24, metalness: 0.25, envMapIntensity: 1.15
+        color: C('#8a3030'), emissive: S('#602020'), emissiveIntensity: 0.15,
+        roughness: 0.35, metalness: 0.12, envMapIntensity: 0.55
       });
-      // 充电桩外壳（白色烤漆，带清漆层）
+      // 充电桩外壳（白色烤漆，写实）
       MAT.charger = new THREE.MeshPhysicalMaterial({
-        color: C('#eef1f4'), roughness: 0.30, metalness: 0.16,
-        clearcoat: 0.85, clearcoatRoughness: 0.10, envMapIntensity: 1.15
+        color: C('#e8e8e8'), roughness: 0.40, metalness: 0.08,
+        clearcoat: 0.55, clearcoatRoughness: 0.18, envMapIntensity: 0.65
       });
       // 充电桩顶盖 / 枪头（深色件）
       MAT.chargerTop = new THREE.MeshStandardMaterial({
-        color: C('#252a31'), roughness: 0.44, metalness: 0.45, envMapIntensity: 0.95
+        color: C('#2a3038'), roughness: 0.55, metalness: 0.25, envMapIntensity: 0.55
       });
       // 充电桩屏幕（暗底绿光）
       MAT.chargerScreen = new THREE.MeshStandardMaterial({
-        color: C('#0e1620'), emissive: S('#1f6349'), emissiveIntensity: 0.65,
-        roughness: 0.16, metalness: 0.30, envMapIntensity: 1.10
+        color: C('#1a242c'), emissive: S('#2a7050'), emissiveIntensity: 0.40,
+        roughness: 0.28, metalness: 0.15, envMapIntensity: 0.55
       });
       // 充电状态灯（绿 = 正在充电）
       MAT.chargeLed = new THREE.MeshStandardMaterial({
-        color: C('#39d98a'), emissive: S('#2fd07f'), emissiveIntensity: 2.2,
-        roughness: 0.30, metalness: 0.05, envMapIntensity: 0.60
+        color: C('#40c880'), emissive: S('#30c078'), emissiveIntensity: 1.10,
+        roughness: 0.40, metalness: 0.05, envMapIntensity: 0.35
       });
       // 充电线缆（黑色橡胶）
       MAT.cable = new THREE.MeshStandardMaterial({
-        color: C('#181b1f'), roughness: 0.90, metalness: 0.03, envMapIntensity: 0.30
+        color: C('#1c2024'), roughness: 0.92, metalness: 0.00, envMapIntensity: 0.18
       });
       // 充电车位地坪涂装（深绿）
       MAT.chargeZone = new THREE.MeshStandardMaterial({
-        color: C('#2f7a5a'), roughness: 0.84, metalness: 0.02, envMapIntensity: 0.55,
+        color: C('#3a7a58'), roughness: 0.88, metalness: 0.00, envMapIntensity: 0.30,
         polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
 
@@ -2439,12 +2441,12 @@
       MAT.chargeLedGlow = [];
       for (let _ci = 0; _ci < 3; _ci++) {
         MAT.chargeCapGlow.push(new THREE.MeshStandardMaterial({
-          color: C('#252a31'), roughness: 0.44, metalness: 0.45, envMapIntensity: 0.95,
-          emissive: S('#3ce68f'), emissiveIntensity: 0.0
+          color: C('#2a3038'), roughness: 0.55, metalness: 0.25, envMapIntensity: 0.55,
+          emissive: S('#40c880'), emissiveIntensity: 0.0
         }));
         MAT.chargeLedGlow.push(new THREE.MeshStandardMaterial({
-          color: C('#39d98a'), emissive: S('#2fd07f'), emissiveIntensity: 2.2,
-          roughness: 0.30, metalness: 0.05, envMapIntensity: 0.60
+          color: C('#40c880'), emissive: S('#30c078'), emissiveIntensity: 1.10,
+          roughness: 0.40, metalness: 0.05, envMapIntensity: 0.35
         }));
       }
 
@@ -2561,9 +2563,9 @@
       skyMesh = createSkyDome();
       starsMesh = createStars();
 
-      // ---- 光照：太阳主光 + 半球环境光 + 补光 ----
-      const sd = THEME_LOOK.dark.sunDir;
-      sunLight = new THREE.DirectionalLight(S(THEME_LOOK.dark.sunHex).getHex(), 2.35);
+      // ---- 光照：太阳主光 + 半球环境光 + 补光（初始=写实白天）----
+      const sd = THEME_LOOK.light.sunDir;
+      sunLight = new THREE.DirectionalLight(S(THEME_LOOK.light.sunHex).getHex(), 2.20);
       sunLight.position.set(sd[0] * 160, sd[1] * 160, sd[2] * 160);
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = 3072;
@@ -2586,10 +2588,10 @@
       sunLight.shadow.normalBias = 0.02;
       scene.add(sunLight);
 
-      hemiLight = new THREE.HemisphereLight(S(THEME_LOOK.dark.hemiSky).getHex(), S(THEME_LOOK.dark.hemiGround).getHex(), 0.74);
+      hemiLight = new THREE.HemisphereLight(S(THEME_LOOK.light.hemiSky).getHex(), S(THEME_LOOK.light.hemiGround).getHex(), 0.92);
       scene.add(hemiLight);
 
-      ambientLight = new THREE.AmbientLight(0xffffff, 0.16);
+      ambientLight = new THREE.AmbientLight(0xffffff, 0.38);
       scene.add(ambientLight);
 
       // ---- 世界容器 ----
@@ -6365,10 +6367,10 @@
        玻璃幕墙**，而不是原来那种一格亮一格暗的"花墙"。城市楼因此干净、克制，
        与园区的"白墙 + 蓝窗"明确拉开层次（园区是主角，城市是沉稳的底）。 */
     const CITY_FACADE = [
-      { cols: 7, rows: 12, day: '#8e9aa8', lit: -0.12, night: '#0a1017', ratio: 0.62 },
-      { cols: 6, rows: 14, day: '#79889a', lit: -0.12, night: '#0b121b', ratio: 0.55 },
-      { cols: 9, rows: 11, day: '#9aa5b1', lit: -0.12, night: '#090f16', ratio: 0.70 },
-      { cols: 8, rows: 16, day: '#6f7b88', lit: -0.12, night: '#0a1119', ratio: 0.48 }
+      { cols: 7, rows: 12, day: '#b0a898', lit: -0.12, night: '#0a1017', ratio: 0.62 },
+      { cols: 6, rows: 14, day: '#9a9088', lit: -0.12, night: '#0b121b', ratio: 0.55 },
+      { cols: 9, rows: 11, day: '#c0b8a8', lit: -0.12, night: '#090f16', ratio: 0.70 },
+      { cols: 8, rows: 16, day: '#8a8880', lit: -0.12, night: '#0a1119', ratio: 0.48 }
     ];
     let cityFacadeMats = null;
     function cityFacadeMat(i) {
@@ -6383,8 +6385,8 @@
           // color 与 map 相乘 —— 把 texFacade 那圈偏亮的浅色窗框整体压成"深蓝灰玻璃"，
           // 立面变暗、窗格才显出来。注意 color 不参与 emissive：夜间亮窗完全不受影响。
           const m = new THREE.MeshStandardMaterial({
-            map: dayTex, roughness: 0.50, metalness: 0.34,
-            envMapIntensity: 0.90, color: C('#a8b0ba')
+            map: dayTex, roughness: 0.58, metalness: 0.12,
+            envMapIntensity: 0.55, color: C('#e0d8d0')
           });
           m.name = 'cityFacade' + i;
           return registerFacade(m, dayTex, nightTex);
@@ -6401,19 +6403,18 @@
     }
     function cityPodiumMat() {
       return cityMat('podium', function () {
-        // 【迭代5】45° 俯视时人的眼睛主要落在裙楼顶面上 —— 原来是 #8d949c 浅灰，
-        //          每栋楼顶都像盖了块白板。压到 #565c64 后楼顶退到暗部，立面才是主角。
-        return new THREE.MeshStandardMaterial({ color: C('#4a5058'), roughness: 0.82, metalness: 0.12, envMapIntensity: 0.55 });
+        // 写实暖灰裙楼（参考图低层浅粉/米色）
+        return new THREE.MeshStandardMaterial({ color: C('#c8b8b0'), roughness: 0.82, metalness: 0.05, envMapIntensity: 0.40 });
       });
     }
     function cityRoofMat() {
       return cityMat('roof', function () {
-        return new THREE.MeshStandardMaterial({ color: C('#3f444b'), roughness: 0.90, metalness: 0.14, envMapIntensity: 0.50 });
+        return new THREE.MeshStandardMaterial({ color: C('#4a5058'), roughness: 0.90, metalness: 0.08, envMapIntensity: 0.35 });
       });
     }
     function cityParaMat() {
       return cityMat('para', function () {
-        return new THREE.MeshStandardMaterial({ color: C('#b6bcc3'), roughness: 0.66, metalness: 0.20, envMapIntensity: 0.80 });
+        return new THREE.MeshStandardMaterial({ color: C('#d0ccc6'), roughness: 0.72, metalness: 0.08, envMapIntensity: 0.45 });
       });
     }
 
@@ -7067,11 +7068,8 @@
        · 页面长时间开着时每分钟复查一次，跨过时间点会自己切（比如 17:00 自动转傍晚）；
        · 一旦用户手动点过切换按钮，本次会话就听用户的，不再被时间抢走。 */
     function autoThemeByClock() {
-      const d = new Date();
-      const h = d.getHours() + d.getMinutes() / 60;
-      if (h >= 6 && h < 17) return 'light';     // 白天
-      if (h >= 17 && h < 19) return 'dark';     // 傍晚
-      return 'black';                           // 晚间
+      // 【写实风格】默认始终白天写实日景；用户仍可通过按钮手动切到傍晚/晚间
+      return 'light';
     }
 
     function setTheme(t, manual) {
