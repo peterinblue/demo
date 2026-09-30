@@ -2620,14 +2620,12 @@
       ground.receiveShadow = true;
       worldGroup.add(ground);
 
-      // 园区铺装：范围严格收在围墙内
-      // 【修正】原来 172x128 比围墙（x±80 / z-62~54，墙厚 0.34）大一圈，
-      // 铺装会甩到墙外草地上，看着像"围墙外还铺了石材"
-      // 墙内表面 x±79.83 / z-61.83~53.83 → 铺装取 159.6 x 115.6，中心 z=-4
-      const padGeo = new THREE.PlaneGeometry(159.6, 115.6);
+      // 园区铺装：范围严格收在围墙内（长宽比对调后：x±58 / z-80~80）
+      // 墙内表面 x±57.83 / z-79.83~79.83 → 铺装取 115.6 x 159.6，中心 z=0
+      const padGeo = new THREE.PlaneGeometry(115.6, 159.6);
       groundPad = new THREE.Mesh(padGeo, MAT.paving);
       groundPad.rotation.x = -Math.PI / 2;
-      groundPad.position.set(0, 0.04, -4);
+      groundPad.position.set(0, 0.04, 0);
       groundPad.receiveShadow = true;
       worldGroup.add(groundPad);
 
@@ -2653,25 +2651,27 @@
     }
 
     function createFactoryBuilding() {
-      // ===== 浦江园区北区 · 按《楼栋总平面图》+ 用户调整重排 =====
-      // 方位：上北(-z) 下南(+z) 左西(-x) 右东(+x)；水系在东，大门在西南角、开口朝西
-      // 楼栋紧贴环路、彼此间距拉宽；车棚南侧预留大块绿地
+      // ===== 浦江园区北区 · 长宽比对调（南北更长、东西收窄），门岗靠左 =====
+      // 方位：上北(-z) 下南(+z) 左西(-x) 右东(+x)；水系在东，门岗/大门在西侧
+      // 围墙 116×160（x±58 / z -80~80）
       // 3 研发楼 —— 最北，地上4层，点击楼层抽拉（往北抽出）
-      addOfficeBuilding(-6, -52, 46, 14, 4, { bld: 'rd', label: '研发楼', dir: -1, axis: 'z', floorsName: ['研发一层', '研发二层', '研发三层', '研发四层'] });
+      addOfficeBuilding(-4, -62, 42, 14, 4, { bld: 'rd', label: '研发楼', dir: -1, axis: 'z', floorsName: ['研发一层', '研发二层', '研发三层', '研发四层'] });
       // 2 主生产车间 —— 中部，高度减半
-      addFactoryMainHall(6, -22, 74, 30, 6.5);
-      // 1 综合办公楼 —— 主生产车间以南，拆成 8 号楼(西1/3) + 7 号楼(东2/3)，相连
-      // 8 号楼：往西抽拉；7 号楼：往东抽拉
-      addOfficeBuilding(-16, 8, 26, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1 });
-      addOfficeBuilding(16, 8, 52, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
-      // 5 光伏车棚 —— 南侧两排，缩短1/3（去掉西段），可点击抬起露出车辆
-      addSolarCarport(10, 32, { id: 'carn', chargers: true });
-      addSolarCarport(10, 42, { id: 'cars', chargers: false });
+      addFactoryMainHall(4, -30, 68, 30, 6.5);
+      // 1 综合办公楼 —— 主生产车间以南，8号楼(西1/3) + 7号楼(东2/3)，相连
+      // 东边缘 x=+42（与光伏车棚东端对齐）
+      addOfficeBuilding(-14, 2, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1 });
+      addOfficeBuilding(16, 2, 52, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
+      // 5 光伏车棚 —— 南侧两排；东端与综合楼东边缘(x=42)对齐，西段去掉
+      // 西端 x=-2，东端 x=42 → 宽 44，中心 x=20
+      addSolarCarport(20, 38, { id: 'carn', chargers: true, w: 44 });
+      addSolarCarport(20, 50, { id: 'cars', chargers: false, w: 44 });
+      // 东端 x = 20+22 = 42，与 7 号楼东缘(16+26=42)对齐
       // 车棚南侧预留大片绿地（不放建筑）
-      // 6 实验室 —— 东北角，再往外靠
-      addSubstation(62, -52);
-      // 4 门卫 —— 最左下角（西南），大门开口朝西
-      addGateHouse(-72, 48);
+      // 6 实验室 —— 东北角，靠外
+      addSubstation(44, -70);
+      // 4 门卫 —— 左侧（西），大门开口朝西
+      addGateHouse(-52, 56);
       // 水系：东侧河道（平面图「河」）
       addWaterBody();
       // 园区围墙
@@ -3408,7 +3408,7 @@
 
     /* ---- 园区围墙尺寸（门岗与围墙共用，保证大门柱子与墙体对齐咬合） ---- */
     // GATE_Z：大门中心 z（平面图主入口在最左下角，开口朝西，故取南端西侧）
-    const WALL = { X: 80, ZS: 54, ZN: -62, H: 2.5, T: 0.34, GATE: 10.4, GATE_Z: 40 };
+    const WALL = { X: 58, ZS: 80, ZN: -80, H: 2.5, T: 0.34, GATE: 10.4, GATE_Z: 52 };
 
     /* ---- 人行通道（岗亭西侧，与车行闸机同一条门线 z=53.2） ----
        原来岗亭紧贴西侧门柱基座（柱基到亭壁净距只剩 0.45m），行人根本挤不过去；
@@ -4272,9 +4272,9 @@
       opts = opts || {};
       const g = new THREE.Group();
       g.position.set(x, 0, z);
-      // 缩短 1/3：原 W=36 → 24（去掉西段）
-      const W = 24, D = 9, H = 4.2;
-      const BAYS = 6;
+      // 宽度可配：默认 24（原缩短后）；传 w 可东延对齐综合楼边缘
+      const W = opts.w || 24, D = 9, H = 4.2;
+      const BAYS = Math.max(4, Math.round(W / 4));
 
       // 车棚地坪（不随抬起移动）
       const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 3, D + 3), MAT.asphalt2);
@@ -4369,30 +4369,30 @@
       });
       const w1 = new THREE.Mesh(new THREE.PlaneGeometry(13, 48), waterMat);
       w1.rotation.x = -Math.PI / 2;
-      w1.position.set(75, 0.052, -25);
+      w1.position.set(50, 0.052, -30);
       w1.receiveShadow = true;
       g.add(w1);
       const w2 = new THREE.Mesh(new THREE.PlaneGeometry(12, 44), waterMat);
       w2.rotation.x = -Math.PI / 2;
-      w2.position.set(76, 0.052, 18);
+      w2.position.set(51, 0.052, 22);
       w2.receiveShadow = true;
       g.add(w2);
       // 水岸（混凝土护岸）
       for (const s of [-1, 1]) {
         const bank1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 50), MAT.concrete);
-        bank1.position.set(75 + s * 6.5, 0.17, -26);
+        bank1.position.set(50 + s * 6.5, 0.17, -31);
         bank1.castShadow = true; bank1.receiveShadow = true;
         g.add(bank1);
         const bank2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 46), MAT.concrete);
-        bank2.position.set(76 + s * 6.2, 0.17, 19);
+        bank2.position.set(51 + s * 6.2, 0.17, 23);
         bank2.castShadow = true; bank2.receiveShadow = true;
         g.add(bank2);
       }
       // 河岸行道树（沿河道西侧成列）
-      for (let z = -48; z <= 38; z += 8) {
+      for (let z = -56; z <= 46; z += 8) {
         if (z > -16 && z < 6) continue;
         if (z > 8 && z < 22) continue;
-        addTree(g, 68, z, rnd(0.85, 1.10), true, true);
+        addTree(g, 42, z, rnd(0.85, 1.10), true, true);
       }
       buildingGroup.add(g);
     }
@@ -4493,7 +4493,7 @@
     function paintGrid() {
       // 【第23轮】外围这一圈现在是绿化带 + 树池草皮，网格线再画过去就成了"草坪上的网格"，
       //          所以内收到铺装主体范围（离树池内边 ≥1.4m）
-      const X0 = -74, X1 = 74, Z0 = -56, Z1 = 48, STEP = 6;
+      const X0 = -52, X1 = 52, Z0 = -74, Z1 = 74, STEP = 6;
       const pts = [];
       for (let x = X0; x <= X1 + 0.01; x += STEP) { pts.push(x, 0, Z0, x, 0, Z1); }
       for (let z = Z0; z <= Z1 + 0.01; z += STEP) { pts.push(X0, 0, z, X1, 0, z); }
@@ -4574,33 +4574,10 @@
       oroad.receiveShadow = true;
       buildingGroup.add(oroad);
 
-      // ---------- 人行道地面（岗亭西侧，行人全程与车流分开） ----------
-      // 【本轮新增】行人与车分流：厂外引道 → 门洞 → 人行横道 → 园内人行道。
-      // 标高 0.066：比厂外引道（0.048）高 18mm、比车行引道（0.058）高 8mm，
-      // 既做出"人行道高出车行道一个路缘"的真实观感，又给远距离共面留足深度余量，
-      // 不会像同高面片那样在远处 z-fighting 闪烁。
-      // 【抗闪烁】人行道用 po=-4（覆面档），比引道 po=-3 更靠前，重叠带永远显示人行道。
+      // 人行道地面：原 PED_XC 跨路人行道在车棚左侧形成“斑马线”观感，已按需求移除
       const WALK_Y = 0.066;
       const PED_XC = (PED.X0 + PED.X1) / 2;
-      const walk = new THREE.Mesh(new THREE.PlaneGeometry(PED.W, 14.25), pavingMat(1, 5));
-      walk.rotation.x = -Math.PI / 2;
-      walk.position.set(PED_XC, WALK_Y, (WALL.ZS + 68.25) / 2);      // z 54 ~ 68.25（墙外段）
-      walk.receiveShadow = true;
-      buildingGroup.add(walk);
-
-      // 门内段：门洞 → 主干道南边线
-      const walk0 = new THREE.Mesh(new THREE.PlaneGeometry(PED.W, 10.5), pavingMat(1, 4));
-      walk0.rotation.x = -Math.PI / 2;
-      walk0.position.set(PED_XC, WALK_Y, (R1.zc + R1.hw + WALL.ZS) / 2);   // z 43.5 ~ 54
-      walk0.receiveShadow = true;
-      buildingGroup.add(walk0);
-
-      // 园内段：过了主干道继续北行，直达主厂房南侧（z 12 ~ 28.5）
-      const walk2 = new THREE.Mesh(new THREE.PlaneGeometry(PED.W, 16.5), pavingMat(1, 5));
-      walk2.rotation.x = -Math.PI / 2;
-      walk2.position.set(PED_XC, WALK_Y, (R1.zc - R1.hw + 12) / 2);
-      walk2.receiveShadow = true;
-      buildingGroup.add(walk2);
+      void WALK_Y; void PED_XC;
 
       // ---------- 地面标线（全部零厚度面片，平贴路面） ----------
       function paint(w, d, x, z) {
@@ -4665,12 +4642,7 @@
       }
       paint(7.2, 0.4, 4.4, R1.zc + R1.hw + 1.3);
 
-      // 人行横道（斑马线）：把墙外、墙内两段人行道在主干道上连通，行人不与车流抢道。
-      // 【本轮新增】此前门口只有车行闸机、没有任何行人设施，行人只能贴着车流进出。
-      // 现在行人路线是一条完整的线：厂外引道 → 门洞（过翼闸）→ 人行横道 → 园内人行道。
-      for (let z = R1.zc - R1.hw + 0.85; z < R1.zc + R1.hw - 0.5; z += 0.92) {
-        paint(PED.W - 0.4, 0.46, PED_XC, z);
-      }
+      // 人行横道（斑马线）已按需求移除（光伏车棚左侧不留斑马线）
 
       // 树木（树位需避开所有建筑 / 道路 / 车位 / 围墙内设施，否则会出现树冠穿墙穿罐）
       // 园区主要占位：主厂房 x-23~23 z-21~9 ｜ 办公楼 x-49~-27 z10~26 ｜ 车间 x26~54 z-26~-6
