@@ -2242,9 +2242,11 @@
       const key = 'solar_' + rx + '_' + ry;
       if (!MAT[key]) {
         // 光伏板：降低 metalness / envMap 强度，避免表面大面积镜面反射天空阴影而发黑
+        // 【抗闪烁】光伏板与屋面板仅差几厘米，远处深度精度不足会翻转 → 加负向 polygonOffset 稳定压在屋面之前
         MAT[key] = new THREE.MeshStandardMaterial({
           map: tiled(TEX.solar, rx, ry), color: C('#ffffff'),
-          roughness: 0.26, metalness: 0.38, envMapIntensity: 1.00
+          roughness: 0.26, metalness: 0.38, envMapIntensity: 1.00,
+          polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
         });
       }
       return MAT[key];
@@ -2310,9 +2312,11 @@
       registerFacade(MAT.facadeHall, TEX.facadeHall, TEX.facadeHallN);
       registerFacade(MAT.facadeOffice, TEX.facadeOffice, TEX.facadeOfficeN);
       // 光伏组件（中等粗糙度，浅蓝深色，避免过深过黑）
+      // 【抗闪烁】与屋面板/顶盖近共面，加负向 polygonOffset 稳定压前
       MAT.solar = new THREE.MeshStandardMaterial({
         map: TEX.solar, color: C('#ffffff'),
-        roughness: 0.26, metalness: 0.38, envMapIntensity: 1.00
+        roughness: 0.26, metalness: 0.38, envMapIntensity: 1.00,
+        polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6
       });
       registerNightDim(MAT.solar, 0.42);   // 晚间光伏板不再反天光，压暗
       // 地面材质按铺贴次数缓存，避免创建重复材质
@@ -3510,8 +3514,9 @@
         registerNightLight(gl, 3.6, 0.45);
       }
 
-      // 双向道闸（大门左侧＝南侧车道）：当中一个接地立柱，左右两杆平均分配
-      const bz = 5.0;                       // 车道中心（左半幅）
+      // 双向道闸：去掉人行匝道后，车道居中；栏杆覆盖整个车道宽度（门洞半宽 10.4）
+      // 人行通道在北侧（局部 z 约 -6），车道占 z -3.5~+10.4，中心 z≈3.5，半幅约 7m
+      const bz = 3.5;
       const bx = PX + 3.2;
       {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
@@ -3521,9 +3526,9 @@
         const postCap = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.14, 0.74), MAT.chargerTop);
         postCap.position.set(bx, 1.62, bz);
         g.add(postCap);
-        // 左右两杆：各 3.75m（4 段×1.25），从中柱向两侧均分
+        // 左右两杆：各 6.25m（5 段×1.25），覆盖整条车道
         for (const side of [-1, 1]) {
-          for (let k = 0; k < 3; k++) {
+          for (let k = 0; k < 5; k++) {
             const seg = new THREE.Mesh(
               new THREE.BoxGeometry(0.36, 0.34, 1.25),
               (k % 2 === 0) ? MAT.warn : MAT.warnRed
@@ -3568,15 +3573,14 @@
         led.position.set(cx + 0.34, 1.19, cz);
         g.add(led);
       }
-      // 翼闸挡板：默认打开（挡板收起贴柱），人行通道默认畅通
+      // 翼闸挡板：单人通道，默认完全打开（挡板收拢贴在立柱侧面，通道畅通）
       for (let i = 0; i < PED_N - 1; i++) {
-        const laneC = (pedPx[i] + pedPx[i + 1]) / 2;
         for (const s of [-1, 1]) {
           const flap = new THREE.Mesh(
-            new THREE.BoxGeometry(0.05, 0.70, PED_LANE / 2 - 0.02), MAT.glassDeep);
-          // 默认打开：挡板沿 x 向收到立柱旁（不再拦在通道中间）
-          flap.position.set(PX + 2.2 + s * (PED_LANE / 2 + 0.12), 0.68, laneC);
-          flap.rotation.y = s * Math.PI / 2;   // 旋转 90°，贴在立柱侧面
+            new THREE.BoxGeometry(0.05, 0.70, 0.42), MAT.glassDeep);
+          // 完全打开：挡板收到立柱外侧，与通行方向平行，不拦路
+          flap.position.set(PX + 2.2 + s * (PED_PW / 2 + 0.10), 0.68, pedPx[i]);
+          flap.rotation.y = s * Math.PI / 2;
           flap.castShadow = true;
           g.add(flap);
         }
