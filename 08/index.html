@@ -2683,8 +2683,9 @@
          7号楼起点西移到 x=-1.6、东缘仍钉在 x=42（与车棚对齐）。
          两栋楼不再有任何共面重叠，闪烁根除。 */
       addOfficeBuilding(-14, 2, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1 });
-      // 7号楼：南立面东段加主入口（玻璃门厅 + 外挑钢结构雨棚 + 台阶 + 门楣铭牌）
-      addOfficeBuilding(20.2, 2, 43.6, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1, entrance: true, entranceX: -12.5 });
+      // 7号楼：南立面加主入口（不封闭 —— 玻璃门与幕墙齐平 + 悬挑顶盖 + 台阶）
+      // 【第4轮·续】大门整体往西挪 5m：entranceX -12.5 → -17.5
+      addOfficeBuilding(20.2, 2, 43.6, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1, entrance: true, entranceX: -17.5 });
       // 5 光伏车棚 —— 南侧两排；东端与综合楼东边缘(x=42)对齐，西段去掉
       // 西端 x=-2，东端 x=42 → 宽 44，中心 x=20
       addSolarCarport(20, 38, { id: 'carn', chargers: true, w: 44, tilt: -0.12 });
