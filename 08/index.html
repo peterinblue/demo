@@ -2676,8 +2676,14 @@
       addFactoryMainHall(4, -30, 68, 30, 6.5);
       // 1 综合办公楼 —— 主生产车间以南，8号楼(西1/3) + 7号楼(东2/3)，相连
       // 东边缘 x=+42（与光伏车棚东端对齐）
+      /* 【抗闪烁·画框】原为 8号楼 x∈[-26,-2]、7号楼 x∈[-10,42] —— **两栋体块重叠 8m**，
+         重叠区里两套幕墙面片落在同一竖直平面上 → 大面积 z-fighting，
+         相机一动就"撕裂式闪烁"（用户圈出的正是 8 号楼东段那一片）。
+         修法：改为**首尾相接 + 留 0.4m 结构缝**（真实双拼楼本来就有沉降缝），
+         7号楼起点西移到 x=-1.6、东缘仍钉在 x=42（与车棚对齐）。
+         两栋楼不再有任何共面重叠，闪烁根除。 */
       addOfficeBuilding(-14, 2, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1 });
-      addOfficeBuilding(16, 2, 52, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
+      addOfficeBuilding(20.2, 2, 43.6, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
       // 5 光伏车棚 —— 南侧两排；东端与综合楼东边缘(x=42)对齐，西段去掉
       // 西端 x=-2，东端 x=42 → 宽 44，中心 x=20
       addSolarCarport(20, 38, { id: 'carn', chargers: true, w: 44, tilt: -0.12 });
@@ -2691,7 +2697,7 @@
       addGateHouse(-52, WALL.GATE_Z);
       // 楼栋标注（7/8/9/10/11 号楼）
       addBuildingLabel(-14, 19.5, 2, '8号楼');
-      addBuildingLabel(16, 19.5, 2, '7号楼');
+      addBuildingLabel(20.2, 19.5, 2, '7号楼');
       addBuildingLabel(4, 8.2, -30, '9号楼');
       addBuildingLabel(-4, 16.2, -62, '10号楼');
       addBuildingLabel(44, 5.2, -70, '11号楼');
@@ -2804,6 +2810,26 @@
     function setUVrange(geo, v0, v1) {
       const uv = geo.attributes.uv, k = v1 - v0;
       for (let i = 0; i < uv.count; i++) uv.setY(i, v0 + uv.getY(i) * k);
+      uv.needsUpdate = true;
+      return geo;
+    }
+
+    /* 【抗闪烁·幕墙横向走样】幕墙贴图 texFacade(10,4) 只有 10 列窗格，却要铺到
+       不同宽度的立面上：7号楼 52.3m → 每格 5.23m（合适）；8号楼 24.3m → 每格 2.43m
+       （被压缩一倍多）。斜视时被压缩那一栋的高频窗格超出屏幕采样率 → 摩尔纹锯齿，
+       相机一动就闪（用户圈出的正是 8 号楼这一段）。
+       修法：把横向 UV 的 u 线性重映射，让"每列窗格"的**物理宽度**接近 TARGET（≈5.2m）。
+       u' = u × n，n 取"最接近的整数分之一"，保证贴图正好用掉 n 份（不外溢、不半截）。
+       于是窄立面不再把 10 列硬挤进去，窗格尺寸与实际体量匹配，走样消失。
+       —— 只改几何体 UV、不克隆贴图，零额外显存；各面独立（长面/进深面各算各的）。 */
+    const FACADE_TARGET_COL_W = 5.2;   // 每列窗格的目标物理宽度（m）
+    function setUVrangeU(geo, spanLen, cols) {
+      const uv = geo.attributes.uv;
+      const span = Math.max(1e-3, spanLen);
+      let want = span / (cols * FACADE_TARGET_COL_W);     // 贴图在横向应铺的次数
+      // 取整到 1/k（k 为整数）：窗格数 = cols×want 必为整数 → 不出现半截窗
+      want = (want >= 1) ? Math.round(want) : (1 / Math.round(1 / want));
+      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * want);
       uv.needsUpdate = true;
       return geo;
     }
@@ -3481,18 +3507,69 @@
       const PX = -WALL.X - x;
 
       // 门卫亭（大门右侧＝北侧，与停车杆左右互换）
-      const BOOTH_X = PX + 5.5;
-      const booth = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.6, 3.8), MAT.concrete);
-      booth.position.set(BOOTH_X, 1.8, -9.5);
+      /* 【本轮】原来是"混凝土块 + 一圈比它还大的玻璃盒"，看上去就是个纯玻璃方盒，
+         既没有门也没有窗。现改为真实门卫亭做法：
+           · 主体混凝土亭身；
+           · **南面（+z，朝园区内）**开一扇门 + 一扇窗（用户明确要求"对着南面"）；
+           · 东面（+x，朝厂外进厂方向）再开一扇值班窗，方便对外查验。
+         门窗都在墙面上"贴片"（略外凸 6cm，避免与亭身共面 z-fighting）。 */
+      const BOOTH_W = 4.2, BOOTH_H = 3.6, BOOTH_D = 3.8;
+      const BOOTH_X = PX + 5.5, BOOTH_Z = -9.5;
+      const booth = new THREE.Mesh(new THREE.BoxGeometry(BOOTH_W, BOOTH_H, BOOTH_D), MAT.concrete);
+      booth.position.set(BOOTH_X, BOOTH_H / 2, BOOTH_Z);
       booth.castShadow = true; booth.receiveShadow = true;
       g.add(booth);
 
-      const win = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 4.0), MAT.glass);
-      win.position.set(BOOTH_X, 2.1, -9.5);
-      g.add(win);
+      // —— 南面（+z）：门 + 窗 ——
+      const southZ = BOOTH_Z + BOOTH_D / 2;          // 南表面局部 z
+      {
+        // 门（偏西一侧，门扇朝园区内开）
+        const doorW = 1.00, doorH = 2.15;
+        const doorX = BOOTH_X - 0.95;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.14, doorH + 0.12, 0.06), MAT.alu);
+        frame.position.set(doorX, doorH / 2 + 0.06, southZ + 0.06);
+        g.add(frame);
+        const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 0.05), MAT.glassDeep);
+        door.position.set(doorX, doorH / 2, southZ + 0.09);
+        g.add(door);
+        // 门把手
+        const knob = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.10), MAT.chargerTop);
+        knob.position.set(doorX + doorW / 2 - 0.14, 1.05, southZ + 0.13);
+        g.add(knob);
+        // 门下台阶
+        const step = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.5, 0.18, 0.5), MAT.fenceCap);
+        step.position.set(doorX, 0.09, southZ + 0.28);
+        step.receiveShadow = true;
+        g.add(step);
 
-      const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.45, 4.6), MAT.alu);
-      roofSlab.position.set(BOOTH_X, 3.85, -9.5);
+        // 窗（偏东一侧，窗台与门腰齐平，开敞明亮）
+        const winW = 1.45, winH = 1.20, winY = 1.85;
+        const winX = BOOTH_X + 1.05;
+        const wFrame = new THREE.Mesh(new THREE.BoxGeometry(winW + 0.14, winH + 0.14, 0.06), MAT.alu);
+        wFrame.position.set(winX, winY, southZ + 0.06);
+        g.add(wFrame);
+        const wPane = new THREE.Mesh(new THREE.BoxGeometry(winW, winH, 0.05), MAT.glass);
+        wPane.position.set(winX, winY, southZ + 0.09);
+        g.add(wPane);
+        // 窗台横档（把窗户一分为二，更像门卫值班窗）
+        const mullion = new THREE.Mesh(new THREE.BoxGeometry(winW, 0.05, 0.06), MAT.alu);
+        mullion.position.set(winX, winY, southZ + 0.11);
+        g.add(mullion);
+      }
+      // —— 东面（+x）：值班窗（对外查验）——
+      {
+        const eastX = BOOTH_X + BOOTH_W / 2;
+        const winW = 1.20, winH = 1.00, winY = 1.95;
+        const eFrame = new THREE.Mesh(new THREE.BoxGeometry(0.06, winH + 0.12, winW + 0.12), MAT.alu);
+        eFrame.position.set(eastX + 0.06, winY, BOOTH_Z);
+        g.add(eFrame);
+        const ePane = new THREE.Mesh(new THREE.BoxGeometry(0.05, winH, winW), MAT.glass);
+        ePane.position.set(eastX + 0.09, winY, BOOTH_Z);
+        g.add(ePane);
+      }
+      // 屋顶压顶
+      const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(BOOTH_W + 0.6, 0.45, BOOTH_D + 0.6), MAT.alu);
+      roofSlab.position.set(BOOTH_X, BOOTH_H + 0.25, BOOTH_Z);
       roofSlab.castShadow = true;
       g.add(roofSlab);
 
@@ -4387,6 +4464,19 @@
               CHARGE_GLOW[i % 3] = { cap: MAT.chargeCapGlow[i % 3], led: MAT.chargeLedGlow[i % 3], ph: (i % 3) * 2.0944 };
             }
           }
+          /* 【本轮】充电中的桩必须有**充电线连到车上** —— 否则"桩在闪"却看不到连接，
+             观感上像故障灯而不是充电。车头朝南(π)、车尾在 -z 侧，正好对着北侧的桩，
+             线缆从桩侧挂枪口垂到地面、拖行一小段后接到车尾充电口（用车辆自报的
+             userData.port 反算，换车型也不会插进空气里）。 */
+          if (charging) {
+            g.updateMatrixWorld(true);
+            const from = isBig
+              ? new THREE.Vector3(chgX + 0.62, 1.05, chgZ + 0.10)   // 大箱子侧出线
+              : new THREE.Vector3(chgX + 0.34, 1.04, chgZ + 0.08);  // 简易桩挂枪口
+            const portW = car.localToWorld((car.userData.port || new THREE.Vector3(0, 0.72, -1.6)).clone());
+            g.worldToLocal(portW);
+            addChargeCable(g, from, portW);
+          }
           void chg;
         }
       }
@@ -4991,42 +5081,12 @@
       sign.position.set(BW / 2 - 0.85, 0.40 + 1.85, BD / 2 + 0.06);
       g.add(sign);
 
-      // ---- 金属栅栏围合（南侧留 2.6m 双开栅栏门） ----
-      const FW = BW + 3.6, FD = BD + 3.6, FH = 1.90, GATE_W = 2.6;
-      const postG = new THREE.BoxGeometry(0.13, FH, 0.13);
-      const railG = new THREE.BoxGeometry(1, 0.07, 0.05);
-      function fenceRun(x0, z0, x1, z1) {
-        const len = Math.hypot(x1 - x0, z1 - z0);
-        const n = Math.max(1, Math.round(len / 0.62));
-        for (let i = 0; i <= n; i++) {
-          const t = i / n;
-          const post = new THREE.Mesh(postG, MAT.fenceCap);
-          post.position.set(x0 + (x1 - x0) * t, FH / 2, z0 + (z1 - z0) * t);
-          post.castShadow = true;
-          post.userData.stayPut = true;        // 【第26轮】围栏属场地设施，掀箱盖时留在地面
-          g.add(post);
-        }
-        for (const yy of [FH - 0.16, 0.28]) {
-          const rail = new THREE.Mesh(railG, MAT.darkMetal);
-          rail.scale.x = len;
-          rail.position.set((x0 + x1) / 2, yy, (z0 + z1) / 2);
-          rail.rotation.y = Math.atan2(-(z1 - z0), x1 - x0);
-          rail.userData.stayPut = true;        // 【第26轮】同上：横杆留在地面
-          g.add(rail);
-        }
-      }
-      fenceRun(-FW / 2, -FD / 2, -FW / 2, FD / 2);
-      fenceRun(FW / 2, -FD / 2, FW / 2, FD / 2);
-      fenceRun(-FW / 2, -FD / 2, FW / 2, -FD / 2);
-      fenceRun(-FW / 2, FD / 2, -GATE_W / 2, FD / 2);
-      fenceRun(GATE_W / 2, FD / 2, FW / 2, FD / 2);
-      for (const sx of [-1, 1]) {
-        const leaf = new THREE.Mesh(new THREE.BoxGeometry(GATE_W / 2 - 0.08, FH - 0.24, 0.06), MAT.darkMetal);
-        leaf.position.set(sx * (GATE_W / 4 + 0.02), (FH - 0.24) / 2, FD / 2);
-        leaf.castShadow = true;
-        leaf.userData.stayPut = true;          // 【第26轮】栅栏门留在地面
-        g.add(leaf);
-      }
+      /* 【本轮】原有一圈"金属栅栏围合"（四周立柱 + 上下横杆 + 南侧双开栅栏门）。
+         用户要求：**11号楼（实验室）周围不要围栏** —— 园区里这栋是设备箱体式建筑，
+         围着篱笆反而显得局促、与周边铺装不搭。整组围栏（立柱 / 横杆 / 栅栏门）
+         及其 stayPut 标记一并移除；接地阴影保留（它压在铺装上，与围栏无关）。
+         下面这两个尺寸仍按"原围栏外扩"取，供接地阴影沿用，视觉上不变。 */
+      const FW = BW + 3.6, FD = BD + 3.6;
 
       // ---- 夜间门灯（晚间自动点亮） ----
       const dlamp = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.16, 0.22), MAT.lampGlass);
