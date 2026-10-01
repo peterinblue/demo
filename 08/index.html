@@ -2329,6 +2329,16 @@
       MAT.lobby = new THREE.MeshStandardMaterial({
         color: C('#dbe4ec'), roughness: 0.72, metalness: 0.04, envMapIntensity: 0.6
       });
+      /* 【本轮】楼层内衬改"透明玻璃"：用户反馈"楼层抽出之后，应该是透明的背景，
+         现在是灰色实心的"。新建**专用**材质（不动全园共用的 MAT.glass / MAT.lobby，
+         否则门厅/幕墙跟着变）。opacity 就是"透明度旋钮"：
+         0.10 ≈ 几乎全透 · 0.20 ≈ 淡淡玻璃感（当前值）· 0.35 ≈ 明显玻璃 · 调 0 ≈ 完全消失。 */
+      MAT.linerGlass = new THREE.MeshPhysicalMaterial({
+        color: C('#b8dcef'), roughness: 0.06, metalness: 0.15,
+        transparent: true, opacity: 0.20, depthWrite: false,
+        clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 1.5,
+        side: THREE.DoubleSide
+      });
       // 大门门楣名牌底板（深藏青）+ 冷白发光字带 / 灯箱面
       MAT.gatePanel = new THREE.MeshStandardMaterial({
         color: C('#12283f'), roughness: 0.42, metalness: 0.45, envMapIntensity: 0.95
@@ -3416,16 +3426,15 @@
                 · 其余各层 = floorH。抽中间层时下面还有楼层垫着，不存在"底部"问题；
                   而且各层芯体尺寸相同，**只有靠"芯体夹在中间"才能隔开共面**，
                   统一加高反而会在重叠段造成侧面共面闪烁。
-             ③ 做成**实心体量**（不是三面空腔）—— 用户要的是"补全"：南面必须一起封住，
-                否则正面看进去仍是一间敞着前墙的房间，读起来还是"缺一块"。
-                实心后，抽出层的原位就是一块干净的浅色体量，四面无缺口。
+             ③ 四面仍然封住（玻璃也算"补全"——不是敞开的洞），但材质用 **MAT.linerGlass
+                透明玻璃**（本轮用户反馈：原位背景要"透明"，不能是灰色实心体量），
+                透出后面场景；不 receiveShadow（玻璃面不吃影，影子会穿帮）。
              ④ 默认 visible=false，只在**本层抽屉抽出（k>0.02）时显形** → 未点击状态与
                 改动前逐像素一致；⑤ raycast 置空，不参与拾取，不干扰"点门=点 1F 楼层"。 */
         const LIN_H = (f === 0) ? (floorH + floorH * 1.3 - 0.02) : floorH;
-        const liner = new THREE.Mesh(new THREE.BoxGeometry(w - 0.20, LIN_H, d - 0.20), MAT.lobby);
+        const liner = new THREE.Mesh(new THREE.BoxGeometry(w - 0.20, LIN_H, d - 0.20), MAT.linerGlass);
         liner.position.y = f * floorH + LIN_H / 2;
         liner.visible = false;
-        liner.receiveShadow = true;
         liner.raycast = function () {};
         g.add(liner);
 
