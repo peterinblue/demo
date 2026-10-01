@@ -1510,6 +1510,9 @@
     let ground, groundPad, gridHelper, ambientLight, sunLight, hemiLight, skyMesh, worldGroup;
     /* 【第34轮】场景双模式：solo = 独立园区（园区坐落在草坪上，默认）；full = 完整园区（园区嵌在城市里） */
     let cityGroup = null, cityGround = null, farTreeGroup = null;
+    /* 【第5轮·问题1】楼顶楼号标签集合 —— 每帧做一次遮挡检测，
+       被建筑/车棚/围墙等实体挡住时自动隐藏（见 updateLabelOcclusion）。 */
+    var BUILDING_LABELS = [];
     let sceneMode = 'solo';
     let currentTheme = 'dark';
     let themeManual = false;      // 用户手动点过切换按钮后，本次会话不再按时间自动跟随
@@ -2302,6 +2305,17 @@
         color: C('#132a44'), roughness: 0.06, metalness: 0.55,
         clearcoat: 1.0, clearcoatRoughness: 0.04, envMapIntensity: 1.60
       });
+      /* 【第5轮】大门改为**通高玻璃门**，为此新增两支材质：
+         · glassDoor —— 比幕墙玻璃更浅、带透明度，能明确读成"玻璃门"而不是深色板；
+         · lobby     —— 门厅内衬（浅色），让玻璃门后面有明亮背景，玻璃感才成立。 */
+      MAT.glassDoor = new THREE.MeshPhysicalMaterial({
+        color: C('#a9d6e8'), roughness: 0.045, metalness: 0.22,
+        transparent: true, opacity: 0.62,
+        clearcoat: 1.0, clearcoatRoughness: 0.02, envMapIntensity: 1.9
+      });
+      MAT.lobby = new THREE.MeshStandardMaterial({
+        color: C('#dbe4ec'), roughness: 0.72, metalness: 0.04, envMapIntensity: 0.6
+      });
       // 大门门楣名牌底板（深藏青）+ 冷白发光字带 / 灯箱面
       MAT.gatePanel = new THREE.MeshStandardMaterial({
         color: C('#12283f'), roughness: 0.42, metalness: 0.45, envMapIntensity: 0.95
@@ -2671,9 +2685,12 @@
       // 方位：上北(-z) 下南(+z) 左西(-x) 右东(+x)；水系在东，门岗/大门在西侧
       // 围墙 116×160（x±58 / z -80~80）
       // 3 研发楼 —— 最北，地上4层，点击楼层抽拉（往北抽出）
-      addOfficeBuilding(-4, -62, 42, 14, 4, { bld: 'rd', label: '研发楼', dir: -1, axis: 'z', floorsName: ['研发一层', '研发二层', '研发三层', '研发四层'] });
+      addOfficeBuilding(-4, -58, 42, 14, 4, { bld: 'rd', label: '研发楼', dir: -1, axis: 'z', floorsName: ['研发一层', '研发二层', '研发三层', '研发四层'] });
       // 2 主生产车间 —— 中部，高度减半
-      addFactoryMainHall(4, -30, 68, 30, 6.5);
+      /* 【第5轮】z 从 -30 南移到 -22（footprint z -37~-7），东缘 38 → 32：
+         ① 东缘原来伸进东环次干道 R3(x 35~45) 3m；
+         ② 中环 R5 南移到 -44 后，本楼南移给 R5 让出 2m 退线，同时与 R6(0) 留 2m。 */
+      addFactoryMainHall(1, -22, 62, 30, 6.5);
       // 1 综合办公楼 —— 主生产车间以南，8号楼(西1/3) + 7号楼(东2/3)，相连
       // 东边缘 x=+42（与光伏车棚东端对齐）
       /* 【抗闪烁·画框】原为 8号楼 x∈[-26,-2]、7号楼 x∈[-10,42] —— **两栋体块重叠 8m**，
@@ -2682,27 +2699,35 @@
          修法：改为**首尾相接 + 留 0.4m 结构缝**（真实双拼楼本来就有沉降缝），
          7号楼起点西移到 x=-1.6、东缘仍钉在 x=42（与车棚对齐）。
          两栋楼不再有任何共面重叠，闪烁根除。 */
-      addOfficeBuilding(-14, 2, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1 });
-      // 7号楼：南立面加主入口（不封闭 —— 玻璃门与幕墙齐平 + 悬挑顶盖 + 台阶）
-      // 【第4轮·续】大门整体往西挪 5m：entranceX -12.5 → -17.5
-      addOfficeBuilding(20.2, 2, 43.6, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1, entrance: true, entranceX: -17.5 });
-      // 5 光伏车棚 —— 南侧两排；东端与综合楼东边缘(x=42)对齐，西段去掉
-      // 西端 x=-2，东端 x=42 → 宽 44，中心 x=20
-      addSolarCarport(20, 38, { id: 'carn', chargers: true, w: 44, tilt: -0.12 });
-      addSolarCarport(20, 50, { id: 'cars', chargers: false, w: 44, tilt: 0.12 });
+      addOfficeBuilding(-15.5, 16, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1, entrance: true, entranceX: 3.2 });
+      // 7号楼：宽 43.6 → 34.8、中心 20.2 → 15.5（东缘 42 → 33.45），东环 R3 留 1.5m 退线
+      addOfficeBuilding(15.5, 16, 34.8, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
+      // 5 光伏车棚 —— 南侧两排
+      /* 【第5轮】整体南移出主干道：原 z=38 时地坪 z 32~44 正好压在
+         R1 主干道（z 28.5~43.5）上 —— 用户截图里"车棚架在马路上"。
+         现 z=51 与 z=64：地坪 45~57、58~70，与 R1 南缘(43.5) 留 1.5m，两排间留 1m。
+         同时 x 从 20 收到 8：地坪宽 47 → x∈[-15.5,31.5]，与东环 R3(35) 留 3.5m。 */
+      addSolarCarport(8, 51, { id: 'carn', chargers: true, w: 44, tilt: -0.12 });
+      addSolarCarport(8, 64, { id: 'cars', chargers: false, w: 44, tilt: 0.12 });
       // 东端 x = 20+22 = 42，与 7 号楼东缘(16+26=42)对齐
       // 车棚南侧预留大片绿地（不放建筑）
-      // 6 实验室 —— 东北角，靠外
-      addSubstation(44, -70);
+      // 6 实验室 / 变电站 —— 原 (44,-70) 同时压在东环 R3(x35~45) 与北环 R4(z-77~-67) 上，
+      // 移到 R5(z-49~-39) 以南、R4 以北的空带 (29,-60)：R4 退 2.05m、R5 退 5.95m、R3 退 3.05m
+      addSubstation(29, -60);
       // 4 门卫 —— 左侧（西），大门开口朝西；组原点放在门洞中心
       // 大门分两部分：左＝人行闸机通道，右＝双向车道（两根停车杆）；门口不留树
       addGateHouse(-52, WALL.GATE_Z);
-      // 楼栋标注（7/8/9/10/11 号楼）
-      addBuildingLabel(-14, 19.5, 2, '8号楼');
-      addBuildingLabel(20.2, 19.5, 2, '7号楼');
-      addBuildingLabel(4, 8.2, -30, '9号楼');
-      addBuildingLabel(-4, 16.2, -62, '10号楼');
-      addBuildingLabel(44, 5.2, -70, '11号楼');
+      // 楼栋标注（7/8/9/10/11 号楼）—— 位置随总平面重排同步更新
+      /* 【第5轮·问题1】标签 Y 必须高过**屋顶最高点**（女儿墙 + 顶部机房屋 + 满铺光伏），
+         否则从任何俯角看，标签都被自己的屋顶设备挡住 —— 实测各楼屋顶顶面：
+           8 号楼 / 7 号楼 22.38（机房屋 2.6 + 光伏）、9 号楼 9.67、10 号楼 18.98、11 号楼 4.86。
+         原值 19.5 / 8.2 / 16.2 正好落在机房屋腰上（5.2 只比 4.86 高 0.34），
+         一开遮挡剔除就会全灭。现统一抬到顶面之上 1.6~1.8m。 */
+      addBuildingLabel(-15.5, 24.0, 16, '8号楼');
+      addBuildingLabel(15.5, 24.0, 16, '7号楼');
+      addBuildingLabel(1, 11.4, -22, '9号楼');
+      addBuildingLabel(-4, 20.7, -58, '10号楼');
+      addBuildingLabel(29, 6.6, -60, '11号楼');
       // 水系：东侧河道（平面图「河」）
       addWaterBody();
       // 园区围墙
@@ -2740,7 +2765,55 @@
       sp.position.set(x, y, z);
       sp.scale.set(10, 2.5, 1);
       sp.renderOrder = 20;
+      /* 【第5轮·问题1】标签不能被自己的射线打中，否则"自己挡自己"恒判为遮挡 */
+      sp.raycast = function () {};
+      sp.userData.isLabel = true;
+      BUILDING_LABELS.push(sp);
       buildingGroup.add(sp);
+    }
+
+    /* ---------- 楼号标签遮挡剔除（第5轮·问题1）----------
+       现象：标签是 depthTest:false + renderOrder:20 的 Sprite，恒画在最上层。
+             相机绕到楼背后、或前面横着一栋楼时，楼号标签仍"穿墙"浮在画面里穿帮。
+       做法：从相机位置向标签中心发一条射线，far 收到"标签前 0.6m"；
+             只要这段区间里被任何实体 mesh 命中，就把该标签 visible 置 false。
+       细节：
+         · 标签自身 sp.raycast 置空 → 不会命中自己；
+         · 跳过 Sprite / Points / Line（灯辉、粒子、网格线不是遮挡体）；
+         · 只在 buildingGroup 里搜（地面/天空/网格不在其中，天然不会误判）；
+         · 每 5 帧算一次（≈12Hz），肉眼无感、开销可忽略。 */
+    const _lblRay = new THREE.Raycaster();
+    const _lblA = new THREE.Vector3();
+    const _lblB = new THREE.Vector3();
+    var _lblTick = 0;
+    function updateLabelOcclusion() {
+      if (!BUILDING_LABELS.length || !camera || !buildingGroup) return;
+      if ((_lblTick++ % 5) !== 0) return;
+      for (var i = 0; i < BUILDING_LABELS.length; i++) {
+        var sp = BUILDING_LABELS[i];
+        sp.getWorldPosition(_lblA);
+        var dist = camera.position.distanceTo(_lblA);
+        _lblB.copy(_lblA).sub(camera.position).normalize();
+        _lblRay.set(camera.position, _lblB);
+        /* 【坑】buildingGroup 里挂着大量灯辉 Sprite（nightGlow），而 three 的
+           intersectObject 不检查 object.visible —— 隐藏的 Sprite 照样进 raycast。
+           Sprite.raycast 要用 raycaster.camera 的矩阵，不设就抛
+           "Cannot read properties of null (reading 'matrixWorld')"，
+           而本函数在 animate 里，抛一次就等于这一帧不 render。必须补上。 */
+        _lblRay.camera = camera;
+        _lblRay.near = 0;
+        _lblRay.far = Math.max(0.1, dist - 0.6);
+        var hits = _lblRay.intersectObjects(buildingGroup.children, true);
+        var blocked = false;
+        for (var h = 0; h < hits.length; h++) {
+          var o = hits[h].object;
+          if (!o || o.visible === false) continue;
+          if (o.isSprite || o.isPoints || o.isLine) continue;
+          blocked = true;
+          break;
+        }
+        sp.visible = !blocked;
+      }
     }
 
     // 主厂房：钢结构大跨厂房，金属墙板 + 玻璃腰带 + 满铺光伏
@@ -3311,67 +3384,115 @@
       const topU = regLift(top);
       g.add(top);
 
-      // 混凝土勒脚（不带幕墙的落地段，不随楼层抬升）
-      const plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 1.0, 2.0, d + 1.0), MAT.concrete);
-      plinth.position.y = 1.0;
-      plinth.castShadow = true; plinth.receiveShadow = true;
-      g.add(plinth);
+      /* 混凝土勒脚（不带幕墙的落地段，不随楼层抬升）
+         【第5轮·修】原来是一整块 (w+1.0)×2.0×(d+1.0) 的混凝土基座，从南立面主入口前
+         **横穿而过**。它外挑 0.5m、高 2.0m，而门玻璃面在幕墙上只外凸 0.28m ——
+         于是玻璃门 3.05m 高里有 2.0m 被基座整个盖住，只剩上面 1m 玻璃 + 3 根竖梃露出来，
+         远看就是"墙上开了个洞插了几根栏杆"（v9_door_front.png 实测如此）。
+         修法：带主入口的楼，把勒脚在门洞范围内**断开**成左右两段（真实入口本来也是这样），
+         门玻璃落在这段 6.6m 宽的断口里，自然形成 0.22m 的浅门斗。 */
+      const PL_H = 2.0, PL_OUT = 0.5;
+      if (opts.entrance) {
+        const ex0 = opts.entranceX != null ? opts.entranceX : (w / 2 - 13);
+        const gapL = ex0 - 3.3 - 0.06, gapR = ex0 + 3.3 + 0.06;   // DOOR_W/2 = 3.3，两边各再让 6cm
+        const xa = -w / 2 - PL_OUT, xb = w / 2 + PL_OUT;
+        const segs = [[xa, gapL], [gapR, xb]];
+        for (const sg of segs) {
+          if (sg[1] - sg[0] < 0.06) continue;
+          const p = new THREE.Mesh(new THREE.BoxGeometry(sg[1] - sg[0], PL_H, d + PL_OUT * 2), MAT.concrete);
+          p.position.set((sg[0] + sg[1]) / 2, PL_H / 2, 0);
+          p.castShadow = true; p.receiveShadow = true;
+          g.add(p);
+        }
+      } else {
+        const plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 1.0, PL_H, d + 1.0), MAT.concrete);
+        plinth.position.y = PL_H / 2;
+        plinth.castShadow = true; plinth.receiveShadow = true;
+        g.add(plinth);
+      }
 
-      /* 【本轮·重做】7号楼南立面主入口 —— 参照实景照片，但按用户明确要求做成：
+      /* 【本轮·重做】综合办公楼南立面主入口 —— 参照实景照片，但按用户明确要求做成
          **不封闭**：左右两侧没有墙、没有侧框、没有立柱（只有顶盖悬在那里）；
          **玻璃门与大楼齐平**：门玻璃贴在大楼主立面上（不外挑）；
          **只有顶盖 + 下面楼梯**：一块外挑的雨棚顶 + 底下几级台阶。
-         删除上一版的玻璃门厅体 / 侧框 / 前角立柱 / 斜拉杆，只留"门 + 顶盖 + 台阶"。 */
+         第5轮补修两处"看起来不像门"的硬伤：
+           ① 勒脚（外挑 0.5m、高 2.0m）原本从门前横穿，把 3.05m 高的门挡住 2m
+              → 已在上面按门洞宽度把勒脚断开；
+           ② 门扇原本从 y=0 落地、台阶却顶到 0.51m，台阶把门脚挡在背后
+              → 现在门整体抬到 STOOP=0.51 的台面上，站在三级踏步之上。 */
       if (opts.entrance) {
         const ex = opts.entranceX != null ? opts.entranceX : (w / 2 - 13);  // 入口局部 x
         const ez = d / 2;                      // 南立面局部 z（与大楼墙面齐平）
         const ent = new THREE.Group();
         ent.position.set(ex, 0, ez);
-        const DOOR_W = 6.2, DOOR_H = 2.90;     // 门洞宽 / 高（双开门 + 两侧固定扇）
+        const DOOR_W = 6.6, DOOR_H = 3.05;     // 门洞宽 / 高（4 扇通高玻璃门）
         // 幕墙片中心局部 z = d/2 + 0.16，厚 0.18 → 外皮局部 z = 0.25；
         // 混凝土芯外皮在 d/2（局部 0.00）。下面所有构件都以 zWall 为参照向外排。
         const zWall = 0.25;                    // 幕墙外皮（局部）
+        /* 【第5轮·修】门必须"站在室外楼梯上面"。原来门扇从 y=0 起、台阶却顶到 0.51m，
+           于是台阶把门下半截整个挡在背后 —— 正视就是"玻璃门只剩上半身，下面一坨白台子"。
+           现在统一按 STOOP 标高抬起来：三级踏步（3×0.17 = 0.51）+ 门扇坐在其上，
+           与真实入口"三级台阶 + 玻璃门"的构造一致。 */
+        const STOOP = 0.51, RISER = 0.17, TREAD = 0.35;
 
-        // —— 楼面外的平地台（薄薄一层，与铺装齐；从幕墙外皮往外铺）——
-        const pad = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + 1.2, 0.10, 1.5), MAT.concrete);
-        pad.position.set(0, 0.05, zWall + 0.75);
-        pad.receiveShadow = true;
-        ent.add(pad);
-
-        // —— 玻璃门扇：与大楼幕墙**齐平** ——
-        // 门玻璃取 zWall + 0.025，正好贴齐幕墙外皮、不埋进墙里。
-        const zGlass = zWall + 0.025;          // 门玻璃：贴齐外皮再外凸 2.5cm，避免共面打架
-        const zFrame = zWall + 0.06;           // 门框再外凸 3.5cm
-        // 门洞内的暗色底衬（防止透过玻璃看到幕墙角料，也让门洞"有深度"）
-        const backPanel = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W - 0.10, DOOR_H, 0.04), MAT.glassDeep);
-        backPanel.position.set(0, DOOR_H / 2, zWall - 0.03);
-        ent.add(backPanel);
-        for (const s of [-1, 1]) {
-          const leaf = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W / 2 - 0.24, DOOR_H, 0.05), MAT.glassDeep);
-          leaf.position.set(s * (DOOR_W / 4 - 0.02), DOOR_H / 2, zGlass);
-          ent.add(leaf);
+        // —— 三级室外踏步：贴墙一级最高，逐级向外下降 ——
+        // 面层用 fenceCap（浅色石材，和勒脚的混凝土网格区分开），否则台阶会跟勒脚
+        // 糊成一片、读不出"梯"来。
+        for (let i = 0; i < 3; i++) {
+          const topY = STOOP - i * RISER;
+          const sw = DOOR_W + 1.4 - i * 0.5;
+          const st = new THREE.Mesh(new THREE.BoxGeometry(sw, topY, TREAD), MAT.fenceCap);
+          st.position.set(0, topY / 2, zWall + TREAD * (i + 0.5));
+          st.castShadow = true; st.receiveShadow = true;
+          ent.add(st);
         }
-        // 门框（左右边梃 + 中缝竖梃 + 上楣），细一些，别做成"盒子"
+
+        /* —— 门厅内衬（浅色）：贴在幕墙里侧，给玻璃门一个明亮背景 ——
+           没有它的话，通高玻璃门后面就是深色幕墙角料，"玻璃"会读成"黑洞"。 */
+        const lobby = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W - 0.24, DOOR_H + 0.10, 0.06), MAT.lobby);
+        lobby.position.set(0, STOOP + (DOOR_H + 0.10) / 2, zWall - 0.075);
+        ent.add(lobby);
+
+        // —— 通高玻璃门扇：与大楼幕墙**齐平**（贴齐外皮再外凸，不埋进墙）——
+        const zGlass = zWall + 0.030;          // 玻璃面
+        const zFrame = zWall + 0.075;          // 边梃 / 竖梃面（比玻璃再外凸 4.5cm）
+        const NLEAF = 4;                       // 4 扇通高玻璃门（双开中扇 + 两侧固定扇）
+        const leafW = (DOOR_W - 0.24) / NLEAF;
+        for (let i = 0; i < NLEAF; i++) {
+          const lx = -DOOR_W / 2 + 0.12 + leafW * (i + 0.5);
+          const leaf = new THREE.Mesh(new THREE.BoxGeometry(leafW - 0.10, DOOR_H - 0.10, 0.045), MAT.glassDoor);
+          leaf.position.set(lx, STOOP + DOOR_H / 2, zGlass);
+          leaf.renderOrder = 6;
+          ent.add(leaf);
+          // 分缝竖梃（细，0.09 宽）
+          if (i < NLEAF - 1) {
+            const st = new THREE.Mesh(new THREE.BoxGeometry(0.09, DOOR_H, 0.11), MAT.darkMetal);
+            st.position.set(-DOOR_W / 2 + 0.12 + leafW * (i + 1), STOOP + DOOR_H / 2, zFrame);
+            ent.add(st);
+          }
+        }
+        // 左右边梃
         for (const s of [-1, 1]) {
-          const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.14, DOOR_H + 0.12, 0.14), MAT.alu);
-          jamb.position.set(s * (DOOR_W / 2 - 0.07), (DOOR_H + 0.12) / 2, zFrame);
+          const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.12, DOOR_H + 0.10, 0.13), MAT.darkMetal);
+          jamb.position.set(s * (DOOR_W / 2 - 0.06), STOOP + (DOOR_H + 0.10) / 2, zFrame);
           ent.add(jamb);
         }
-        const mid = new THREE.Mesh(new THREE.BoxGeometry(0.10, DOOR_H, 0.14), MAT.alu);
-        mid.position.set(0, DOOR_H / 2, zFrame);
-        ent.add(mid);
-        const head = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + 0.14, 0.18, 0.14), MAT.alu);
-        head.position.set(0, DOOR_H + 0.09, zFrame);
+        // 上楣（通高门的顶横档）+ 下门槛（压条）
+        const head = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + 0.12, 0.16, 0.13), MAT.darkMetal);
+        head.position.set(0, STOOP + DOOR_H + 0.05, zFrame);
         ent.add(head);
-        // 门把手（中缝两侧一对）
+        const sill = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W + 0.04, 0.07, 0.15), MAT.darkMetal);
+        sill.position.set(0, STOOP + 0.045, zFrame);
+        ent.add(sill);
+        // 长拉手（中缝两侧，通高门的竖向通条拉手）
         for (const s of [-1, 1]) {
-          const hdl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.90, 0.07), MAT.chargerTop);
-          hdl.position.set(s * 0.22, 1.15, zFrame + 0.07);
+          const hdl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.30, 0.06), MAT.alu);
+          hdl.position.set(s * 0.26, STOOP + 1.28, zFrame + 0.09);
           ent.add(hdl);
         }
 
         // —— 顶盖（悬挑雨棚）：只有这一块"盖"，左右无墙 ——
-        const AWN_D = 1.9, AWN_Y = DOOR_H + 0.42, AWN_W = DOOR_W + 1.0;
+        const AWN_D = 1.9, AWN_Y = STOOP + DOOR_H + 0.42, AWN_W = DOOR_W + 1.0;
         // 顶盖后沿埋进幕墙外皮（zWall=0.25）以内 0.28m，避免与墙面之间出现缝
         const awn = new THREE.Mesh(new THREE.BoxGeometry(AWN_W, 0.18, AWN_D + 0.28), MAT.alu);
         awn.position.set(0, AWN_Y, zWall + AWN_D / 2 - 0.14);
@@ -3386,15 +3507,7 @@
         awnRoot.position.set(0, AWN_Y + 0.03, zWall + 0.02);
         ent.add(awnRoot);
 
-        // —— 台阶（三级，从门向外铺）——
-        const STEP_N = 3;
-        for (let i = 0; i < STEP_N; i++) {
-          const sw = AWN_W - 0.2 - i * 0.4;
-          const st = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.17, 0.46), MAT.fenceCap);
-          st.position.set(0, 0.085 + (STEP_N - 1 - i) * 0.17, zWall + 0.55 + i * 0.46);
-          st.receiveShadow = true;
-          ent.add(st);
-        }
+        // 台阶已在上面随 STOOP 一起生成，这里不再叠第二套
 
         g.add(ent);
       }
@@ -4800,8 +4913,11 @@
       road4.receiveShadow = true;
       buildingGroup.add(road4);
 
-      // 中环：10 号楼与 9 号楼之间（z≈-52）东西向道路，接东西环
-      const R5 = { zc: -52, hw: 5, x0: -40, x1: 40 };
+      // 中环：10 号楼与 9 号楼之间（z≈-44）东西向道路，接东西环
+      /* 【第5轮】原 zc=-52 时，它与北环 R4(-77~-67) 之间只有 10m 净空，
+         而研发楼进深 14m —— 楼板必压路。本环南移到 zc=-44，
+         使 R4 与 R5 之间留出 18m，研发楼（14m）两侧各得 2m 退线。 */
+      const R5 = { zc: -44, hw: 5, x0: -40, x1: 40 };
       const road5 = new THREE.Mesh(
         new THREE.PlaneGeometry(R5.x1 - R5.x0, R5.hw * 2), asphaltMat(6, 3));
       road5.rotation.x = -Math.PI / 2;
@@ -4809,8 +4925,11 @@
       road5.receiveShadow = true;
       buildingGroup.add(road5);
 
-      // 南环：9 号楼（主生产车间 z=-30）南侧道路（z≈-8），接主干道
-      const R6 = { zc: -8, hw: 5, x0: -40, x1: 40 };
+      // 南环：9 号楼（主生产车间）南侧道路，接主干道
+      /* 【第5轮】原 zc=-8 时，8/7 号楼（z -5~9）北缘压在路面上。
+         本环南移到 zc=2，9 号楼（含南门 3m 外挑雨棚，最南到 z=-3.9）留 0.9m，
+         8/7 号楼北移到 z=16 后与它留 1.45m。 */
+      const R6 = { zc: 2, hw: 5, x0: -40, x1: 40 };
       const road6 = new THREE.Mesh(
         new THREE.PlaneGeometry(R6.x1 - R6.x0, R6.hw * 2), asphaltMat(6, 3));
       road6.rotation.x = -Math.PI / 2;
@@ -4937,7 +5056,9 @@
       // 合并后南侧 / 东侧变成一条贴墙、等间距 15.5m 的连续树列。
       const treePositions = [
         [-55, -45],  // 北厂房西侧
-        [45, 28]     // 东南停车场东侧
+        // 【第5轮】东南侧那棵从 (45,28) 移到 (50,20)：原位置正好落在
+        // 主干道 R1(z28.5~43.5) 与东环 R3(x35~45) 的交叉口上 —— 树长在马路中间。
+        [50, 20]     // 东南侧，退到东环路以东、围墙绿化带内
       ];
       // 大门口不留树（原 [-65,30] 距门洞过近，已移除）
       treePositions.forEach(function (p) {
@@ -4987,7 +5108,7 @@
         [-58, -30, 22, 50],                           // 西门洞 + 引道 + 门岗
         [R2.xc - R2.hw - 0.2, R2.xc + R2.hw + 0.2, R2.z0 - 1.2, R2.z1 + 1.2],
         [R3.xc - R3.hw - 0.2, R3.xc + R3.hw + 0.2, R3.z0 - 1.2, R3.z1 + 1.2],
-        [-2, 42, 30, 62]                              // 光伏车棚两排
+        [-16, 32, 44, 71]                             // 光伏车棚两排（地坪 z 45~70，留 1m 余量）
       ];
       function ringFree(x, z) {
         const h = BED / 2;
@@ -5044,12 +5165,12 @@
       //   全园实光仍为 11 盏，与上一版持平，移动端帧率不受影响。
       // 照明：只在园区围墙内侧一圈布灯（不占车棚、不占车行通道），厂房内无灯
       const LAMPS = [
-        // 南墙内侧
-        [-44, 68, Math.PI / 2],
-        [-20, 68, Math.PI / 2],
-        [4, 68, Math.PI / 2],
-        [28, 68, Math.PI / 2],
-        [48, 68, Math.PI / 2],
+        // 南墙内侧（z 68 → 72：让开南移后的第二排车棚地坪 z 58~70）
+        [-44, 72, Math.PI / 2],
+        [-20, 72, Math.PI / 2],
+        [4, 72, Math.PI / 2],
+        [28, 72, Math.PI / 2],
+        [48, 72, Math.PI / 2],
         // 东墙内侧
         [52, 40, -Math.PI / 2],
         [52, 10, -Math.PI / 2],
@@ -7422,6 +7543,7 @@
       stepCityTraffic(dt);               // 第34轮：城市车流（独立模式零开销）
       controls.update();
       updateFogScale();
+      updateLabelOcclusion();             // 第5轮：楼号标签被实体挡住时自动隐藏
       renderer.render(scene, camera);
     }
 
@@ -7443,9 +7565,10 @@
       all: { pos: [72, 54, 72], target: [0, 8, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
       // 充电桩：定位到光伏车棚北面，并抬起车棚露出充电桩
-      charge: { pos: [20, 18, 62], target: [20, 1, 38], liftCarport: 'carn' },
-      // 实验室：定位 11 号楼
-      lab: { pos: [44, 12, -48], target: [44, 2, -70] },
+      // 【第5轮】车棚南移到 (8,51)，机位同步南移，视线仍从南向北看北排桩
+      charge: { pos: [8, 18, 75], target: [8, 1, 51], liftCarport: 'carn' },
+      // 实验室：定位 11 号楼（原 (44,-70) → 现 (29,-60)）
+      lab: { pos: [29, 12, -42], target: [29, 2, -60] },
       tank: { pos: [-6, 30, -52], target: [-44, 4, -24] }
     };
 
