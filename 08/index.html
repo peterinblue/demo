@@ -1653,6 +1653,19 @@
       return light;
     }
 
+    /* 晚间需要"点亮"的自发光材质（门岗亮窗等）
+       —— 与 NIGHT_LIGHTS 的区别：这里调的是材质自身的 emissive（表面自己发亮），
+       而不是照亮别人。用于"某扇窗/某个灯箱夜里亮起来"这类局部发光件。 */
+    const NIGHT_EMIT = [];
+    function registerNightEmit(mat, nightI, dayI, warmHex) {
+      if (warmHex && mat.emissive) mat.emissive.set(warmHex);
+      mat.userData.dayEmi = (dayI == null) ? 0 : dayI;
+      mat.userData.nightEmi = nightI;
+      mat.emissiveIntensity = mat.userData.dayEmi;
+      NIGHT_EMIT.push(mat);
+      return mat;
+    }
+
     /* ============ 1. 程序化 PBR 纹理（canvas 生成，无外部依赖） ============ */
     const TEX = {};
 
@@ -2696,12 +2709,29 @@
       /* 【抗闪烁·画框】原为 8号楼 x∈[-26,-2]、7号楼 x∈[-10,42] —— **两栋体块重叠 8m**，
          重叠区里两套幕墙面片落在同一竖直平面上 → 大面积 z-fighting，
          相机一动就"撕裂式闪烁"（用户圈出的正是 8 号楼东段那一片）。
-         修法：改为**首尾相接 + 留 0.4m 结构缝**（真实双拼楼本来就有沉降缝），
+         第5轮的修法是"首尾相接 + 留 0.4m 结构缝"（真实双拼楼本来就有沉降缝），
          7号楼起点西移到 x=-1.6、东缘仍钉在 x=42（与车棚对齐）。
-         两栋楼不再有任何共面重叠，闪烁根除。 */
-      addOfficeBuilding(-15.5, 16, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1, entrance: true, entranceX: 3.2 });
-      // 7号楼：宽 43.6 → 34.8、中心 20.2 → 15.5（东缘 42 → 33.45），东环 R3 留 1.5m 退线
-      addOfficeBuilding(15.5, 16, 34.8, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
+         两栋楼不再有任何共面重叠，闪烁根除。
+
+         【本轮·需求1】8号楼一层大门从"正中间"左移到**靠西端**：
+         门中心由局部 x=+3.2（世界 -12.3）改为局部 x=-8.5（世界 -24.0），
+         门洞 6.6m 宽 → 世界 x -27.3~-20.7，西侧仍留 0.84m 边跨（勒脚不断到角上）。
+         复核后**再东移 10m**：局部 x -8.5 → **+1.5**（门中心世界 -24.0 → **-14.0**），
+         门洞世界 x -17.3~-10.7；8号楼东西跨 -27.5~-3.5，
+         门东侧留 7.9m、西侧留 10.2m，两侧勒脚段 10.64m / 7.64m，左右基本均衡。
+         **最后定稿**：再往左（西）5m → 局部 x **-3.5**（门中心世界 **-19.0**），
+         门洞世界 x -22.3~-15.7；西侧留 5.2m、东侧留 12.2m，
+         两侧勒脚段 5.64m / 12.64m —— 大门定在 8号楼南立面**中间偏西**。
+
+         【本轮·需求2】8号楼与7号楼**连成一体、去掉中间缝隙**：
+         ① 7号楼向西加宽：东缘仍钉在 x=32.9，西缘 -1.9 → -3.5（宽 34.8 → 36.4、中心 15.5 → 14.7），
+            与 8号楼东缘（-3.5）严丝合缝、无缝相接；
+         ② 接缝处补一段"共用墙垛"（addJointPier）把两层幕墙板 / 两层压顶 / 两层勒脚
+            在接缝上的共面重叠整个盖住 —— 详见该函数注释。 */
+      addOfficeBuilding(-15.5, 16, 24, 14, 5, { bld: 'bld8', label: '8号楼', dir: -1, entrance: true, entranceX: -3.5 });
+      // 7号楼：宽 34.8 → 36.4、中心 15.5 → 14.7（东缘 32.9 不动），西缘与 8号楼东缘齐平
+      addOfficeBuilding(14.7, 16, 36.4, 14, 5, { bld: 'bld7', label: '7号楼', dir: 1 });
+      addJointPier(-3.5, 16);
       // 5 光伏车棚 —— 南侧两排
       /* 【第5轮】整体南移出主干道：原 z=38 时地坪 z 32~44 正好压在
          R1 主干道（z 28.5~43.5）上 —— 用户截图里"车棚架在马路上"。
@@ -2711,9 +2741,18 @@
       addSolarCarport(8, 64, { id: 'cars', chargers: false, w: 44, tilt: 0.12 });
       // 东端 x = 20+22 = 42，与 7 号楼东缘(16+26=42)对齐
       // 车棚南侧预留大片绿地（不放建筑）
-      // 6 实验室 / 变电站 —— 原 (44,-70) 同时压在东环 R3(x35~45) 与北环 R4(z-77~-67) 上，
-      // 移到 R5(z-49~-39) 以南、R4 以北的空带 (29,-60)：R4 退 2.05m、R5 退 5.95m、R3 退 3.05m
-      addSubstation(29, -60);
+      // 6 实验室 / 变电站（11号楼） —— 【本轮·需求3】移到**东北角**
+      /* 原落位 (29,-60)：夹在研发楼（10号楼）东侧，看着像"10号楼旁边的小配电房"。
+         本轮要求：11号楼应在园区**东北角角落**里，且在东侧绿化带居中（往东面移动）。
+         新落位 (50.5,-68)：
+           · 在东北象限最东、最北的一片净地 —— 东环 R3(x35~45) 以东、
+             北环 R4(x-40~40) 的延长线以外，四邻皆空，紧邻东墙内侧绿带；
+           · 地基 5.9×9.9 → x 47.55~53.45 / z -72.95~-63.05，
+             与东墙内表面(57.83) 留 4.38m、与北墙内表面(-79.83) 留 6.88m；
+           · 向东移动 21.5m（29 → 50.5），距 10号楼 65m 以上，彻底脱开"旁边"的关系；
+           · 避开东墙内侧与北墙内侧的环带树（树心 x=55.03 / z=-77.03，树池 3.2m），
+             最近一株的树池与地基平面无重叠。 */
+      addSubstation(50.5, -68);
       // 4 门卫 —— 左侧（西），大门开口朝西；组原点放在门洞中心
       // 大门分两部分：左＝人行闸机通道，右＝双向车道（两根停车杆）；门口不留树
       addGateHouse(-52, WALL.GATE_Z);
@@ -2722,12 +2761,13 @@
          否则从任何俯角看，标签都被自己的屋顶设备挡住 —— 实测各楼屋顶顶面：
            8 号楼 / 7 号楼 22.38（机房屋 2.6 + 光伏）、9 号楼 9.67、10 号楼 18.98、11 号楼 4.86。
          原值 19.5 / 8.2 / 16.2 正好落在机房屋腰上（5.2 只比 4.86 高 0.34），
-         一开遮挡剔除就会全灭。现统一抬到顶面之上 1.6~1.8m。 */
+         一开遮挡剔除就会全灭。现统一抬到顶面之上 1.6~1.8m。
+         【本轮】7号楼中心随宽度变化 15.5 → 14.7；11号楼随落位更新为 (50.5,-68)。 */
       addBuildingLabel(-15.5, 24.0, 16, '8号楼');
-      addBuildingLabel(15.5, 24.0, 16, '7号楼');
+      addBuildingLabel(14.7, 24.0, 16, '7号楼');
       addBuildingLabel(1, 11.4, -22, '9号楼');
       addBuildingLabel(-4, 20.7, -58, '10号楼');
-      addBuildingLabel(29, 6.6, -60, '11号楼');
+      addBuildingLabel(50.5, 6.6, -68, '11号楼');
       // 水系：东侧河道（平面图「河」）
       addWaterBody();
       // 园区围墙
@@ -3195,6 +3235,59 @@
        平面图不会被腰线压住；腰线在世界坐标里的位置与改造前逐一致（f*floorH, f=1..floors-1）。
        平面图默认 visible=false 且懒生成 —— 一是省性能（9 层全建约 700 个网格），
        二是未展开时它与上层 core 空间重叠，隐藏才能保证外观与改造前 100% 相同。 */
+    /* ==========================================================================
+       【本轮·需求2】8号楼 ↔ 7号楼 接缝"共用墙垛"
+       ------------------------------------------------------------------------
+       背景：两栋楼是双拼关系（8号楼西 1/3、7号楼东 2/3，共用一道分户墙）。
+       第5轮为了消灭 z-fighting 把两栋拉开了 1.6m，主视方向就多出一道缝；
+       本轮要求"连成一体、没有缝隙"。
+
+       难点：两栋楼的尺寸做法完全一致（同层高、同进深 d=14），一旦首尾严丝合缝，
+       下面这些**成对面片就会落在同一平面上**（＝大面积 z-fighting，比缝隙还难看）：
+         · 幕墙板  宽 w+0.30 → 每栋向外多出 0.15，接缝处 0.30m 重叠；
+         · 屋顶压顶 宽 w+0.90 → 接缝处 0.45m 重叠（顶面同在 y=17.9）；
+         · 勒脚    宽 w+1.00 → 接缝处 0.50m 重叠；
+         · 接地阴影 宽 w+1.10 → 接缝处 0.55m 重叠。
+
+       做法：在接缝上立一段"共用墙垛"——混凝土墙身 + 铝压顶，尺寸取得比上面每一项
+       **都更大、更高**，于是它把接缝附近的共面重叠整个包在体内（遮挡住），
+       自己又不与任何既有面共面：
+         · x：墙垛 1.8 宽，两侧各嵌进楼体 0.9m → 侧立面埋在两栋的混凝土芯里，不可见；
+         · z：进深 15.4 > 勒脚 15.0 → 南北两侧都比勒脚再外凸 0.2m；
+         · y：墙身顶 17.9（＝压顶顶面标高）被自己的压顶（17.68~18.10）盖住，
+              压顶再把两栋压顶在接缝处的共面顶面盖住；总高压过屋面 0.2m，
+              俯视看就是一道连续的女儿墙垛 —— 双拼楼本来就是这么做的。
+       校验：墙垛实体完全覆盖 x∈[-4.05,-2.95]（幕墙/压顶/勒脚/阴影的最宽重叠带
+       ≈2.95~4.00）与 z∈[8.45,23.55]，故所有共面重叠都被压在它内部，不会闪。
+       ========================================================================== */
+    function addJointPier(jx, jz) {
+      const JW = 1.8, JD = 15.4, JH = 17.9, CH = 0.42;
+      const g = new THREE.Group();
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(JW, JH, JD), MAT.concrete);
+      body.position.set(jx, JH / 2, jz);
+      body.castShadow = true; body.receiveShadow = true;
+      g.add(body);
+
+      // 压顶（与两栋楼屋顶压顶同族材质）：上下各咬住墙身 0.22m，避免出现共面顶面
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(JW + 0.24, CH, JD + 0.24), MAT.alu);
+      cap.position.set(jx, JH - CH / 2 + 0.2, jz);
+      cap.castShadow = true; cap.receiveShadow = true;
+      g.add(cap);
+
+      // 竖向分缝装饰线（细，贴在南北立面上，弱化"一大块混凝土"的呆板感）
+      for (const sz of [-1, 1]) {
+        const groove = new THREE.Mesh(new THREE.BoxGeometry(0.10, JH - 1.0, 0.06), MAT.darkMetal);
+        groove.position.set(jx, (JH - 1.0) / 2 + 0.4, jz + sz * (JD / 2 + 0.02));
+        g.add(groove);
+      }
+
+      // 注：墙垛**不再**单独加接地阴影 —— 两栋楼自己的接地阴影 (w+1.10) 在接缝处
+      //     已叠成 0.55m 的共面重叠带，再叠第三层只会多一层 z-fighting；
+      //     这一段地面被墙垛实体（y 0~17.9）整个压住，本来就看不见，无需干预。
+      buildingGroup.add(g);
+    }
+
     // opts: { bld:'bld7'|'bld8'|'rd', label, dir:+1/-1, axis:'x'|'z', floorsName:[] }
     function addOfficeBuilding(x, z, w, d, floors, opts) {
       opts = opts || {};
@@ -3269,6 +3362,9 @@
 
       const units = [];
 
+      /* 【本轮】一楼抽屉里给"大门"预留的挂点 —— 见下面楼层循环与入口段的注释 */
+      let ENTRANCE_SLOT = null;
+
       /* 三级分组（第28轮立骨架，第33轮补第三级）：
            fl   —— 抬升单元，只由 regLift 写 position.y（"被点中的楼层以上的各层升起"）
            dg   —— 抽屉单元，只由 regTween 写 position.x / position.y / scale（抽出 + 抬高 + 放大）
@@ -3290,6 +3386,48 @@
            未点击状态与改动前逐像素一致（由 fair33 的像素比对兜底）。 */
         const sbase = new THREE.Group();
         dg.add(sbase);
+
+        /* 【本轮·需求】"点一楼抽拉时，大门要一起移动"
+           一楼抽屉里预留一个挂点 entSlot，入口整组（三级台阶 / 玻璃门扇 / 门厅内衬 /
+           雨棚顶盖）在下面创建完后就挂进这里 —— 点一楼时它随抽屉一起
+           平移 + 放大 2.0 倍 + 悬停展示，不再被落在原地跟楼体脱开。
+           两个要点：
+             ① 挂 dg 而**不是** sbase —— 底座要压薄到 0.16，挂 sbase 会把大门一起压成薄片；
+             ② 竖直位置由抽屉补间里的 sk 驱动（下方 tween 内 `entSlot.position.y`）：
+                抽到位时大门正好坐在"压扁后的板面"（floorH×DRAWER_BASE×2 倍）上，
+                三级台阶完整露在板面上，而不是陷进板里；
+                sk=0（未抽出）时偏移恒为 0，与改动前逐像素一致。 */
+        const entSlot = (f === 0) ? new THREE.Group() : null;
+        if (entSlot) { dg.add(entSlot); ENTRANCE_SLOT = entSlot; }
+
+        /* 【本轮·修复】"楼层内衬"—— 用户报"一楼抽拉出来之后，底部有一个部位没有补全"。
+           根因：抽屉把该层**整套外壳**（楼板 core + 四面幕墙 + 屋顶腰线）一次搬空，
+           而挂在楼体根组 g 上的勒脚、接地阴影并不跟着走 —— 于是抽走的那一层在原位
+           留下一个**贯通空腔**。带主入口的楼最扎眼：勒脚本来就在门前断开了 6.72m，
+           门又跟着抽屉走了，那段缺口连勒脚带幕墙全空，从地面能一眼看穿楼体。
+           修法：给每层在原位补一块"内衬芯体"，**挂 g，不随抽屉走**：
+             ① 尺寸 = 楼板 footprint **每边内缩 0.10** → 与 core（占满整层体积的实体）
+                各面都不共面；未抽出时整块藏在 core 内部（即使误显也不 z-fighting）；
+             ② 高度分两档，这是关键：
+                · 首层（f=0）= floorH + LIFT_OFFICE − 0.02 = **7.80m**。因为抽出 1F 后
+                  二层被抬起 4.42m，浮起楼板底面在 7.82m，而"底部"这条空档是
+                  0 → 7.82m 的通长缺口（勒脚只有 2m 高，上面 5.82m 全空）。3.4m 高的
+                  芯体只补得住下半截，正面仍是一大片开口 —— 必须一路补到 7.80。
+                · 其余各层 = floorH。抽中间层时下面还有楼层垫着，不存在"底部"问题；
+                  而且各层芯体尺寸相同，**只有靠"芯体夹在中间"才能隔开共面**，
+                  统一加高反而会在重叠段造成侧面共面闪烁。
+             ③ 做成**实心体量**（不是三面空腔）—— 用户要的是"补全"：南面必须一起封住，
+                否则正面看进去仍是一间敞着前墙的房间，读起来还是"缺一块"。
+                实心后，抽出层的原位就是一块干净的浅色体量，四面无缺口。
+             ④ 默认 visible=false，只在**本层抽屉抽出（k>0.02）时显形** → 未点击状态与
+                改动前逐像素一致；⑤ raycast 置空，不参与拾取，不干扰"点门=点 1F 楼层"。 */
+        const LIN_H = (f === 0) ? (floorH + floorH * 1.3 - 0.02) : floorH;
+        const liner = new THREE.Mesh(new THREE.BoxGeometry(w - 0.20, LIN_H, d - 0.20), MAT.lobby);
+        liner.position.y = f * floorH + LIN_H / 2;
+        liner.visible = false;
+        liner.receiveShadow = true;
+        liner.raycast = function () {};
+        g.add(liner);
 
         // 层实体（混凝土）
         const core = new THREE.Mesh(new THREE.BoxGeometry(w, floorH, d), MAT.concrete);
@@ -3360,6 +3498,13 @@
           var ys = 1 - (1 - DRAWER_BASE) * sk;
           sbase.scale.y = ys;
           plan.position.y = floorH * ys;
+          // 【本轮】大门随抽屉做竖直定位：sk=0 → 0（未抽出，与改动前一致）；
+          //          sk=1 → floorH×DRAWER_BASE（＝压扁后板面高度，随 dg 的 2 倍缩放一起放大）
+          if (entSlot) entSlot.position.y = floorH * DRAWER_BASE * sk;
+          // 【本轮·修复】抽屉一动（k>0.02）就把该层的"内衬芯体"显示出来，补上被搬空的那一段；
+          // 收回到位（k→0）再隐藏 → 未点击状态零变化。阈值取 0.02 是为了避开补间起步的
+          // "蓄力"段（那一小段 k 极小、抽屉还没真正离开，芯体显形会闪一下）。
+          liner.visible = (k > 0.02);
           if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
         }, 2.2, { dur: 3.0 });
         dr.target = 0;
@@ -3411,41 +3556,6 @@
         g.add(plinth);
       }
 
-      /* ================= 【第6轮·修】"抽出后楼底空档"的补全 =================
-         现象（用户截图，8 号楼 1F 抽出后）：浮起楼板底面在 **7.82m**（= 层高 3.4 + 抬升
-         4.42），而勒脚只有 2.0m 高，于是 2.0 → 7.82m 之间是一条 **5.82m 高的通长空档**：
-           · 从正面看进去，先是被阴影压暗的地面（读成"黑洞"）；
-           · 再往里，直接穿透到楼后的园区道路（连路面白线都看得见）；
-           · 勒脚在门洞处的断口同样是个黑缝 —— 于是整个"楼底"读成破洞、
-             两段勒脚像两块互不相干的白色孤块。
-         做法：在建筑轮廓**里面**加一圈**静态内衬**（浅色地坪 + 北/东/西三面内衬墙，
-         **南面留空**）。抽出后它读成"一间被搬空的首层房间"——有地坪、有内墙，
-         视线不会再穿透；南面留空则保住了"这一层被搬走了"的剖切读法。
-         ★ 零风险要点：内衬高 = floorH + floorH×1.3 = **7.82m**，正好顶到浮起楼板的底面
-           （留 2cm 余量避免共面 z-fighting）；未抽出时它整块被 1F/2F/3F 的混凝土芯盒
-           逐层包住，且外皮刻意退到芯体外皮以内 0.16m（不共面）→ 外观逐像素不变。 */
-      (function buildDrawerLiner() {
-        const LNY = floorH + floorH * 1.3 - 0.02;   // 7.80，顶到浮起楼板底面下 2cm
-        const IX = w / 2 - 0.16, IZ = d / 2 - 0.16; // 内衬外皮（退进 0.16，避免与芯体共面）
-        const Y0 = 0.10;
-        const slab = new THREE.Mesh(new THREE.BoxGeometry(IX * 2, 0.16, IZ * 2), MAT.lobby);
-        slab.position.set(0, Y0 + 0.08, 0);
-        slab.receiveShadow = true;
-        g.add(slab);
-        // 北内衬（挡住"穿透到楼后马路"）
-        const nb = new THREE.Mesh(new THREE.BoxGeometry(IX * 2, LNY - Y0, 0.14), MAT.lobby);
-        nb.position.set(0, Y0 + (LNY - Y0) / 2, -(IZ - 0.07));
-        nb.receiveShadow = true;
-        g.add(nb);
-        // 东 / 西内衬（挡住斜看时的穿视）
-        for (const s of [-1, 1]) {
-          const wb = new THREE.Mesh(new THREE.BoxGeometry(0.14, LNY - Y0, IZ * 2), MAT.lobby);
-          wb.position.set(s * (IX - 0.07), Y0 + (LNY - Y0) / 2, 0);
-          wb.receiveShadow = true;
-          g.add(wb);
-        }
-      })();
-
       /* 【本轮·重做】综合办公楼南立面主入口 —— 参照实景照片，但按用户明确要求做成
          **不封闭**：左右两侧没有墙、没有侧框、没有立柱（只有顶盖悬在那里）；
          **玻璃门与大楼齐平**：门玻璃贴在大楼主立面上（不外挑）；
@@ -3483,13 +3593,12 @@
         }
 
         /* —— 门厅内衬（浅色）：贴在幕墙里侧，给玻璃门一个明亮背景 ——
-           没有它的话，通高玻璃门后面就是深色幕墙角料，"玻璃"会读成"黑洞"。 */
-        /* 【第6轮·修】门厅由"6cm 薄内衬"升级为**实体门厅体量**（浅色箱体，进深 1.5m）。
-           原因：薄内衬只挡得住"正对面"那一点视线 —— 1F 被抽走后，从侧面看门洞、
-           或俯视勒脚断口，看到的仍是空洞（用户截图里两段勒脚之间那道黑缝）。
-           做成实体后，门洞里就是一间明亮的小门厅：玻璃门有亮背景、断口有实体填充。
-           高度做到 3.88（雨棚底面 3.89 之下 1cm），把"门洞 → 雨棚"这段也补住。
-           未抽出时它整块埋在 1F/2F 混凝土芯盒里（南面贴幕墙内表面，不进墙体）→ 零变化。 */
+           没有它的话，通高玻璃门后面就是深色幕墙角料，"玻璃"会读成"黑洞"。
+           【本轮·合并】由"6cm 薄内衬"升级为**实体门厅体量**（浅色箱体，进深 1.5m）——
+           这条改动来自线上另一版（commit 8e6d146 的"第6轮·修"），这里原样并进来：
+           门随抽屉抽出后，整组入口若只有一副玻璃框 + 雨棚，会读成"悬空的框"；
+           补上实体门厅后，它是一座有厚度的门厅体量，落在抽屉板面上更像真建筑。
+           未抽出时它整块埋在 1F/2F 混凝土芯盒里（南面贴幕墙内表面，不进墙体）→ 外观不变。 */
         const VH = 3.88, VD = 1.50, VW = DOOR_W - 0.06;
         const vest = new THREE.Mesh(new THREE.BoxGeometry(VW, VH, VD), MAT.lobby);
         vest.position.set(0, VH / 2, zWall - 0.075 - VD / 2);
@@ -3552,7 +3661,11 @@
 
         // 台阶已在上面随 STOOP 一起生成，这里不再叠第二套
 
-        g.add(ent);
+        /* 【本轮】大门挂进"一楼抽屉"的挂点（见楼层循环里 entSlot 的注释）：
+           点一楼抽出时，整组入口随抽屉一起平移 + 放大 + 悬停；
+           拾取也随之改善 —— 入口成了 fl 的后代，点门扇会命中"1F 楼层"标签（以前点门等于点空白，会直接收起）。 */
+        if (ENTRANCE_SLOT) ENTRANCE_SLOT.add(ent);
+        else g.add(ent);
       }
 
       addContactShade(g, w + 1.1, d + 1.1, 2.0);   // 接地阴影过渡带（办公楼·勒脚外扩 0.5）
@@ -3794,6 +3907,17 @@
       booth.castShadow = true; booth.receiveShadow = true;
       g.add(booth);
 
+      /* 【本轮·需求5】门岗（门卫亭）**晚间内部灯要亮起**
+         亭子是个封闭混凝土盒子，全园共用的 MAT.glass / MAT.glassDeep 都是**不透明**深色玻璃，
+         里面再亮也透不出来。所以给门卫亭单开一支克隆材质 boothGlass：
+           · 白天 ≈ 原玻璃质感（同一支原型克隆，颜色/粗糙度一致），emissiveIntensity = 0；
+           · 晚间 emissive 开到暖白 1.75 —— 门窗玻璃整片"点起来"，
+             从外面看就是"岗亭里灯开了"，白天完全不发光、不改观感。
+         再配三处暖光晕（南窗 / 南门 / 东值班窗，只在晚间可见）+ 门口地面暖光斑
+         + 一盏暖光点光源（只照门口踏步与外墙，白天强度 0）。 */
+      const boothGlass = MAT.glass.clone();
+      registerNightEmit(boothGlass, 1.25, 0, '#ffd9a0');
+
       // —— 南面（+z）：门 + 窗 ——
       /* 【本轮】门窗左右**对调**：门移到东侧（原来在西侧）、窗移到西侧（原来在东侧）。 */
       const southZ = BOOTH_Z + BOOTH_D / 2;          // 南表面局部 z
@@ -3804,7 +3928,7 @@
         const frame = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.14, doorH + 0.12, 0.06), MAT.alu);
         frame.position.set(doorX, doorH / 2 + 0.06, southZ + 0.06);
         g.add(frame);
-        const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 0.05), MAT.glassDeep);
+        const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 0.05), boothGlass);
         door.position.set(doorX, doorH / 2, southZ + 0.09);
         g.add(door);
         // 门把手
@@ -3823,7 +3947,7 @@
         const wFrame = new THREE.Mesh(new THREE.BoxGeometry(winW + 0.14, winH + 0.14, 0.06), MAT.alu);
         wFrame.position.set(winX, winY, southZ + 0.06);
         g.add(wFrame);
-        const wPane = new THREE.Mesh(new THREE.BoxGeometry(winW, winH, 0.05), MAT.glass);
+        const wPane = new THREE.Mesh(new THREE.BoxGeometry(winW, winH, 0.05), boothGlass);
         wPane.position.set(winX, winY, southZ + 0.09);
         g.add(wPane);
         // 窗台横档（把窗户一分为二，更像门卫值班窗）
@@ -3838,7 +3962,7 @@
         const eFrame = new THREE.Mesh(new THREE.BoxGeometry(0.06, winH + 0.12, winW + 0.12), MAT.alu);
         eFrame.position.set(eastX + 0.06, winY, BOOTH_Z);
         g.add(eFrame);
-        const ePane = new THREE.Mesh(new THREE.BoxGeometry(0.05, winH, winW), MAT.glass);
+        const ePane = new THREE.Mesh(new THREE.BoxGeometry(0.05, winH, winW), boothGlass);
         ePane.position.set(eastX + 0.09, winY, BOOTH_Z);
         g.add(ePane);
       }
@@ -3847,6 +3971,38 @@
       roofSlab.position.set(BOOTH_X, BOOTH_H + 0.25, BOOTH_Z);
       roofSlab.castShadow = true;
       g.add(roofSlab);
+
+      /* ---- 【本轮·需求5】门岗室内灯（晚间）----
+         ① 灯管：亭内吊顶上一根暖白灯带（只在晚间可见）——
+            box 藏在亭内，从门外看不见它本体，但它让后加的光晕有"光源感"；
+         ② 三处窗/门口暖光晕：南窗 / 南门 / 东值班窗，各贴一片面向相机的柔光斑；
+         ③ 门口地面暖光斑：让灯"洒"到踏步和前场地上；
+         ④ 一盏暖光点光源（晚间 1.35 / 白天 0）：把门框、踏步、近处外墙照暖。
+         全部走既有 NIGHT_PROPS / NIGHT_LIGHTS 通道，自动跟随昼夜切换，白天一点痕迹都不留。 */
+      {
+        const winX2 = BOOTH_X - 1.05;                 // 与南窗同 x（上面块作用域外，重算）
+        const doorX2 = BOOTH_X + 0.95;
+        const eastX2 = BOOTH_X + BOOTH_W / 2;
+
+        const tube = new THREE.Mesh(
+          new THREE.BoxGeometry(BOOTH_W * 0.62, 0.12, BOOTH_D * 0.34),
+          new THREE.MeshBasicMaterial({ color: S('#ffe7c2'), toneMapped: false })
+        );
+        tube.position.set(BOOTH_X, BOOTH_H - 0.40, BOOTH_Z);
+        tube.visible = false;
+        g.add(tube);
+        NIGHT_PROPS.push(tube);
+
+        nightGlow(g, winX2, 1.85, southZ + 0.52, 2.8, 0.60);      // 南窗
+        nightGlow(g, doorX2, 1.72, southZ + 0.52, 2.3, 0.52);     // 南门
+        nightGlow(g, eastX2 + 0.52, 1.95, BOOTH_Z, 2.4, 0.52);    // 东值班窗
+        nightPool(g, BOOTH_X, 0.092, southZ + 1.9, 5.0, 0.34);    // 门口地面光斑
+
+        const boothLight = new THREE.PointLight(S('#ffcf9a').getHex(), 0, 13, 2);
+        boothLight.position.set(BOOTH_X + 0.2, 2.55, southZ + 0.75);
+        g.add(boothLight);
+        registerNightLight(boothLight, 1.35, 0);
+      }
 
       // 门柱（柱脚基座 + 柱身 + 压顶 + 柱顶灯）
       // 西侧门洞：柱心沿 z 向落在 GATE_Z±GATE，x 贴西墙内侧（PX 已在函数开头定义）
@@ -5071,12 +5227,24 @@
         if (mid > XING_GAP_X[0] - 1.6 && mid < XING_GAP_X[1] + 1.6) continue;
         paint(3.2, 0.24, mid, R1.zc);
       }
-      // 次干道：两侧边线 + 中心虚线
+      // 次干道（西环 R2）：两侧边线 + 中心虚线
       for (const s of [1, -1]) {
         paintLine('z', R2.xc + s * (R2.hw - 0.45), R2.z0 + 0.6, R2.z1 - 0.6, [], 0.16);
       }
       for (let z = R2.z0 + 3; z < R2.z1 - 3; z += 7.2) {
         paint(0.24, 3.2, R2.xc, z + 1.6);
+      }
+      /* 次干道（东环 R3）—— 【本轮·需求4】"东面的马路也需要有中间的间隔线"
+         东环原来一根线都没有（西环 R2 有边线 + 中心虚线），与西环不对称。
+         这里按西环同规格补齐：两侧边线 + 中心虚线（dash 3.2 / gap 4.0，与全园一致）。
+         南北向虚线段沿 z 排布，跨越 R4/R5/R6 三个交叉口时用同一标高 Y_MK 平铺，
+         不会与横向道路的边线打架（都在 y=0.070，交叉处本来就只有横向线）。
+         南端止于 R1 主干道北缘（R3.z1=28.5），不伸进主路中心。 */
+      for (const s of [1, -1]) {
+        paintLine('z', R3.xc + s * (R3.hw - 0.45), R3.z0 + 0.6, R3.z1 - 0.6, [], 0.16);
+      }
+      for (let z = R3.z0 + 3; z < R3.z1 - 3; z += 7.2) {
+        paint(0.24, 3.2, R3.xc, z + 1.6);
       }
       // 引道：两侧边线（沿门洞上下边缘，把"进门路线"框出来）
       for (const s of [1, -1]) {
@@ -5151,7 +5319,13 @@
         [-58, -30, 22, 50],                           // 西门洞 + 引道 + 门岗
         [R2.xc - R2.hw - 0.2, R2.xc + R2.hw + 0.2, R2.z0 - 1.2, R2.z1 + 1.2],
         [R3.xc - R3.hw - 0.2, R3.xc + R3.hw + 0.2, R3.z0 - 1.2, R3.z1 + 1.2],
-        [-16, 32, 44, 71]                             // 光伏车棚两排（地坪 z 45~70，留 1m 余量）
+        [-16, 32, 44, 71],                            // 光伏车棚两排（地坪 z 45~70，留 1m 余量）
+        // 【本轮·需求3】11号楼（实验室/配电站）移到东北角 (50.5,-68) 后，
+        // 这块净地要整块让出来：地基 5.9×9.9 + 接地阴影 8.6×12.6，
+        // 覆盖 x 46.2~54.8 / z -74.3~-61.7 —— 取 45.0~56.5 / -75.5~-62.5 作避让框，
+        // 东北角原本那 3 株环带树（x55.03 的 z-61.53、z-77.03 与 x53.03 的 z-77.03）
+        // 会与地基/树池/夜间光斑叠面，整株不再种。
+        [45.0, 56.5, -75.5, -62.5]
       ];
       function ringFree(x, z) {
         const h = BED / 2;
@@ -7601,17 +7775,19 @@
        tank   西北储罐区：4 座拱顶罐 @ (-44±6.5, -24±6.5)，罐体 y0.7~10.7、拱顶到 12.3，
               防火堤 x-58.6~-29.4 / z-39.6~-8.4。原机位 (-8,21,-46) 太贴、罐身被裁、前景空。
               现在拉到 (-6,30,-52) 俯角约 47°，4 罐完整入画且防火堤边界清楚。
-       sub    东北角小型配电站 @ (69,-54)，正面（双开门 / 警示牌 / 栅栏门）朝 +z（南）。
-              原机位 (46,12,-34) 距离 35m，7.2×5.0×3.0 的箱体在画面里只有一小块。
-              现在收到 (63,7,-41)（距离约 14m、俯角约 22°），正对西南面 + 正面。 */
+       lab    11号楼（实验室 / 配电站）@ (50.5,-68)：箱体 5.0(东西)×9.0(南北)×3.6，
+              混凝土平台 5.9×9.9，正面双开门朝西（-x，朝园区内）。原在 (44,-70) 压东环/北环，
+              第5轮退到 (29,-60)，【本轮·需求3】再东移到东北角 (50.5,-68)。
+              机位从东南侧 18m 外俯看（俯角约 39°），正面 + 东值班窗同时入画。 */
     const viewPositions = {
       all: { pos: [72, 54, 72], target: [0, 8, 0] },
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
       // 充电桩：定位到光伏车棚北面，并抬起车棚露出充电桩
       // 【第5轮】车棚南移到 (8,51)，机位同步南移，视线仍从南向北看北排桩
       charge: { pos: [8, 18, 75], target: [8, 1, 51], liftCarport: 'carn' },
-      // 实验室：定位 11 号楼（原 (44,-70) → 现 (29,-60)）
-      lab: { pos: [29, 12, -42], target: [29, 2, -60] },
+      // 实验室：定位 11 号楼（【本轮·需求3】原 (44,-70) → (29,-60) → 现 (50.5,-68)，东北角）
+      // 机位随落位东移：从东南侧 18m 外俯看，正面（朝西双开门）与东值班窗同时入画
+      lab: { pos: [50.5, 12, -50.5], target: [50.5, 2, -68] },
       tank: { pos: [-6, 30, -52], target: [-44, 4, -24] }
     };
 
@@ -7727,6 +7903,8 @@
       NIGHT_LIGHTS.forEach(function (l) { l.intensity = night ? l.userData.nightI : l.userData.dayI; });
       // ③ 灯具玻璃罩自发光：晚间明显加强，配合 ACES 曝光形成"过曝灯泡"的发光感
       if (MAT.lampGlass) MAT.lampGlass.emissiveIntensity = night ? 3.8 : 1.6;
+      // ③-2 【本轮·需求5】自定义自发光件（门岗"亮窗"）：白天熄、晚间点亮
+      NIGHT_EMIT.forEach(function (m) { m.emissiveIntensity = night ? m.userData.nightEmi : m.userData.dayEmi; });
       // ④ 大楼房间灯：晚间换成"亮灯"幕墙贴图，并把窗格作为自发光贴图点亮
       FACADE_MATS.forEach(function (m) {
         const wantMap = night ? m.userData.nightMap : m.userData.dayMap;
