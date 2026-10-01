@@ -3362,6 +3362,9 @@
 
       const units = [];
 
+      /* 【本轮】一楼抽屉里给"大门"预留的挂点 —— 见下面楼层循环与入口段的注释 */
+      let ENTRANCE_SLOT = null;
+
       /* 三级分组（第28轮立骨架，第33轮补第三级）：
            fl   —— 抬升单元，只由 regLift 写 position.y（"被点中的楼层以上的各层升起"）
            dg   —— 抽屉单元，只由 regTween 写 position.x / position.y / scale（抽出 + 抬高 + 放大）
@@ -3383,6 +3386,19 @@
            未点击状态与改动前逐像素一致（由 fair33 的像素比对兜底）。 */
         const sbase = new THREE.Group();
         dg.add(sbase);
+
+        /* 【本轮·需求】"点一楼抽拉时，大门要一起移动"
+           一楼抽屉里预留一个挂点 entSlot，入口整组（三级台阶 / 玻璃门扇 / 门厅内衬 /
+           雨棚顶盖）在下面创建完后就挂进这里 —— 点一楼时它随抽屉一起
+           平移 + 放大 2.0 倍 + 悬停展示，不再被落在原地跟楼体脱开。
+           两个要点：
+             ① 挂 dg 而**不是** sbase —— 底座要压薄到 0.16，挂 sbase 会把大门一起压成薄片；
+             ② 竖直位置由抽屉补间里的 sk 驱动（下方 tween 内 `entSlot.position.y`）：
+                抽到位时大门正好坐在"压扁后的板面"（floorH×DRAWER_BASE×2 倍）上，
+                三级台阶完整露在板面上，而不是陷进板里；
+                sk=0（未抽出）时偏移恒为 0，与改动前逐像素一致。 */
+        const entSlot = (f === 0) ? new THREE.Group() : null;
+        if (entSlot) { dg.add(entSlot); ENTRANCE_SLOT = entSlot; }
 
         // 层实体（混凝土）
         const core = new THREE.Mesh(new THREE.BoxGeometry(w, floorH, d), MAT.concrete);
@@ -3453,6 +3469,9 @@
           var ys = 1 - (1 - DRAWER_BASE) * sk;
           sbase.scale.y = ys;
           plan.position.y = floorH * ys;
+          // 【本轮】大门随抽屉做竖直定位：sk=0 → 0（未抽出，与改动前一致）；
+          //          sk=1 → floorH×DRAWER_BASE（＝压扁后板面高度，随 dg 的 2 倍缩放一起放大）
+          if (entSlot) entSlot.position.y = floorH * DRAWER_BASE * sk;
           if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
         }, 2.2, { dur: 3.0 });
         dr.target = 0;
@@ -3602,7 +3621,11 @@
 
         // 台阶已在上面随 STOOP 一起生成，这里不再叠第二套
 
-        g.add(ent);
+        /* 【本轮】大门挂进"一楼抽屉"的挂点（见楼层循环里 entSlot 的注释）：
+           点一楼抽出时，整组入口随抽屉一起平移 + 放大 + 悬停；
+           拾取也随之改善 —— 入口成了 fl 的后代，点门扇会命中"1F 楼层"标签（以前点门等于点空白，会直接收起）。 */
+        if (ENTRANCE_SLOT) ENTRANCE_SLOT.add(ent);
+        else g.add(ent);
       }
 
       addContactShade(g, w + 1.1, d + 1.1, 2.0);   // 接地阴影过渡带（办公楼·勒脚外扩 0.5）
