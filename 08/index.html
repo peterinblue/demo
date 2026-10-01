@@ -3374,6 +3374,10 @@
 
       /* 【本轮】一楼抽屉里给"大门"预留的挂点 —— 见下面楼层循环与入口段的注释 */
       let ENTRANCE_SLOT = null;
+      /* 【第6轮】"门前地面补齐块"：一楼抽出后，勒脚在门洞处断开留下的缺口要补平
+         （用户反馈："一层抽出后，大门的地方不平整，地面是平整的一块 / 地面平整补全即可"）。
+         只在**本楼一楼抽屉抽出时**显示；未抽出时完全隐藏 → 正常看门观感零变化。 */
+      let GAP_FILL = null;
 
       /* 三级分组（第28轮立骨架，第33轮补第三级）：
            fl   —— 抬升单元，只由 regLift 写 position.y（"被点中的楼层以上的各层升起"）
@@ -3514,6 +3518,7 @@
           // 收回到位（k→0）再隐藏 → 未点击状态零变化。阈值取 0.02 是为了避开补间起步的
           // "蓄力"段（那一小段 k 极小、抽屉还没真正离开，芯体显形会闪一下）。
           liner.visible = (k > 0.02);
+          if (f === 0 && GAP_FILL) GAP_FILL.visible = (k > 0.02);   // 一楼抽出时：门口缺口补齐块显形
           if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
         }, 2.2, { dur: 3.0 });
         dr.target = 0;
@@ -3558,6 +3563,20 @@
           p.castShadow = true; p.receiveShadow = true;
           g.add(p);
         }
+        /* 【第6轮·补全】门洞缺口"补齐块"——与左右两段勒脚**同高、同厚、同材质**，
+           正好填满 gapL..gapR 那段断口，使勒脚在门口连成**平整的一整块**。
+           ① 默认 visible=false，只在"本楼一楼抽屉抽出（k>0.02）"时显形（见楼层补间），
+              未点击/未抽出时完全藏在门洞里，与改动前逐像素一致；
+           ② 不参与拾取（raycast 置空），不干扰"点门=点 1F 楼层"。
+           为什么需要它：一楼抽屉带着门走之后，勒脚在门口留下的 6.72m 断口就"裸露"了 ——
+           两侧断头 + 地面高差，看着像没补全。抽出后把这段填平，落地面就是完整一条。 */
+        const fill = new THREE.Mesh(new THREE.BoxGeometry(gapR - gapL, PL_H, d + PL_OUT * 2), MAT.concrete);
+        fill.position.set((gapL + gapR) / 2, PL_H / 2, 0);
+        fill.castShadow = true; fill.receiveShadow = true;
+        fill.visible = false;
+        fill.raycast = function () {};
+        g.add(fill);
+        GAP_FILL = fill;
       } else {
         const plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 1.0, PL_H, d + 1.0), MAT.concrete);
         plinth.position.y = PL_H / 2;
