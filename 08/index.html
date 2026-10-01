@@ -1761,10 +1761,22 @@
     }
 
     // 玻璃幕墙分格（真实建筑做法：贴图代替几何窗）
+    /* 【抗闪烁·画框】原实现画布 = cols*34 × rows*42，主厂房得 544×1008 —— 是 NPOT
+       （非 2 的幂）。WebGL 对 NPOT 贴图会**禁用 mipmap**（强制 ClampToEdge + Linear），
+       于是幕墙这种"高频棋盘窗格"在斜视/远处采样时退化成一格取一个样点 → 摩尔纹，
+       相机一动整片窗格就"撕扯式闪烁"，用户圈出的那面外墙最明显。
+       修法：把画布尺寸取到最近的 2 的幂（≥ 原尺寸），窗格几何按同一比例缩放绘制，
+       贴图内容与格数完全不变，但 mipmap 恢复工作 → 远处自动降采样 → 闪烁消失。 */
+    function potCeil(n) {
+      let p = 1; while (p < n) p <<= 1; return p;
+    }
     function texFacade(cols, rows, opt) {
       opt = opt || {};
-      const cw = 34, ch = 42;
-      const W = cols * cw, H = rows * ch;
+      const baseCw = 34, baseCh = 42;                    // 每格逻辑尺寸（保持观感）
+      const rawW = cols * baseCw, rawH = rows * baseCh;
+      const W = potCeil(rawW), H = potCeil(rawH);        // 升到 2 的幂
+      const sx = W / rawW, sy = H / rawH;                // 等比放大系数（≈1.x）
+      const cw = baseCw * sx, ch = baseCh * sy;          // 缩放后的格子尺寸
       const o = canvas2d(W, H), ctx = o.ctx;
 
       // ---- 晚间版：底子近乎全黑，只有"开着的房间"是亮的 → 这张贴图同时当自发光贴图用 ----
@@ -2299,14 +2311,18 @@
         roughness: 0.30, metalness: 0.05, envMapIntensity: 0.70
       });
       // 幕墙贴图（主厂房）
+      // 【抗闪烁·画框】显式声明 mipmap 三线性过滤：远处/斜视时自动取低分辨率层，
+      //   避免高频窗格走样（贴图本身已由 texFacade 保证为 2 的幂，mipmap 才可用）。
       MAT.facadeHall = new THREE.MeshStandardMaterial({
         map: TEX.facadeHall, color: C('#ffffff'),
-        roughness: 0.11, metalness: 0.50, envMapIntensity: 1.55
+        roughness: 0.11, metalness: 0.50, envMapIntensity: 1.55,
+        minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter
       });
       // 幕墙贴图（办公楼）
       MAT.facadeOffice = new THREE.MeshStandardMaterial({
         map: TEX.facadeOffice, color: C('#ffffff'),
-        roughness: 0.09, metalness: 0.52, envMapIntensity: 1.65
+        roughness: 0.09, metalness: 0.52, envMapIntensity: 1.65,
+        minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter
       });
       // 幕墙进入昼夜系统：晚间换成"亮灯"贴图并让窗格自发光（＝大楼房间灯打开）
       registerFacade(MAT.facadeHall, TEX.facadeHall, TEX.facadeHallN);
@@ -3514,9 +3530,13 @@
         registerNightLight(gl, 3.6, 0.45);
       }
 
-      // 双向道闸：去掉人行匝道后，车道居中；栏杆覆盖整个车道宽度（门洞半宽 10.4）
-      // 人行通道在北侧（局部 z 约 -6），车道占 z -3.5~+10.4，中心 z≈3.5，半幅约 7m
-      const bz = 3.5;
+      // 双向道闸：中柱落在「车行道」正中心，左右两杆等长，端头各自顶到车行道边界 —— 不留空。
+      // 车行道范围（局部 z）：北端 = 人行闸机南沿 +3.55（见下方 PED 布置），南端 = 门洞端 +GATE(10.4)。
+      // 【本轮修正】原中柱在 z=3.5、两杆各 5 段×1.25=6.25m，覆盖 2.875~9.125，
+      //   南端差 1.275、北端差 1.475 均有留空，且中柱未落在车行道中心。
+      const BZ_N = -4.55;                    // 车行道北界（人行闸机南侧净边）
+      const BZ_S = WALL.GATE;                // 车行道南界（门洞南端，局部 +10.4）
+      const bz = (BZ_N + BZ_S) / 2;          // 中柱：车行道正中心
       const bx = PX + 3.2;
       {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.55, 0.62), MAT.charger);
@@ -3526,45 +3546,54 @@
         const postCap = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.14, 0.74), MAT.chargerTop);
         postCap.position.set(bx, 1.62, bz);
         g.add(postCap);
-        // 左右两杆：各 6.25m（5 段×1.25），覆盖整条车道
+        // 左右两杆：等长，各覆盖半个车行道（半幅 = (BZ_S-BZ_N)/2），端头顶到边界
+        const SEG_N = 6;                     // 分段数（红黄相间）
+        const halfSpan = (BZ_S - BZ_N) / 2;  // 单侧杆长
+        const segLen = halfSpan / SEG_N;
         for (const side of [-1, 1]) {
-          for (let k = 0; k < 5; k++) {
+          for (let k = 0; k < SEG_N; k++) {
             const seg = new THREE.Mesh(
-              new THREE.BoxGeometry(0.36, 0.34, 1.25),
+              new THREE.BoxGeometry(0.36, 0.34, segLen),
               (k % 2 === 0) ? MAT.warn : MAT.warnRed
             );
-            seg.position.set(bx, 1.15, bz + side * (0.625 + 1.25 * k));
+            seg.position.set(bx, 1.15, bz + side * (segLen / 2 + segLen * k));
             seg.castShadow = true;
             g.add(seg);
           }
         }
       }
 
-      /* ---------- 人行通道 + 翼闸（大门右侧＝北侧，紧贴门岗） ---------- */
+      /* ---------- 人行通道 + 翼闸（大门右侧＝北侧，紧贴门岗） ----------
+         【本轮修正】原为 3 根柱、柱身沿 z 长 1.30、柱距 1.35 —— 柱身几乎首尾相接地连成
+         一条 4.0m 的"矮墙"，柱间净缝只剩 0.05m，行人根本无处可走。
+         现改为：柱身收成方形柱（z 向 0.36），2 根柱夹 1 条 1.00m 净宽通道，
+         总占位 1.72m（≈ 原来 4.0m 的 43%，即"减半"），中间开口清晰可通行。 */
       const PED_ZL = -6.2;                   // 人行通道中心（局部 z，北侧＝右，与门岗同侧）
-      const PED_PW = 0.30;
-      const PED_N = 3;
-      const PED_LANE = 1.05;
+      const PED_PW = 0.30;                   // 柱身沿通行方向（x）厚度
+      const PED_DZ = 0.36;                   // 柱身沿 z 向长度（收窄，让出开口）
+      const PED_N = 2;                       // 2 根柱 = 1 条通道
+      const PED_LANE = 1.00;                 // 通道净宽
+      const PED_SPAN = (PED_N - 1) * (PED_DZ + PED_LANE);  // 首末柱中心距
       const pedPx = [];
       for (let i = 0; i < PED_N; i++) {
         const cx = PX + 2.2;
-        const cz = PED_ZL + (i - 1) * (PED_PW + PED_LANE);
+        const cz = PED_ZL + (i - (PED_N - 1) / 2) * (PED_DZ + PED_LANE);
         pedPx.push(cz);
 
         // 闸机柱身（不锈钢拉丝面）
-        const body = new THREE.Mesh(new THREE.BoxGeometry(PED_PW, 1.05, 1.30), MAT.alu);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(PED_PW, 1.05, PED_DZ), MAT.alu);
         body.position.set(cx, 0.525, cz);
         body.castShadow = true; body.receiveShadow = true;
         g.add(body);
 
         // 顶盖（深色件）
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(PED_PW + 0.06, 0.09, 1.34), MAT.chargerTop);
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(PED_PW + 0.06, 0.09, PED_DZ + 0.06), MAT.chargerTop);
         cap.position.set(cx, 1.10, cz);
         cap.castShadow = true;
         g.add(cap);
 
         // 读卡器面板（面向园内一侧）
-        const reader = new THREE.Mesh(new THREE.BoxGeometry(PED_PW - 0.06, 0.05, 0.34), MAT.chargerTop);
+        const reader = new THREE.Mesh(new THREE.BoxGeometry(PED_PW - 0.06, 0.05, 0.22), MAT.chargerTop);
         reader.position.set(cx + 0.34, 1.16, cz);
         g.add(reader);
 
@@ -3573,21 +3602,21 @@
         led.position.set(cx + 0.34, 1.19, cz);
         g.add(led);
       }
-      // 翼闸挡板：单人通道，默认完全打开（挡板收拢贴在立柱侧面，通道畅通）
+      // 翼闸挡板：默认完全打开（挡板收拢贴在立柱侧面，通道畅通）
       for (let i = 0; i < PED_N - 1; i++) {
         for (const s of [-1, 1]) {
           const flap = new THREE.Mesh(
             new THREE.BoxGeometry(0.05, 0.70, 0.42), MAT.glassDeep);
           // 完全打开：挡板收到立柱外侧，与通行方向平行，不拦路
-          flap.position.set(PX + 2.2 + s * (PED_PW / 2 + 0.10), 0.68, pedPx[i]);
+          flap.position.set(PX + 2.2 + s * (PED_PW / 2 + 0.10), 0.68, pedPx[i] + s * (PED_DZ / 2 + 0.10));
           flap.rotation.y = s * Math.PI / 2;
           flap.castShadow = true;
           g.add(flap);
         }
       }
       // 导流护栏：把排队人流限制在通道内
-      for (const s of [0, 1]) {
-        const railZ = PED_ZL + (s === 0 ? -1.7 : 1.7);
+      for (const s of [-1, 1]) {
+        const railZ = PED_ZL + s * (PED_SPAN / 2 + 1.15);
         const rail = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.06, 0.05), MAT.alu);
         rail.position.set(PX + 3.9, 1.02, railZ);
         g.add(rail);
@@ -4328,29 +4357,31 @@
       }
 
       // 车辆 + 充电桩（北排有桩，南排无桩）
+      // 【本轮】车辆车头统一朝南（+z）；充电桩一律布置在车尾一侧（北侧，-z），面向车辆。
+      //   原先车头是 i%2 交替朝南北、桩按"车尾在 ±x 侧"横向错开 —— 方向理解有误，
+      //   桩实际落在车辆侧面。现统一：车净身沿 z 向停放（车头 +z），桩排贴车棚北缘。
       const kinds = ['sedan', 'suv', 'hatch', 'mpv', 'sedan', 'pickup'];
+      const CHG_Z = -(D / 2) + 0.85;          // 充电桩所在深度（车棚北缘内侧）
       for (let i = 0; i < BAYS; i++) {
         const cx = -W / 2 + (W / BAYS) * (i + 0.5);
         const car = makeVehicle(kinds[i % kinds.length], MAT.carBody[i % MAT.carBody.length]);
-        car.position.set(cx, 0.052, 0);
-        car.rotation.y = (i % 2 === 0) ? 0 : Math.PI;
+        car.position.set(cx, 0.052, 0.55);    // 车头朝 +z：车身整体略南移，给车尾留出桩位
+        car.rotation.y = Math.PI;             // 全部车头朝南
         g.add(car);
         if (opts.chargers) {
-          // 充电桩靠车辆背面（车尾一侧），不是固定南面
-          // 车头朝向：i%2===0 时车头朝 -x（rotation.y=0），车尾在 +x 侧；反之车尾在 -x 侧
-          const rearSign = (i % 2 === 0) ? 1 : -1;
-          const chgX = cx + rearSign * (W / BAYS) * 0.38;
+          const chgX = cx;
+          const chgZ = CHG_Z;
           // 西侧 2 个车位：大箱子快充；其余：简易桩
           const isBig = (i < 2);
           const charging = (i === 1 || i === 3 || i === 5);
-          const chg = addCharger(g, chgX, 0, charging, i % 3);
+          const chg = addCharger(g, chgX, chgZ, charging, i % 3);
           if (isBig) {
             const box = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.9, 0.9), MAT.charger);
-            box.position.set(chgX, 1.05, 0);
+            box.position.set(chgX, 1.05, chgZ);
             box.castShadow = true; box.receiveShadow = true;
             g.add(box);
             const boxCap = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.12, 0.98), charging ? MAT.chargeCapGlow[i % 3] : MAT.chargerTop);
-            boxCap.position.set(chgX, 2.05, 0);
+            boxCap.position.set(chgX, 2.05, chgZ);
             g.add(boxCap);
             if (charging && !CHARGE_GLOW[i % 3]) {
               CHARGE_GLOW[i % 3] = { cap: MAT.chargeCapGlow[i % 3], led: MAT.chargeLedGlow[i % 3], ph: (i % 3) * 2.0944 };
