@@ -2589,7 +2589,7 @@
       controls.enableDamping = true;
       controls.dampingFactor = 0.06;
       // 【第 17 轮】缩放放开：原来 min 30 / max 170 —— 拉到 170 时园区仍占满整屏（"不能自由缩小、
-      // 还是太大"），贴近也进不去。改成 14~300：可以贴到单体跟前（充电桩/配电站），
+      // 还是太大"），贴近也进不去。改成 14~300：可以贴到单体跟前（充电桩/实验室），
       // 也可以一路拉到看全园区＋周边环境。
       controls.minDistance = 14;
       controls.maxDistance = 300;
@@ -2633,7 +2633,7 @@
       // 【第 17 轮·阴影重做 ①】原写法只改了正交相机的 left/right/top/bottom，却从未调用
       // updateProjectionMatrix() —— three 的 DirectionalLightShadow 是 new OrthographicCamera(-5,5,5,-5,0.5,500)，
       // 不重算投影矩阵，它就一直是构造时的默认值 ±5！结果：阴影贴图只覆盖原点周围 10×10m，
-      // 主厂房以外的建筑（办公楼、车间、储罐、配电站）**全都没有影子** —— 这就是"阴影都不对"的根因。
+      // 主厂房以外的建筑（办公楼、车间、储罐、实验室）**全都没有影子** —— 这就是"阴影都不对"的根因。
       // 正确范围要能把 160×116m 的园区（斜投影后约 ±100m）全罩住。
       sunLight.shadow.camera.near = 30;
       sunLight.shadow.camera.far = 470;
@@ -2697,7 +2697,7 @@
 
       applyTheme(currentTheme);
 
-      setupPick();          // 第26轮：建筑剖切交互（点击楼层 / 点击厂房·配电间掀屋盖）
+      setupPick();          // 第26轮：建筑剖切交互（点击楼层 / 点击厂房·实验室掀屋盖）
       animate();
 
       setTimeout(function () {
@@ -2765,7 +2765,7 @@
       addSolarCarport(8, 64, { id: 'cars', chargers: false, w: 44, tilt: 0.12 });
       // 东端 x = 20+22 = 42，与 7 号楼东缘(16+26=42)对齐
       // 车棚南侧预留大片绿地（不放建筑）
-      // 6 实验室 / 变电站（11号楼） —— 【本轮·需求3】移到**东北角**
+      // 6 设备测试实验室（11号楼） —— 【本轮·需求3】移到**东北角**
       /* 原落位 (29,-60)：夹在研发楼（10号楼）东侧，看着像"10号楼旁边的小配电房"。
          本轮要求：11号楼应在园区**东北角角落**里，且在东侧绿化带居中（往东面移动）。
          新落位 (50.5,-68)：
@@ -5441,7 +5441,7 @@
         [R2.xc - R2.hw - 0.2, R2.xc + R2.hw + 0.2, R2.z0 - 1.2, R2.z1 + 1.2],
         [R3.xc - R3.hw - 0.2, R3.xc + R3.hw + 0.2, R3.z0 - 1.2, R3.z1 + 1.2],
         [-16, 32, 44, 71],                            // 光伏车棚两排（地坪 z 45~70，留 1m 余量）
-        // 【本轮·需求3】11号楼（实验室/配电站）移到东北角 (50.5,-68) 后，
+        // 【本轮·需求3】11号楼（设备测试实验室）移到东北角 (50.5,-68) 后，
         // 这块净地要整块让出来：地基 5.9×9.9 + 接地阴影 8.6×12.6，
         // 覆盖 x 46.2~54.8 / z -74.3~-61.7 —— 取 45.0~56.5 / -75.5~-62.5 作避让框，
         // 东北角原本那 3 株环带树（x55.03 的 z-61.53、z-77.03 与 x53.03 的 z-77.03）
@@ -5583,15 +5583,16 @@
       buildingGroup.add(g);
     }
 
-    /* ---- 小型配电站（箱式变电站）：园区东北角内侧 ----
-       只做"园区自己用"的规模：7.2 x 5.0 x 3.0 的金属箱体坐在混凝土平台上，
-       外面一圈 1.9m 高金属栅栏、南面留双开栅栏门；正面双开门，两侧与背面散热百叶，
-       顶部 3 只高压进线套管，门侧一块黄色警示牌；晚间门口一盏灯。 */
+    /* ---- 11号楼 · 设备测试实验室（箱体式）：园区东北角内侧 ----
+       5.0(东西) × 9.0(南北) × 3.6 的金属箱体坐在混凝土平台上，南北向长方形、门朝西；
+       西立面 = 双开门 + 机构铭牌 + 观察窗，东/南/北三面做散热百叶，
+       屋顶 2 台排风机组 + 四角通风帽；晚间门口一盏灯。
+       点击时箱壳升起并向右移开，露出室内的**设备测试实验室**平面（见 buildLabPlan）。
+       注：函数名沿用 addSubstation（历史命名），实体内容已不是变电所。 */
     function addSubstation(x, z) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
 
-      // 【修正】实验室改为南北向长方形，门朝西
       const BW = 5.0, BD = 9.0, BH = 3.6;   // 箱体宽(东西) / 深(南北) / 高
       const PF = 0.45;                       // 平台外挑
 
@@ -5633,31 +5634,65 @@
       lintel.position.set(-BW / 2 - 0.05, 0.40 + 2.34, 0);
       g.add(lintel);
 
-      // 散热百叶：做成一条条横向格栅（不是两块大深色"窗户"—— 那看着像开窗的库房）
-      for (const sx of [-1, 1]) {
-        for (let i = 0; i < 5; i++) {
-          const lv = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.15, 3.05), MAT.alu);
-          lv.position.set(sx * (BW / 2 + 0.045), 0.98 + i * 0.30, 0.55);
-          g.add(lv);
-        }
+      /* 散热百叶：做成一条条横向格栅（不是两块大深色"窗户"—— 那看着像开窗的库房）。
+         【本轮·修复】原来东西两个立面各做一条，而西立面正是双开门所在 ——
+         百叶（z -0.98~2.08）横穿门扇（z ±1.09），两片实体互相穿插。
+         现在西立面只留"双开门 + 铭牌 + 观察窗"，百叶移到东立面 + 北立面 + 南立面。 */
+      for (let i = 0; i < 5; i++) {
+        const lvE = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.15, 3.05), MAT.alu);
+        lvE.position.set(BW / 2 + 0.045, 0.98 + i * 0.30, 0.55);
+        g.add(lvE);
       }
       for (let i = 0; i < 5; i++) {
-        const lvB = new THREE.Mesh(new THREE.BoxGeometry(2.95, 0.15, 0.09), MAT.alu);
-        lvB.position.set(0, 0.98 + i * 0.30, -(BD / 2 + 0.045));
-        g.add(lvB);
+        const lvN = new THREE.Mesh(new THREE.BoxGeometry(2.95, 0.15, 0.09), MAT.alu);
+        lvN.position.set(0, 0.98 + i * 0.30, -(BD / 2 + 0.045));
+        g.add(lvN);
+      }
+      for (let i = 0; i < 5; i++) {
+        const lvS = new THREE.Mesh(new THREE.BoxGeometry(2.95, 0.15, 0.09), MAT.alu);
+        lvS.position.set(0, 0.98 + i * 0.30, BD / 2 + 0.045);
+        g.add(lvS);
       }
 
-      // 顶部高压进线套管
-      for (const dx of [-0.9, 0, 0.9]) {
-        const bush = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.62, 10), MAT.alu);
-        bush.position.set(dx, 0.40 + BH + 0.55, -BD / 2 + 1.05);
-        g.add(bush);
+      /* 【本轮·需求】11号楼是**设备测试实验室**（不是配电间）——
+         原屋顶 3 只"高压进线套管"是箱式变电站的标志物，与实验室完全不搭，整组换掉：
+         2 台屋顶排风机组（AHU，箱体 + 各 2 段短排风管），坐在压顶之上。
+         压顶顶面标高 = 0.40 + BH + 0.26（cap 中心 0.40+BH+0.13、厚 0.26）。 */
+      const CAPT = 0.40 + BH + 0.26;
+      for (const dx of [-0.80, 0.80]) {
+        const ahu = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.58, 1.05), MAT.alu);
+        ahu.position.set(dx, CAPT + 0.29, -BD / 2 + 1.15);
+        ahu.castShadow = true;
+        g.add(ahu);
+        for (const sx of [-1, 1]) {
+          const duct = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.34, 10), MAT.darkMetal);
+          duct.position.set(dx + sx * 0.40, CAPT + 0.72, -BD / 2 + 1.15);
+          g.add(duct);
+        }
       }
 
-      // 黄色警示牌（正面门侧）
-      const sign = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.44, 0.06), MAT.warn);
-      sign.position.set(BW / 2 - 0.85, 0.40 + 1.85, BD / 2 + 0.06);
+      /* 西立面（主入口侧）：门南侧挂"设备测试实验室"机构铭牌 —— 深色底板 + 浅色字条，
+         替换原来的黄色变电站警示牌。 */
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.46, 0.88), MAT.gatePanel);
+      sign.position.set(-BW / 2 - 0.05, 0.40 + 1.92, 1.58);
       g.add(sign);
+      const signTx = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.17, 0.62), MAT.marking);
+      signTx.position.set(-BW / 2 - 0.085, 0.40 + 1.92, 1.58);
+      g.add(signTx);
+      const signTx2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.09, 0.44), MAT.marking);
+      signTx2.position.set(-BW / 2 - 0.085, 0.40 + 1.62, 1.58);
+      g.add(signTx2);
+
+      /* 门北侧的观察窗：实验室需要"隔着玻璃看测试场景"，
+         也让它一眼不像变电所。窗洞 1.70(南北) × 0.95(高)，上下各一道铝框。 */
+      const win = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.95, 1.70), MAT.glassDoor);
+      win.position.set(-BW / 2 - 0.035, 0.40 + 1.80, -2.05);
+      g.add(win);
+      for (const wy of [-1, 1]) {
+        const wf = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 1.86), MAT.alu);
+        wf.position.set(-BW / 2 - 0.045, 0.40 + 1.80 + wy * 0.52, -2.05);
+        g.add(wf);
+      }
 
       /* 【本轮】原有一圈"金属栅栏围合"（四周立柱 + 上下横杆 + 南侧双开栅栏门）。
          用户要求：**11号楼（实验室）周围不要围栏** —— 园区里这栋是设备箱体式建筑，
@@ -5677,9 +5712,9 @@
       registerNightLight(subLight, 2.4, 0);
       nightPool(g, 0, 0.090, BD / 2 + 1.6, 3.2, 0.42).userData.stayPut = true;   // 【第26轮】地面光斑留在地面
 
-      // ---- 【第26轮·剖切】箱壳（含压顶/通风帽/套管/双开门/百叶/警示牌/门灯）整体搬进壳组，
-      //      点击时升起露出室内配电平面；围栏与接地阴影留在原地。 ----
-      var shade = addContactShade(g, FW, FD, 1.3);             // 接地阴影过渡带（配电站·按围栏外围）
+      // ---- 【第26轮·剖切】箱壳（含压顶/通风帽/排风机组/双开门/百叶/铭牌/观察窗/门灯）
+      //      整体搬进壳组，点击时升起露出室内实验室平面；接地阴影留在原地。 ----
+      var shade = addContactShade(g, FW, FD, 1.3);             // 接地阴影过渡带（实验室·按原围栏外围）
       var shell = new THREE.Group();
       for (var ci = g.children.length - 1; ci >= 0; ci--) {
         var ch = g.children[ci];
@@ -5690,12 +5725,15 @@
       }
       g.add(shell);
 
+      /* 室内平面：**抬到混凝土平台顶面（0.40）**再摆 —— 平台的顶面标高就是室内地坪，
+         否则室内件（地板 / 控制台 / 台体）会被埋在 0~0.40 的混凝土里看不到。 */
       var plan = new THREE.Group();
+      plan.position.y = 0.40;
       plan.visible = false;
-      buildSubPlan(plan);
+      buildLabPlan(plan);
       g.add(plan);
 
-      SHELLS.sub = { unit: regLift(shell), plan: plan, lift: BH + 1.6, label: '配电间', built: true };
+      SHELLS.sub = { unit: regLift(shell), plan: plan, lift: BH + 1.6, label: '设备测试实验室', built: true };
       regShellDrift(SHELLS.sub, 3.5, -5.6, 3.0);   // 第28轮：箱盖向东北让开（场地东北角，量取小，不越围墙）
       tagPick(g, { kind: 'shell', bld: 'sub', key: 'sub' });
       PICK_ROOTS.push(g);
@@ -6703,40 +6741,94 @@
       ibox(plan, W - 2.2, 0.02, 0.14, 0, 0.17, 3.0, MAT.warn);
     }
 
-    /* ---------- 配电间室内平面（内净 6.6 × 4.4：木地板 + 三组开关柜 + 方柱 + 控制台）---------- */
-    function buildSubPlan(plan) {
+    /* ---------- 11号楼 · 设备测试实验室 室内平面 ----------
+       箱体 5.0(东西) × 9.0(南北)；内净 4.6 × 8.6，主入口（双开门）开在西墙 -x 正中。
+       坐标以箱心为原点：x ∈ [-2.3, 2.3]（东正）、z ∈ [-4.3, 4.3]（南正）。
+       自北向南三段（黄线分隔），照"设备测试实验室"的动线组织：
+         ① 环境试验区  z -4.30 ~ -1.70   环境试验箱 ×2（含温控/动力柜、备件工装架）
+         ② 测试工位区  z -1.70 ~  2.40   东壁测试台 ×3（台面仪器 + 被测设备 + 操作椅）
+                                        中部 19" 测试机柜 ×2、西壁仪器柜、门北更衣隔间
+         ③ 老化/屏蔽区 z  2.40 ~  4.30   金属屏蔽测试角（被测机柜 + 探头）+ 老化架 ×2 + 待检托盘
+       配色：浅灰防静电地坪（inFloorShop）+ 浅色台面/柜体 + 深色仪器与屏蔽壁板，
+       保证剖开俯视时"每个构件都读得出来"（浅地坪 + 浅设备会糊成一片，故地坪取中灰）。 */
+    function buildLabPlan(plan) {
+      var K = makePlanKit(plan);
+      var W = 4.6, D = 8.6;
       var i;
-      ibox(plan, 6.6, 0.12, 4.4, 0, 0.06, 0, MAT.inFloorWood);          // 木地板
 
-      // 西侧一排 4 联开关柜（柜面朝东，带表计/指示灯）
-      for (i = 0; i < 4; i++) {
-        var cz = -1.55 + i * 1.03;
-        ibox(plan, 0.86, 2.02, 1.00, -2.82, 1.08, cz, MAT.inCabinet);
-        ibox(plan, 0.92, 0.30, 1.04, -2.86, 2.24, cz, MAT.inCabPanel);
-        ibox(plan, 0.05, 0.10, 0.11, -2.38, 1.78, cz, MAT.inLed);
-        ibox(plan, 0.05, 0.10, 0.11, -2.38, 1.52, cz, MAT.inLed);
+      /* 防静电地坪 + 两条分区标线 + 入口地垫 */
+      ibox(plan, W, 0.12, D, 0, 0.06, 0, MAT.inFloorShop);
+      ibox(plan, W - 0.4, 0.02, 0.10, 0, 0.155, -1.70, MAT.warn);
+      ibox(plan, W - 0.4, 0.02, 0.10, 0, 0.155, 2.40, MAT.warn);
+      ibox(plan, 1.30, 0.03, 1.70, -1.55, 0.155, 0, MAT.inRug);
+      /* 西墙门位（双开门 2.2m）：箱壳升起后墙都跟着走了，地面留一条门位线，进门方向一眼可读 */
+      ibox(plan, 0.14, 0.03, 2.20, -2.24, 0.16, 0, MAT.inGlassP);
+
+      /* —— 局部工厂：一台标准测试台（台体柜 + 台面 + 被测设备 + 测试仪 + 操作椅） ——
+         操作椅落在台面西侧、面向东（ry = +π/2 时椅背朝 -x）。 */
+      function bench(pz, len) {
+        var px = 1.78;
+        ibox(plan, 0.80, 0.72, len - 0.10, px, 0.36, pz, MAT.inCabinet);            // 台体柜
+        ibox(plan, 0.88, 0.07, len, px, 0.905, pz, MAT.inWhite);                    // 台面
+        ibox(plan, 0.06, 0.30, len - 0.18, px - 0.46, 0.40, pz, MAT.inCabPanel);    // 前挡板
+        ibox(plan, 0.56, 0.40, 0.52, px + 0.02, 1.14, pz - len * 0.24, MAT.inMachineDark);  // 被测设备
+        ibox(plan, 0.50, 0.06, 0.44, px + 0.02, 1.37, pz - len * 0.24, MAT.inCabinet);      // 设备顶盖
+        ibox(plan, 0.06, 0.10, 0.10, px - 0.22, 1.20, pz - len * 0.24, MAT.inLed);
+        ibox(plan, 0.46, 0.32, 0.46, px + 0.02, 1.10, pz + len * 0.22, MAT.inScreen);       // 测试仪
+        ibox(plan, 0.06, 0.09, 0.09, px - 0.20, 1.14, pz + len * 0.22, MAT.inLed);
+        K.chair(px - 0.86, pz, Math.PI / 2, 0, 0, MAT.inChairBlue);
       }
-      // 北侧 3 联柜
-      for (i = 0; i < 3; i++) {
-        var cx1 = -1.35 + i * 1.06;
-        ibox(plan, 1.02, 2.02, 0.88, cx1, 1.08, -1.62, MAT.inCabinet);
-        ibox(plan, 1.08, 0.30, 0.92, cx1, 2.24, -1.62, MAT.inCabPanel);
-        ibox(plan, 0.11, 0.10, 0.05, cx1, 1.80, -1.17, MAT.inLed);
+
+      /* ===== ① 环境试验区（北端）：环境试验箱 ×2 + 温控动力柜 + 备件工装架 ===== */
+      for (i = 0; i < 2; i++) {
+        var cz = -3.62 + i * 1.32;                                  // -3.62 / -2.30
+        ibox(plan, 1.50, 2.10, 1.22, 1.42, 1.05, cz, MAT.inCabinet);       // 箱体
+        ibox(plan, 1.60, 0.10, 1.32, 1.42, 2.15, cz, MAT.alu);             // 顶盖
+        ibox(plan, 0.07, 1.90, 1.06, 0.65, 1.05, cz, MAT.inCabPanel);      // 箱门（朝西）
+        ibox(plan, 0.06, 0.36, 0.74, 0.61, 1.58, cz, MAT.inScreen);        // 温控面板
+        ibox(plan, 0.05, 0.09, 0.09, 0.58, 1.06, cz - 0.25, MAT.inLed);
+        ibox(plan, 0.05, 0.09, 0.09, 0.58, 1.06, cz + 0.25, MAT.inLed);
       }
-      // 南侧 3 联柜
-      for (i = 0; i < 3; i++) {
-        var cx2 = -1.35 + i * 1.06;
-        ibox(plan, 1.02, 2.02, 0.88, cx2, 1.08, 1.62, MAT.inCabinet);
-        ibox(plan, 1.08, 0.30, 0.92, cx2, 2.24, 1.62, MAT.inCabPanel);
-        ibox(plan, 0.11, 0.10, 0.05, cx2, 1.80, 1.17, MAT.inLed);
-      }
-      // 两根方柱
-      ibox(plan, 0.40, 2.60, 0.40, -0.30, 1.30, -0.95, MAT.inCol);
-      ibox(plan, 0.40, 2.60, 0.40, -0.30, 1.30, 0.95, MAT.inCol);
-      // 靠中央的控制台（桌 + 显示器）
-      ibox(plan, 1.05, 0.70, 0.62, -1.90, 0.35, 0, MAT.inDeskLeg);
-      ibox(plan, 1.14, 0.06, 0.68, -1.90, 0.73, 0, MAT.inDeskTop);
-      ibox(plan, 0.56, 0.38, 0.07, -1.90, 0.95, -0.24, MAT.inScreen);
+      /* 温控 / 动力柜（西壁北段） */
+      ibox(plan, 0.55, 1.90, 1.60, -2.02, 0.95, -3.42, MAT.inCabPanel);
+      ibox(plan, 0.06, 0.38, 0.88, -1.72, 1.54, -3.42, MAT.inScreen);
+      ibox(plan, 0.05, 0.08, 0.08, -1.69, 1.04, -3.80, MAT.inLed);
+      ibox(plan, 0.05, 0.08, 0.08, -1.69, 1.04, -3.04, MAT.inLed);
+      /* 备件 / 工装架（西壁，分区线北侧） */
+      ibox(plan, 0.50, 1.85, 1.20, -2.05, 0.925, -2.45, MAT.inRack);
+      ibox(plan, 0.44, 0.09, 1.08, -2.05, 1.20, -2.45, MAT.inCabPanel);
+      ibox(plan, 0.44, 0.09, 1.08, -2.05, 0.62, -2.45, MAT.inCabPanel);
+
+      /* ===== ② 测试工位区（中段）：东壁测试台 ×3 + 中部测试机柜 ×2 + 西壁仪器柜 + 更衣隔间 ===== */
+      var bz = [-1.02, 0.38, 1.78];
+      for (i = 0; i < bz.length; i++) bench(bz[i], 1.25);
+      /* 中部 19" 测试机柜 ×2（K.rackRow 自带层板与指示灯） */
+      K.rackRow(-0.55, -1.15, 0, 1, 0);
+      K.rackRow(-0.55, 0.60, 0, 1, 0);
+      /* 西壁仪器柜 ×2（门洞以南） */
+      ibox(plan, 0.50, 1.90, 1.10, -2.05, 0.95, 1.85, MAT.inCabinet);
+      ibox(plan, 0.06, 0.34, 0.80, -1.77, 1.52, 1.85, MAT.inScreen);
+      ibox(plan, 0.05, 0.08, 0.08, -1.74, 1.06, 1.60, MAT.inLed);
+      ibox(plan, 0.50, 1.90, 1.10, -2.05, 0.95, 3.20, MAT.inCabinet);
+      ibox(plan, 0.06, 0.34, 0.80, -1.77, 1.52, 3.20, MAT.inScreen);
+      ibox(plan, 0.05, 0.08, 0.08, -1.74, 1.06, 3.45, MAT.inLed);
+      /* 门北侧：更衣柜 + 玻璃隔断（做成一个 0.95m 的更衣隔间，进门先更衣） */
+      ibox(plan, 0.48, 1.80, 1.20, -2.06, 0.90, -1.98, MAT.inWood);
+      ibox(plan, 0.08, 2.20, 1.45, -1.35, 1.10, -1.98, MAT.inGlassP);
+
+      /* ===== ③ 老化 / 屏蔽测试区（南端）===== */
+      /* 金属屏蔽测试角：L 形壁板围出 1.6 × 0.9 的暗室，内放被测机柜与场强探头 */
+      ibox(plan, 0.10, 2.20, 0.95, 0.60, 1.10, 3.80, MAT.inMachineDark);
+      ibox(plan, 1.70, 2.20, 0.10, 1.42, 1.10, 3.32, MAT.inMachineDark);
+      ibox(plan, 0.62, 1.55, 0.52, 1.58, 0.78, 3.86, MAT.inMachine);
+      ibox(plan, 0.10, 1.70, 0.10, 1.05, 0.85, 3.86, MAT.alu);
+      ibox(plan, 0.62, 0.07, 0.52, 1.58, 1.58, 3.86, MAT.inCabPanel);
+      /* 老化架 ×2（南段中部）*/
+      K.rackRow(-1.15, 3.75, 0, 1, 0);
+      K.rackRow(-0.15, 3.75, 0, 1, 0);
+      /* 待检 / 待测托盘 ×2 */
+      ibox(plan, 1.15, 0.30, 0.78, -0.75, 0.15, 2.15, MAT.inTray);
+      ibox(plan, 0.90, 0.30, 0.78, 1.55, 0.15, 2.80, MAT.inTray);
     }
 
     /* ==========================================================================
@@ -7188,8 +7280,9 @@
       // 生产车间：两班制 —— 09:00 / 15:00 双尖峰，12:00 停机午休深谷（0.52）
       shop:      [0.32, 0.30, 0.29, 0.29, 0.32, 0.50, 0.84, 1.16, 1.38, 1.46, 1.42, 0.88,
                   0.52, 1.24, 1.44, 1.46, 1.34, 1.06, 0.70, 0.54, 0.46, 0.40, 0.36, 0.34],
-      // 配电间：基荷为主 + 上下午两段空调峰，全天在 0.83~1.26 之间小幅波动
-      sub:       [0.86, 0.84, 0.83, 0.83, 0.85, 0.90, 0.96, 1.02, 1.10, 1.18, 1.24, 1.22,
+      // 11号楼 设备测试实验室：环境试验箱 24h 待机（夜间基荷 0.83~0.90）
+      // + 工作时段通电测试（上午 / 下午两段抬到 1.22~1.26），全天不归零
+      testlab:   [0.86, 0.84, 0.83, 0.83, 0.85, 0.90, 0.96, 1.02, 1.10, 1.18, 1.24, 1.22,
                   1.08, 1.20, 1.26, 1.24, 1.14, 1.02, 0.96, 0.94, 0.92, 0.90, 0.88, 0.87]
     };
     // 月：星期一到星期日的相对权重（办公楼周末低，连续生产的厂房周末几乎不停）
@@ -7205,7 +7298,7 @@
       exec:      [1.12, 1.14, 1.12, 1.06, 1.00, 0.62, 0.54],
       hall:      [1.03, 1.05, 1.05, 1.04, 1.03, 0.94, 0.90],
       shop:      [1.04, 1.06, 1.06, 1.05, 1.02, 0.92, 0.88],
-      sub:       [1.02, 1.03, 1.03, 1.02, 1.01, 0.96, 0.94]
+      testlab:   [1.02, 1.03, 1.03, 1.02, 1.01, 0.96, 0.94]   // 试验箱不断电，周末只小幅回落
     };
     // 年：1~12 月的季节权重（办公/实验夏季空调尖峰，厂房四季度订单走高）
     var AP_SHAPE_YEAR = {
@@ -7220,7 +7313,7 @@
       exec:      [0.92, 0.86, 0.94, 0.97, 1.00, 1.08, 1.18, 1.20, 1.06, 0.94, 0.88, 0.92],
       hall:      [0.94, 0.88, 1.00, 1.04, 1.06, 1.08, 1.11, 1.07, 1.06, 1.10, 1.12, 1.16],
       shop:      [0.92, 0.86, 0.99, 1.03, 1.06, 1.09, 1.12, 1.08, 1.05, 1.09, 1.12, 1.15],
-      sub:       [0.96, 0.92, 0.99, 1.02, 1.04, 1.08, 1.14, 1.13, 1.04, 0.99, 0.96, 0.99]
+      testlab:   [0.96, 0.92, 0.99, 1.02, 1.04, 1.08, 1.14, 1.13, 1.04, 0.99, 0.96, 0.99]
     };
 
     var AP_NORM = null;
@@ -7311,17 +7404,17 @@
         ]
       },
       sub: {
-        title: '配电间', badge: 'power', shape: 'sub', day: 380, yoy: 1.4,
-        tag: '基荷平稳型',
-        peak: '10:00–11:00 / 14:00–15:00（空调峰）',
-        sub: '箱式变电站 · 园区自用配电',
+        title: '设备测试实验室', badge: 'lab', shape: 'testlab', day: 380, yoy: 1.4,
+        tag: '长时段平台型',
+        peak: '08:00–18:00 持续运行（设备待机 + 测试通电）',
+        sub: '11号楼 · 箱体式设备测试实验室',
         rows: [
           ['所在区域', '园区东北角 · 围墙内侧'],
-          ['建筑类型', '箱式变电站 · 压型钢板箱体'],
-          ['占地 / 面积', '7.2 × 5.0 m · 36 m²'],
-          ['檐高', '3.0 m（含混凝土基础平台）'],
-          ['功能用途', '10 kV 进线 · 干式变压器 · 低压配电'],
-          ['计量点位', 'HK-SUB-03']
+          ['建筑类型', '箱体式实验建筑 · 压型钢板箱体'],
+          ['占地 / 面积', '5.0 × 9.0 m · 45 m²（内净 39 m²）'],
+          ['檐高', '3.6 m（含 0.4 m 混凝土基础平台）'],
+          ['功能用途', '环境试验区 · 测试工位区 · 老化/屏蔽测试区'],
+          ['计量点位', 'HK-LAB-03']
         ]
       }
     };
@@ -7330,7 +7423,8 @@
       office: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h2M13 9h2M9 13h2M13 13h2M10 17h4"/></svg>',
       factory: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21V10l5 3V10l5 3V8l6 4v9"/><path d="M8 21v-4h3v4"/></svg>',
       workshop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21v-9h7v9"/><path d="M11 21v-6h9v6"/><path d="M6.6 15.4h1.8M15.6 18h1.8"/></svg>',
-      power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M13 7l-4 6h3l-1 4 4-6h-3z"/></svg>'
+      power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M13 7l-4 6h3l-1 4 4-6h-3z"/></svg>',
+      lab: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6.2L5.6 17.4A2 2 0 0 0 7.4 20.5h9.2a2 2 0 0 0 1.8-3.1L14 9.2V3"/><path d="M7.4 15h9.2"/><path d="M12 12.2v.01M14.2 13.8v.01"/></svg>'
     };
 
     function apPad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -8456,7 +8550,7 @@
        tank   西北储罐区：4 座拱顶罐 @ (-44±6.5, -24±6.5)，罐体 y0.7~10.7、拱顶到 12.3，
               防火堤 x-58.6~-29.4 / z-39.6~-8.4。原机位 (-8,21,-46) 太贴、罐身被裁、前景空。
               现在拉到 (-6,30,-52) 俯角约 47°，4 罐完整入画且防火堤边界清楚。
-       lab    11号楼（实验室 / 配电站）@ (50.5,-68)：箱体 5.0(东西)×9.0(南北)×3.6，
+       lab    11号楼（设备测试实验室）@ (50.5,-68)：箱体 5.0(东西)×9.0(南北)×3.6，
               混凝土平台 5.9×9.9，正面双开门朝西（-x，朝园区内）。原在 (44,-70) 压东环/北环，
               第5轮退到 (29,-60)，【本轮·需求3】再东移到东北角 (50.5,-68)。
               机位从东南侧 18m 外俯看（俯角约 39°），正面 + 东值班窗同时入画。 */
