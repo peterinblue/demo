@@ -2745,11 +2745,13 @@
                      （6.8 + 3.4 + 6.8 = 17m = 8号楼 5×3.4）→ 两栋一样高。 */
       addOfficeBuilding(-15.5, 16, 24, 14, 5, {
         bld: 'bld8', label: '8号楼', dir: -1, entrance: true, entranceX: -3.5,
+        strippable: true, tagName: '8',
         floorsName: ['展厅会议室', '数智平台事业部', '行政职能部门', '场站事业部', '智慧能源公司']
       });
       // 7号楼：宽 36.4、中心 14.7（东缘 32.9 不动），西缘与 8号楼东缘齐平；3 层、层高 2:1:2
       addOfficeBuilding(14.7, 16, 36.4, 14, 3, {
         bld: 'bld7', label: '7号楼', dir: 1,
+        strippable: true, tagName: '7',
         floorHList: [6.8, 3.4, 6.8],
         floorsName: ['生产车间', '数字仪表事业部', '会议室活动室']
       });
@@ -2867,6 +2869,44 @@
       const sp = new THREE.Sprite(mat);
       sp.scale.set(11.0, 11.0 * H / W, 1);   // 固定世界尺寸（约 11.0m × 2.1m）
       sp.renderOrder = 22;
+      sp.raycast = function () {};
+      return sp;
+    }
+
+    /* 【第35轮·新增】楼层短标签（"8#1F"）—— 服务于"整栋剥离"状态。
+       用户要的效果：点开一栋楼后，玻璃幕墙与大门整体脱掉，同时在每一层标出楼层号
+       （8号楼1层 → "8#1F"），提示"这一层可以再点一下抽拉出来"。
+       与 makeFloorBadge 的区别：
+         · 文本只有 4~5 个字符（"8#1F"），所以画布更方、字号更大、一眼可读；
+         · 世界尺寸收到 4.0m × 1.58m（badge 是 11m × 2.1m）—— 竖排一列贴在楼面外侧，
+           不会互相压住，也不会盖住整栋楼的轮廓。 */
+    function makeFloorTag(text) {
+      const W = 384, H = 152;
+      const c = canvas2d(W, H);
+      const ctx = c.ctx;
+      ctx.clearRect(0, 0, W, H);
+      const r = 28;
+      ctx.fillStyle = 'rgba(9, 26, 44, 0.90)';
+      ctx.beginPath();
+      ctx.moveTo(r, 5); ctx.lineTo(W - r, 5); ctx.quadraticCurveTo(W - 5, 5, W - 5, r);
+      ctx.lineTo(W - 5, H - r); ctx.quadraticCurveTo(W - 5, H - 5, W - r, H - 5);
+      ctx.lineTo(r, H - 5); ctx.quadraticCurveTo(5, H - 5, 5, H - r);
+      ctx.lineTo(5, r); ctx.quadraticCurveTo(5, 5, r, 5); ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(95, 208, 255, 0.95)';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.fillStyle = '#eaf7ff';
+      ctx.font = 'bold 84px "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, W / 2, H / 2 + 4);
+      const tex = new THREE.CanvasTexture(c.c);
+      tex.needsUpdate = true;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false });
+      const sp = new THREE.Sprite(mat);
+      sp.scale.set(4.0, 4.0 * H / W, 1);
+      sp.renderOrder = 23;
       sp.raycast = function () {};
       return sp;
     }
@@ -3436,6 +3476,11 @@
 
       const units = [];
 
+      /* 【第35轮】"整栋剥离"进度（0=原样，1=幕墙大门全部脱掉）——
+         由下面循环结束后注册的 strip 补间写入；本函数内的抽屉补间读它，
+         好让"剥离后再抽拉"时不再对已经压薄的楼板二次压扁。 */
+      var stripK = 0;
+
       /* 【本轮】一楼抽屉里给"大门"预留的挂点 —— 见下面楼层循环与入口段的注释 */
       let ENTRANCE_SLOT = null;
       /* 【第6轮】"门前地面补齐块"：一楼抽出后，勒脚在门洞处断开留下的缺口要补平
@@ -3527,16 +3572,21 @@
         const FAC_H = h - 1.2, FAC_Y0 = 0.6;
         const fy0 = Math.max(FAC_Y0, BASE[f]);
         const fy1 = Math.min(FAC_Y0 + FAC_H, BASE[f] + FH);
+        /* 【第35轮】本层幕墙收进 facG 子组：整栋剥离时只把 facG.scale.y 压到 0
+           （4 片玻璃像卷帘一样朝楼面收起），几何一变都不需要动，
+           复原时 scale.y 回到 1 就是逐像素原样。 */
+        const facG = new THREE.Group();
+        sbase.add(facG);
         if (fy1 > fy0) {
           const v0 = (fy0 - FAC_Y0) / FAC_H, v1 = (fy1 - FAC_Y0) / FAC_H;
           const fyh = fy1 - fy0, fcy = (fy0 + fy1) / 2 - BASE[f];
           for (const s of [1, -1]) {
             const f1 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(w + 0.30, fyh, 0.18), v0, v1), fMat);
             f1.position.set(0, fcy, s * (d / 2 + 0.16));
-            sbase.add(f1);
+            facG.add(f1);
             const f2 = new THREE.Mesh(setUVrange(new THREE.BoxGeometry(0.18, fyh, d + 0.30), v0, v1), fMat);
             f2.position.set(s * (w / 2 + 0.16), fcy, 0);
-            sbase.add(f2);
+            facG.add(f2);
           }
         }
 
@@ -3565,6 +3615,15 @@
         badge.visible = false;
         fl.add(badge);
 
+        /* 【第35轮】楼层短标签（"8#1F"）：只在本栋"剥离"状态下显形，贴在**南立面外侧**
+           （默认机位朝北看，南面正对镜头），竖向一列排开 —— 8#1F 在最下一层往上数。
+           挂 fl（不挂 dg）：标签不吃抽屉的 2 倍放大，字号恒定。
+           y 取本层净高的一半（即"这层楼板面往上 1.7m"），视觉上落在这层的腰高。 */
+        const tag = makeFloorTag((opts.tagName || '') + '#' + (f + 1) + 'F');
+        tag.position.set(0, BASE[f] + FH * 0.5, d * 0.5 + 1.75);
+        tag.visible = false;
+        fl.add(tag);
+
         tagPick(fl, { kind: 'floor', bld: BLD, f: f, key: BLD + '|' + f });
         const u = regLift(fl);
 
@@ -3588,14 +3647,17 @@
           dg.position.y = dy * yk;
           var sc = 1 + DRAWER_S * sk;
           dg.scale.set(sc, sc, sc);
-          var ys = 1 - (1 - DRAWER_BASE) * sk;
+          /* 【第35轮】底座压扁系数带上"剥离"修正：本层已被剥离（stripK=1，楼板早就压薄到 8%）
+             时不再二次压扁（ys 保持 1），否则 0.08 × 0.16 = 1.28% 的板子薄到看不见。
+             剥离进度为 0 时本式与原式完全等价 → 未开启剥离的楼栋逐像素不变。 */
+          var ys = 1 - (1 - DRAWER_BASE) * sk * (1 - stripK);
           sbase.scale.y = ys;
-          plan.position.y = FH * ys;
+          plan.position.y = FH * (1 - 0.92 * stripK) * ys;
           /* 【本轮】楼层名牌跟随抽屉：水平跟 dg 的位移，竖向坐在"压扁后的板面"之上 2.6m。
              牌子的世界大小恒定（它不在 dg 里、不吃 2 倍放大），读数不受抽屉缩放影响。 */
           badge.position.x = dg.position.x;
           badge.position.z = dg.position.z - d * 0.5 * sc - 1.2;
-          badge.position.y = dg.position.y + FH * ys + 2.6;
+          badge.position.y = dg.position.y + FH * (1 - 0.92 * stripK) * ys + 2.6;
           badge.visible = (k > 0.30);
           /* 【第7轮·重做】入口（门厅/大门/雨棚/台阶）随抽屉一起"压矮"，与已压扁的幕墙齐平：
              ① position.y —— sk=0 → 0（未抽出，与改动前一致）；sk=1 → floorH×DRAWER_BASE
@@ -3610,11 +3672,14 @@
           // "蓄力"段（那一小段 k 极小、抽屉还没真正离开，芯体显形会闪一下）。
           liner.visible = (k > 0.02);
           if (f === 0 && GAP_FILL) GAP_FILL.visible = (k > 0.02);   // 一楼抽出时：门口缺口补齐块显形
-          if (k <= 0.0001) plan.visible = false;   // 收回到位才隐藏平面图，别让它在动画中途凭空消失
+          /* 收回到位才隐藏平面图；但**本栋已被剥离**时平面图要一直露着（那是"内部建筑"本身），
+             不能因为抽屉收回就把它关掉 —— 否则剥开后点一下空白，整栋楼的室内布置会全黑。 */
+          if (k <= 0.0001 && stripK <= 0.02) plan.visible = false;
         }, 2.2, { dur: 3.0 });
         dr.target = 0;
         units.push({ u: u, f: f, plan: plan, dg: dg, sbase: sbase, built: false, dr: dr,
-                     badge: badge, name: flName });
+                     badge: badge, name: flName,
+                     core: core, facG: facG, tag: tag, ent: entSlot });
         g.add(fl);
       }
 
@@ -3633,6 +3698,41 @@
       tagPick(top, { kind: 'floor', bld: BLD, f: floors - 1, key: BLD + '|' + (floors - 1) });
       const topU = regLift(top);
       g.add(top);
+
+      /* ============ 【第35轮·新增】整栋"剥离"补间（仅 strippable 的楼栋） ============
+         用户需求：点 7号楼 / 8号楼 → 该栋的**玻璃幕墙与大门整体脱掉**，只留内部建筑与地板，
+         并在每层标出楼层号（8号楼1层 = "8#1F"）；再点某层 → 照旧抽拉；再点 → 还原原样。
+
+         一条 k（0→1）驱动三件事，避免多套补间互相打架：
+           ① 外壳收起 hk = 0→0.60 段：facG.scale.y 1→0（4 片幕墙像卷帘朝楼面收上去），
+              facG.visible 在收到 98.5% 时关闭（避免 scale 极小但仍参与渲染）；
+              大门（ent = 一楼入口整组：门厅体量 / 4 扇玻璃门 / 雨棚 / 台阶）在 hk>0.80 时隐去。
+           ② 楼板化：core（占满整层的混凝土芯）压薄到 **8%** —— 3.4m 的芯体变成 0.27m 的楼板，
+              楼面上方因此腾出净空，从外面能一眼看进每一层。
+              压薄用 scale.y + position.y/2 同步下移（底面始终贴着本层楼板标高，不浮空）。
+           ③ 内部显形 pk = 0.26→1 段：各层室内布置（plan：办公桌/工位/设备/货架…）显形，
+              每层南侧的 "8#1F" 短标签在 hk>0.55 后浮出。
+         复原（k→0）时三件事原路返回，scale 回到 1 → 逐像素原样（未点过的楼栋完全不受影响）。 */
+      var stripT = null;
+      if (opts.strippable) {
+        stripT = regTween(function (k) {
+          stripK = k;
+          const hk = ss(Math.min(1, k / 0.60));
+          const pk = ss(Math.max(0, (k - 0.26) / 0.74));
+          const cys = 1 - 0.92 * hk;
+          for (var si = 0; si < units.length; si++) {
+            var it = units[si];
+            it.core.scale.y = cys;
+            it.core.position.y = FHL[it.f] / 2 * cys;
+            it.facG.scale.y = (hk >= 0.985) ? 0.001 : (1 - hk);
+            it.facG.visible = (hk < 0.985);
+            if (it.ent) it.ent.visible = (hk < 0.80);
+            if (it.built) it.plan.visible = (pk > 0.02) || (it.dr && it.dr.k > 0.02);
+            it.tag.visible = (hk > 0.55);
+          }
+        }, 3.2);
+        stripT.target = 0;
+      }
 
       /* 混凝土勒脚（不带幕墙的落地段，不随楼层抬升）
          【第5轮·修】原来是一整块 (w+1.0)×2.0×(d+1.0) 的混凝土基座，从南立面主入口前
@@ -3791,10 +3891,12 @@
 
       LIFT_OFFICE = LIFT_H;
       if (!OFFICES[BLD]) {
-        OFFICES[BLD] = { bld: BLD, label: opts.label || BLD, w: w, d: d, floors: floors, floorH: floorH, floorHList: FHL, liftH: LIFT_H, units: units, top: topU, dir: DIR, axis: AXIS };
+        OFFICES[BLD] = { bld: BLD, label: opts.label || BLD, w: w, d: d, floors: floors, floorH: floorH, floorHList: FHL, liftH: LIFT_H, units: units, top: topU, dir: DIR, axis: AXIS,
+                         strippable: !!opts.strippable, stripT: stripT, stage: 0 };
       } else {
         // 同一 bld 只保留第一份（理论上不会重复调用）
         OFFICES[BLD].units = units; OFFICES[BLD].top = topU;
+        OFFICES[BLD].strippable = !!opts.strippable; OFFICES[BLD].stripT = stripT;
       }
       if (!OFFICE) OFFICE = OFFICES[BLD];   // 兼容旧调试出口
       PICK_ROOTS.push(g);
@@ -6998,6 +7100,20 @@
     function hideTip() { showTip(''); }
 
     function hintOf(info) {
+      /* 【第35轮】7/8 号楼的悬停提示按剥离状态分三档，让用户知道"下一击会发生什么" */
+      var ST = OFFICES[info.bld];
+      if (ST && ST.strippable) {
+        if (ST.stage === 0) {
+          return '点击剥离' + (ST.label || '') + '玻璃幕墙与大门，露出各层楼板与室内布置';
+        }
+        if (ST.stage === 1) {
+          if (info.kind === 'floor') {
+            return '点击抽出 ' + (ST.label || '') + (info.f + 1) + ' 层内部布置（抽出 + 放大 2.0 倍）';
+          }
+          return '点击空白处或再点此建筑，还原' + (ST.label || '') + '原有样貌';
+        }
+        return '再次点击该层还原' + (ST.label || '') + '原有样貌　·　点击其它层可直接切换';
+      }
       if (info.kind === 'floor') {
         var OB = OFFICES[info.bld] || OFFICE;
         var dirTxt = (OB && OB.axis === 'z') ? (OB.dir < 0 ? '向北' : '向南') : (OB && OB.dir < 0 ? '向西' : '向东');
@@ -7008,7 +7124,10 @@
       return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + ' 并向右移开，完整露出室内平面';
     }
 
-    function collapseAll() {
+    /* 【第35轮】keepStrip = true 时**保留"已剥离"的楼栋**（幕墙/大门仍脱着），
+       只把抽屉与抬升收回去 —— 切换抽拉楼层时用；
+       不传（点空白 / 点其它建筑）则连剥离状态一起还原成原样。 */
+    function collapseAll(keepStrip) {
       for (var b in OFFICES) {
         if (!OFFICES.hasOwnProperty(b)) continue;
         var OB = OFFICES[b];
@@ -7041,17 +7160,66 @@
         var cp = CARPORTS[ci];
         if (cp && cp.lift) { cp.lift.target = 0; if (cp.drift) cp.drift.target = 0; }
       }
+      if (!keepStrip) {
+        for (var sb in OFFICES) {
+          if (!OFFICES.hasOwnProperty(sb)) continue;
+          var SO = OFFICES[sb];
+          if (SO.stripT) { SO.stripT.target = 0; SO.stage = 0; }
+        }
+        STAGE_BLD = null;
+      }
       pickState = null;
       hideAreaPanel();          // 第30轮：收起时同步关闭右侧信息面板
     }
 
-    function openPick(info) {
-      if (pickState && pickState.key === info.key) {    // 同一目标再点一次 = 收起
+    /* ============ 【第35轮】"整栋剥离"状态机（只对 strippable 的 7号楼 / 8号楼） ============
+       第 1 次点楼栋 → 剥离：玻璃幕墙 + 大门整体脱掉，露出各层楼板与室内布置，每层标 "8#1F"
+       第 2 次点某层 → 该层照旧抽拉（抬升 + 抽出 + 放大 2.0 倍），其余层保持剥离状态
+       第 3 次点同一层（或点非楼层部位）→ 还原成**原有样貌**
+       任意时刻点空白 / 点别的建筑 → collapseAll() 一步全还原（随时可用的出口）。 */
+    var STAGE_BLD = null;        // 当前处于"剥离链条"里的楼栋 id
+
+    function stripIn(bld, silent) {
+      var OB = OFFICES[bld];
+      if (!OB || !OB.stripT) return;
+      /* 【前提】剥离前把各层室内布置一次性生成好：buildPlanFor 是同步的重活
+         （每层几十个构件），塞进补间里逐帧生成会明显掉帧，所以先做完再启动动画。 */
+      for (var i = 0; i < OB.units.length; i++) {
+        var it = OB.units[i];
+        if (!it.built) {
+          buildPlanFor(it.plan, OB, i);
+          it.built = true;
+          tagPick(it.plan, { kind: 'floor', bld: bld, f: i, key: bld + '|' + i });
+        }
+      }
+      OB.stripT.target = 1;
+      OB.stage = 1;
+      STAGE_BLD = bld;
+      pickState = null;
+      hideAreaPanel();
+      if (!silent) {
+        showTip((OB.label || bld) + '　·　玻璃幕墙与大门已收掉，只留楼板与室内布置　·　' +
+                '点击任意一层可抽出查看　·　再次点击还原原样', true);
+      }
+    }
+
+    function stripOut(bld) {
+      var OB = OFFICES[bld];
+      if (!OB || !OB.stripT) return;
+      collapseAll(true);          // 先收回抽屉（保留剥离），避免抽屉与外壳同时往回动
+      OB.stripT.target = 0;
+      OB.stage = 0;
+      STAGE_BLD = null;
+      hideTip();
+    }
+
+    function openDrawer(info, keepStrip) {
+      if (pickState && pickState.key === info.key && !keepStrip) {   // 同一目标再点一次 = 收起
         collapseAll();
         hideTip();
         return;
       }
-      collapseAll();
+      collapseAll(keepStrip);
 
       if (info.kind === 'floor') {
         var OB = OFFICES[info.bld] || OFFICE;
@@ -7078,8 +7246,14 @@
         }
         showAreaPanel(info.bld, info.f);          // 第30轮：右侧信息面板（位置 + 用能 + 趋势）
         var dirTxt = (OB.axis === 'z') ? (OB.dir < 0 ? '向北抽出' : '向南抽出') : (OB.dir < 0 ? '向西抽出' : '向东抽出');
-        showTip((OB.label || '') + (info.f + 1) + '层 · ' + (cur && cur.name ? cur.name : '') +
-                '　·　已' + dirTxt + ' · 放大 2.0 倍 · 悬停展示　·　再次点击或点空白收回', true);
+        if (keepStrip && OB.strippable) {
+          showTip((OB.label || '') + (info.f + 1) + '层 · ' + (cur && cur.name ? cur.name : '') +
+                  '　·　已' + dirTxt + ' · 放大 2.0 倍　·　' +
+                  '再次点击该层还原整栋，点击其它层可直接切换', true);
+        } else {
+          showTip((OB.label || '') + (info.f + 1) + '层 · ' + (cur && cur.name ? cur.name : '') +
+                  '　·　已' + dirTxt + ' · 放大 2.0 倍 · 悬停展示　·　再次点击或点空白收回', true);
+        }
       } else if (info.kind === 'carport') {
         var cp = CARPORTS[info.idx];
         if (!cp) return;
@@ -7103,7 +7277,33 @@
         showAreaPanel(info.bld, -1);               // 第30轮：右侧信息面板
         showTip(sh.label + '　·　屋盖已升起并向右侧移开，室内平面完整露出　·　再次点击或点空白收起', true);
       }
-      pickState = { key: info.key };
+      pickState = { key: info.key, bld: info.bld, f: info.f };
+    }
+
+    function openPick(info) {
+      var ST = OFFICES[info.bld];
+      if (ST && ST.strippable) {
+        if (ST.stage === 0) {                        // ① 第 1 次点楼栋：剥离
+          collapseAll();
+          stripIn(info.bld);
+          return;
+        }
+        if (ST.stage === 1) {                        // ② 已剥离：点哪层抽哪层
+          if (info.kind === 'floor') { openDrawer(info, true); return; }
+          stripOut(info.bld);                        // 点到非楼层（机房顶之类）→ 还原
+          return;
+        }
+        /* ③ 已抽出：点**同一层** = 还原整栋原样；点**别的层** = 直接切过去（保持剥离）。
+           用户要的"再点击后还原楼栋原有样貌"就落在这一句上。 */
+        if (info.kind === 'floor' && pickState && pickState.bld === info.bld && pickState.f === info.f) {
+          stripOut(info.bld);
+          return;
+        }
+        if (info.kind === 'floor') { openDrawer(info, true); return; }
+        stripOut(info.bld);
+        return;
+      }
+      openDrawer(info, false);
     }
 
     /* ---- 事件接线：点击（按位移/时长区分"点击"与"拖动旋转"）、悬停光标 ---- */
@@ -7150,6 +7350,11 @@
       floor: function (f) { openPick({ kind: 'floor', bld: 'office', f: f, key: 'office|' + f }); },
       shell: function (b) { openPick({ kind: 'shell', bld: b, key: b }); },
       collapse: function () { collapseAll(); hideTip(); },
+      /* 【第35轮】剥离链条的无头调试入口：strip → pick(bld,f) → stripOut */
+      pick: function (bld, f) { openPick({ kind: 'floor', bld: bld, f: f, key: bld + '|' + f }); },
+      strip: function (bld) { stripIn(bld); return (OFFICES[bld] || {}).stage; },
+      stripOut: function (bld) { stripOut(bld); return (OFFICES[bld] || {}).stage; },
+      stage: function (bld) { var o = OFFICES[bld]; return o ? o.stage : -1; },
       area: function (kind, f) { showAreaPanel(kind, f === undefined ? -1 : f); },
       areaMode: function (m) { if (apState) { apState.mode = m; apApply(); apDrawChart(0); } },
       // 【第34轮】场景模式：__expand.sceneMode('full') / ('solo')
