@@ -3,20 +3,22 @@
  * ------------------------------------------------------------------
  * 一行引入即可，样式与 DOM 全部由本文件注入，不影响宿主页面：
  *
- *   <!-- 展示样式（带数字动画） -->
- *   <script defer src="https://peterinblue.github.io/demo/counter.js"></script>
+ *   <script defer src="https://peterinblue.github.io/demo/counter.js?v=2"></script>
  *
  *   <!-- 只在后台计数、不显示任何东西 -->
- *   <script defer src="https://peterinblue.github.io/demo/counter.js" data-mode="count"></script>
+ *   <script defer src="https://peterinblue.github.io/demo/counter.js?v=2" data-mode="count"></script>
  *
  * 可选属性：
  *   data-mode       display | count            默认 display
  *   data-namespace  计数命名空间                默认 peterinblue.github.io
  *   data-key        计数键                      默认 demo-visits
  *   data-base       起始值（键不存在时的兜底）  默认 2000
- *   data-label      标题文案
- *   data-sub        副标题文案
- *   data-target     自定义挂载选择器（默认插到 <footer> 之前）
+ *   data-label      标题文案                    默认 累计访问
+ *   data-note       尾注文案                    默认 同一访客每天只计一次
+ *   data-target     自定义挂载选择器（默认放进 <footer> 首行之上）
+ *
+ * 外观：**只有一行浅灰小字** —— 无边框、无底色、无阴影，跟页脚版权行同色系，
+ *       不喧宾夺主；数字是唯一有动效的部分（rolling odometer）。
  *
  * 计数规则：
  *   1. 只统计挂了本脚本的页面 —— 当前仅 https://peterinblue.github.io/demo/；
@@ -44,8 +46,8 @@
     ns: attr('data-namespace', 'peterinblue.github.io'),
     key: attr('data-key', 'demo-visits'),
     base: parseInt(attr('data-base', '2000'), 10) || 2000,
-    label: attr('data-label', '累计访问人数'),
-    sub: attr('data-sub', '本站访客 · 同一访客每天只计一次'),
+    label: attr('data-label', '累计访问'),
+    note: attr('data-note', '同一访客每天只计一次'),
     target: attr('data-target', '')
   };
 
@@ -145,49 +147,28 @@
     });
   }
 
-  /* ---------------- 样式 ---------------- */
+  /* ---------------- 样式：刻意做"轻" ---------------- */
+  /* 只有一行浅灰小字，与页脚版权行同色系；不设边框 / 背景 / 阴影，避免变成一张卡片 */
 
   var CSS = [
-    '.pbc-root{--pbc-a:#4f46e5;--pbc-b:#0891b2;--pbc-ink:#312e81;--pbc-mut:#64748b;',
-    'display:flex;justify-content:center;margin:30px 16px 20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}',
-    '.pbc-card{position:relative;display:flex;align-items:center;gap:14px;width:100%;max-width:400px;padding:15px 20px 15px 22px;',
-    'border-radius:18px;border:1px solid transparent;box-sizing:border-box;overflow:hidden;',
-    'background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(246,248,255,.9)) padding-box,',
-    'linear-gradient(135deg,rgba(99,102,241,.55),rgba(6,182,212,.45),rgba(99,102,241,.2)) border-box;',
-    'box-shadow:0 14px 34px -18px rgba(49,46,129,.45),0 2px 6px rgba(15,23,42,.04);',
-    'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);',
-    'transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease;}',
-    '.pbc-card:hover{transform:translateY(-2px);box-shadow:0 20px 40px -20px rgba(49,46,129,.5),0 2px 8px rgba(15,23,42,.06);}',
-    '.pbc-card::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;',
-    'background:linear-gradient(180deg,var(--pbc-a),var(--pbc-b));}',
-    '.pbc-card::after{content:"";position:absolute;right:-40px;top:-60px;width:150px;height:150px;border-radius:50%;',
-    'background:radial-gradient(circle,rgba(99,102,241,.16),rgba(99,102,241,0) 70%);pointer-events:none;}',
-
-    '.pbc-ico{flex:0 0 auto;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;',
-    'background:linear-gradient(135deg,var(--pbc-a),var(--pbc-b));box-shadow:0 6px 14px -6px rgba(79,70,229,.8);}',
-    '.pbc-ico svg{width:17px;height:17px;display:block;}',
-
-    '.pbc-main{flex:1 1 auto;min-width:0;}',
-    '.pbc-head{display:flex;align-items:center;gap:7px;margin-bottom:2px;}',
-    '.pbc-label{font-size:11.5px;font-weight:600;letter-spacing:.14em;color:var(--pbc-mut);white-space:nowrap;}',
-    '.pbc-live{display:inline-flex;align-items:center;gap:4px;margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.12em;color:#059669;}',
-    '.pbc-live i{width:5px;height:5px;border-radius:50%;background:#10b981;box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:pbc-pulse 2s infinite;}',
-    '@keyframes pbc-pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.55)}70%{box-shadow:0 0 0 7px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}',
-
-    '.pbc-val{display:flex;align-items:baseline;gap:9px;line-height:1;margin:3px 0 5px;}',
+    '.pbc-root{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;',
+    'margin:0 auto 7px;font-size:12.5px;line-height:1.2;font-weight:400;letter-spacing:.01em;color:#94a3b8;',
+    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;',
+    'background:none;border:0;box-shadow:none;padding:0;}',
+    '.pbc-ico{display:inline-flex;align-items:center;flex:0 0 auto;opacity:.85;}',
+    '.pbc-ico svg{width:13px;height:13px;display:block;stroke:#9aa8bb;fill:none;stroke-width:1.7;',
+    'stroke-linecap:round;stroke-linejoin:round;}',
+    '.pbc-label{color:#94a3b8;}',
     '.pbc-digits{display:inline-flex;align-items:flex-end;height:1em;overflow:hidden;',
-    'font-size:34px;font-weight:800;color:var(--pbc-ink);font-variant-numeric:tabular-nums;}',
-    '.pbc-d{display:inline-block;width:.62em;height:1em;overflow:hidden;}',
+    'font-size:14px;font-weight:600;color:#64748b;font-variant-numeric:tabular-nums;}',
+    '.pbc-d{display:inline-block;width:.60em;height:1em;overflow:hidden;}',
     '.pbc-t{display:block;will-change:transform;}',
     '.pbc-t i{display:block;height:1em;line-height:1;font-style:normal;text-align:center;}',
-    '.pbc-sep{display:inline-block;width:.32em;height:1em;line-height:1;text-align:center;color:rgba(49,46,129,.45);}',
-    '.pbc-plus{font-size:12px;font-weight:700;color:#059669;opacity:0;transform:translateY(4px);transition:opacity .4s ease,transform .4s ease;}',
-    '.pbc-plus.on{opacity:1;transform:translateY(0);}',
-
-    '.pbc-sub{margin-top:4px;font-size:10.5px;color:#94a3b8;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-    '.pbc-dot{display:inline-block;width:3px;height:3px;border-radius:50%;background:#cbd5e1;margin:0 5px;vertical-align:middle;}',
-    '@media (max-width:430px){.pbc-card{padding:13px 16px 13px 18px;gap:11px;}.pbc-digits{font-size:26px;}.pbc-label{font-size:10.5px;letter-spacing:.1em;}.pbc-sub{font-size:9.5px;}}',
-    '@media (prefers-reduced-motion:reduce){.pbc-card,.pbc-t,.pbc-plus{transition:none!important;}.pbc-live i{animation:none!important;}}'
+    '.pbc-sep{display:inline-block;width:.28em;height:1em;line-height:1;text-align:center;color:#c3ccd8;}',
+    '.pbc-dot{display:inline-block;width:3px;height:3px;border-radius:50%;background:#cbd5e1;flex:0 0 auto;}',
+    '.pbc-note{color:#a9b4c2;font-size:11.5px;}',
+    '@media (max-width:430px){.pbc-root{font-size:11.5px;gap:5px;}.pbc-digits{font-size:13px;}.pbc-note{font-size:10.5px;}}',
+    '@media (prefers-reduced-motion:reduce){.pbc-t{transition:none!important;}}'
   ].join('');
 
   function ensureStyle() {
@@ -200,7 +181,7 @@
 
   /* ---------------- 渲染 ---------------- */
 
-  var el = {}, cols = [], lastCount = -1, mountNode = null, plusTimer = null;
+  var el = {}, cols = [], lastCount = -1, mountNode = null;
 
   function fmt(n) {
     return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -244,8 +225,8 @@
     cols.forEach(function (c, idx) {
       var target = targets[idx] || 0;
       c.t.style.transition = roll
-        ? 'transform .95s cubic-bezier(.22,1,.36,1) ' + (idx * 70) + 'ms'
-        : 'transform .8s cubic-bezier(.22,1,.36,1)';
+        ? 'transform .9s cubic-bezier(.22,1,.36,1) ' + (idx * 60) + 'ms'
+        : 'transform .7s cubic-bezier(.22,1,.36,1)';
       c.t.style.transform = 'translateY(-' + target + 'em)';
       c.v = target;
     });
@@ -266,7 +247,7 @@
         var c = cols[idx];
         var d = parseInt(ch, 10);
         if (c && c.v !== d) {
-          c.t.style.transition = 'transform .8s cubic-bezier(.22,1,.36,1)';
+          c.t.style.transition = 'transform .7s cubic-bezier(.22,1,.36,1)';
           c.t.style.transform = 'translateY(-' + d + 'em)';
           c.v = d;
         }
@@ -280,72 +261,52 @@
     var root = document.createElement('div');
     root.className = 'pbc-root';
     root.setAttribute('role', 'group');
-    root.setAttribute('aria-label', CFG.label);
+    root.setAttribute('aria-label', CFG.label + ' ' + CFG.note);
 
-    var card = document.createElement('div');
-    card.className = 'pbc-card';
-
-    var ico = document.createElement('div');
+    var ico = document.createElement('span');
     ico.className = 'pbc-ico';
-    ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5 5.5 12 5.5 22.5 12 22.5 12 19 18.5 12 18.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>';
+    ico.innerHTML = '<svg viewBox="0 0 24 24"><path d="M1.6 12S5.2 5.8 12 5.8 22.4 12 22.4 12 18.8 18.2 12 18.2 1.6 12 1.6 12z"/><circle cx="12" cy="12" r="3.1"/></svg>';
 
-    var main = document.createElement('div');
-    main.className = 'pbc-main';
-
-    var head = document.createElement('div');
-    head.className = 'pbc-head';
     var lab = document.createElement('span');
     lab.className = 'pbc-label';
     lab.textContent = CFG.label;
-    var live = document.createElement('span');
-    live.className = 'pbc-live';
-    live.innerHTML = '<i></i>LIVE';
-    head.appendChild(lab);
-    head.appendChild(live);
 
-    var val = document.createElement('div');
-    val.className = 'pbc-val';
-    val.setAttribute('aria-live', 'polite');
     var digits = document.createElement('span');
     digits.className = 'pbc-digits';
-    var plus = document.createElement('span');
-    plus.className = 'pbc-plus';
-    plus.textContent = '+1';
-    val.appendChild(digits);
-    val.appendChild(plus);
 
-    var sub = document.createElement('div');
-    sub.className = 'pbc-sub';
-    sub.innerHTML = CFG.sub.replace(/·/g, '<span class="pbc-dot"></span>');
+    var dot = document.createElement('span');
+    dot.className = 'pbc-dot';
 
-    main.appendChild(head);
-    main.appendChild(val);
-    main.appendChild(sub);
-    card.appendChild(ico);
-    card.appendChild(main);
-    root.appendChild(card);
+    var note = document.createElement('span');
+    note.className = 'pbc-note';
+    note.textContent = CFG.note;
 
-    el = { root: root, digits: digits, plus: plus };
+    root.appendChild(ico);
+    root.appendChild(lab);
+    root.appendChild(digits);
+    if (CFG.note) { root.appendChild(dot); root.appendChild(note); }
+
+    el = { root: root, digits: digits };
     return root;
   }
 
+  /* 挂载：优先放进 <footer> 里（当版权行的上一行），这样与页脚同色系、间距自然，
+     不会被页脚那个 clamp(40px,6vw,64px) 的 margin-top 顶得老远 */
   function mount() {
     if (mountNode) return mountNode;
     var node = buildWidget();
     var host = CFG.target ? document.querySelector(CFG.target) : null;
     if (host) { host.appendChild(node); mountNode = node; return node; }
+
     var foot = document.querySelector('footer') || document.querySelector('.footer') || document.querySelector('#footer');
-    if (foot && foot.parentNode) { foot.parentNode.insertBefore(node, foot); mountNode = node; return node; }
+    if (foot) {
+      foot.insertBefore(node, foot.firstChild);
+      mountNode = node;
+      return node;
+    }
     document.body.appendChild(node);
     mountNode = node;
     return node;
-  }
-
-  function showPlus() {
-    if (!el.plus) return;
-    el.plus.classList.add('on');
-    clearTimeout(plusTimer);
-    plusTimer = setTimeout(function () { el.plus.classList.remove('on'); }, 2200);
   }
 
   /* ---------------- 主流程 ---------------- */
@@ -361,12 +322,16 @@
       paint(fallback, true);
     }
 
+    function apply(v) {
+      if (typeof v === 'number' && isFinite(v) && v >= CFG.base) {
+        lsSet('pbc_last', String(v));
+        if (CFG.mode === 'display') paint(v, false);
+      }
+    }
+
     if (lsGet(flag) === '1') {
       api('get', CFG.key).then(function (r) {
-        if (r && r.status === 200 && typeof r.value === 'number' && r.value >= CFG.base) {
-          lsSet('pbc_last', String(r.value));
-          if (CFG.mode === 'display') paint(r.value, false);
-        }
+        if (r && r.status === 200) apply(r.value);
       });
       return;
     }
@@ -377,28 +342,10 @@
       return api('create', uniqueKey, '?initializer=1').then(function (r) {
         if (r && r.status === 201) {
           lsSet(flag, '1');
-          return api('hit', CFG.key).then(function (h) {
-            if (h && typeof h.value === 'number') {
-              lsSet('pbc_last', String(h.value));
-              if (CFG.mode === 'display') { paint(h.value, false); showPlus(); }
-            }
-          });
+          return api('hit', CFG.key).then(function (h) { if (h) apply(h.value); });
         }
-        if (r && r.status === 409) {
-          lsSet(flag, '1');
-          return api('get', CFG.key).then(function (g) {
-            if (g && typeof g.value === 'number' && g.value >= CFG.base) {
-              lsSet('pbc_last', String(g.value));
-              if (CFG.mode === 'display') paint(g.value, false);
-            }
-          });
-        }
-        return api('get', CFG.key).then(function (g) {
-          if (g && typeof g.value === 'number' && g.value >= CFG.base) {
-            lsSet('pbc_last', String(g.value));
-            if (CFG.mode === 'display') paint(g.value, false);
-          }
-        });
+        if (r && r.status === 409) lsSet(flag, '1');
+        return api('get', CFG.key).then(function (g) { if (g) apply(g.value); });
       });
     }).catch(function () {});
   }
