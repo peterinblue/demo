@@ -1,5 +1,5 @@
 /*!
- * 全站访问计数器  ·  peterinblue.github.io
+ * 访问计数器  ·  peterinblue.github.io/demo
  * ------------------------------------------------------------------
  * 一行引入即可，样式与 DOM 全部由本文件注入，不影响宿主页面：
  *
@@ -12,14 +12,14 @@
  * 可选属性：
  *   data-mode       display | count            默认 display
  *   data-namespace  计数命名空间                默认 peterinblue.github.io
- *   data-key        计数键                      默认 visits
+ *   data-key        计数键                      默认 demo-visits
  *   data-base       起始值（键不存在时的兜底）  默认 2000
  *   data-label      标题文案
  *   data-sub        副标题文案
  *   data-target     自定义挂载选择器（默认插到 <footer> 之前）
  *
  * 计数规则：
- *   1. 全站共用一个计数键 —— peterinblue.github.io 之下所有页面共享同一个数字；
+ *   1. 只统计挂了本脚本的页面 —— 当前仅 https://peterinblue.github.io/demo/；
  *   2. 同一天、同一个访客只计一次 —— 服务端用「每(日+IP)一把唯一键」做原子去重，
  *      客户端 local 记录只作加速，清缓存也刷不上去；
  *   3. 取不到 IP 时退化为「设备指纹」，效果等价（同一台设备一天仍只计一次）。
@@ -42,10 +42,10 @@
   var CFG = {
     mode: attr('data-mode', 'display') === 'count' ? 'count' : 'display',
     ns: attr('data-namespace', 'peterinblue.github.io'),
-    key: attr('data-key', 'visits'),
+    key: attr('data-key', 'demo-visits'),
     base: parseInt(attr('data-base', '2000'), 10) || 2000,
     label: attr('data-label', '累计访问人数'),
-    sub: attr('data-sub', '全站统计 · 同一访客每天只计一次'),
+    sub: attr('data-sub', '本站访客 · 同一访客每天只计一次'),
     target: attr('data-target', '')
   };
 
@@ -373,7 +373,7 @@
 
     visitorIp().then(function (ip) {
       var ident = ip ? ('ip:' + ip) : ('dev:' + deviceId());
-      var uniqueKey = 'v' + day + '-' + hash(ident);
+      var uniqueKey = 'd' + day + '-' + hash(ident);
       return api('create', uniqueKey, '?initializer=1').then(function (r) {
         if (r && r.status === 201) {
           lsSet(flag, '1');
