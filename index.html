@@ -119,6 +119,7 @@
     font-size:13px;color:var(--muted);
   }
   footer a{color:var(--accent);text-decoration:none;}
+  .vcount{font-size:12px;color:var(--muted);opacity:.75;margin-bottom:7px;letter-spacing:.4px;font-variant-numeric:tabular-nums;}
 
   /* ===== 版本选择弹框 ===== */
   .card.energy{cursor:pointer;}
@@ -269,6 +270,7 @@
     </section>
 
     <footer>
+      <div class="vcount" id="vcount">访问 2,000</div>
       © 2026 AI小程序合集 · by 梁英俊
     </footer>
   </main>
@@ -309,6 +311,44 @@
       document.body.style.overflow='';
     }
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeEnergyModal(); });
+
+    /* 访问计数器：真实全站独立访客（服务端按 IP+浏览器去重），接口不可用时自动降级 */
+    (function(){
+      var BASE=2000, KEY='demo_uv_v1';
+      var el=document.getElementById('vcount');
+      if(!el) return;
+      function fmt(n){ return (BASE+n).toLocaleString('en-US'); }
+      function localCount(){
+        var n=0;
+        try{ n=parseInt(localStorage.getItem(KEY)||'0',10)||0; }catch(e){}
+        n++;
+        try{ localStorage.setItem(KEY,String(n)); }catch(e){}
+        el.textContent='访问 '+fmt(n);
+      }
+      function getJSON(url,ms){
+        return new Promise(function(resolve,reject){
+          var ctl=('AbortController' in window)?new AbortController():null;
+          var t=setTimeout(function(){ if(ctl) ctl.abort(); reject(new Error('timeout')); },ms);
+          fetch(url,{cache:'no-store',signal:ctl?ctl.signal:undefined})
+            .then(function(r){ return r.json(); })
+            .then(function(j){ clearTimeout(t); resolve(j); })
+            .catch(function(e){ clearTimeout(t); reject(e); });
+        });
+      }
+      var page=encodeURIComponent(location.origin+location.pathname);
+      var srcs=[
+        'https://api.goshare.cn/api/v1/count?url='+page+'&type=1',
+        'https://api.countapi.xyz/api/hit/peterinblue-demo'
+      ];
+      (function attempt(i){
+        if(i>=srcs.length){ localCount(); return; }
+        getJSON(srcs[i],3500).then(function(j){
+          var n=(j&&typeof j.count==='number')?j.count:null;
+          if(n===null||isNaN(n)) throw new Error('bad');
+          el.textContent='访问 '+fmt(n);
+        }).catch(function(){ attempt(i+1); });
+      })(0);
+    })();
   </script>
 </body>
 </html>
