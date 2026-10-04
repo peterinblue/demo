@@ -203,7 +203,8 @@
     /* 左侧面板 */
     .left-column {
       left: 16px;
-      top: 80px;
+      /* 【14站】顶栏移除：原 top:80px = 让开 64px 顶栏 + 16px 间隙，改为贴顶 */
+      top: 16px;
       width: 300px;
       display: flex;
       flex-direction: column;
@@ -214,7 +215,8 @@
     /* 右侧面板 */
     .right-column {
       right: 16px;
-      top: 80px;
+      /* 【14站】顶栏移除：原 top:80px = 让开 64px 顶栏 + 16px 间隙，改为贴顶 */
+      top: 16px;
       width: 300px;
       display: flex;
       flex-direction: column;
@@ -225,7 +227,8 @@
     /* 中央顶部综合效益 */
     .center-top {
       position: absolute;
-      top: 80px;
+      /* 【14站】顶栏移除：原 top:80px = 让开 64px 顶栏 + 16px 间隙，改为贴顶 */
+      top: 16px;
       left: 50%;
       transform: translateX(-50%);
       width: 560px;
@@ -434,12 +437,14 @@
     .left-dash.show { display: block; }
 
     /* ============ 场景模式切换（第34轮）：独立园区 / 完整园区 ============
-       位置钉在左上角 header 正下方；默认高亮「独立」（= 改动前的园区外观）。
+       【14站】顶栏已移除，位置改为左上角贴顶（top:16px）；默认高亮「独立」
+       （= 改动前的园区外观）。
        body.light / body.black 各覆盖一套配色，跟随三套昼夜主题自动换肤。 */
     .scene-switch {
       position: absolute;
       left: 8px;
-      top: 76px;
+      /* 【14站】顶栏移除：原 top:76px = 让开 64px 顶栏 + 12px 间隙，改为贴顶 */
+      top: 16px;
       z-index: 16;
       display: flex;
       gap: 3px;
