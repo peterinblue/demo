@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b1030">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>飞机穿环小游戏 by 梁英俊</title>
+<title>飞机小游戏 by 梁英俊</title>
 <style>
   :root{
     --ink:#f2f5ff;
@@ -200,6 +200,44 @@
   }
   .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;}
 
+  /* ---------- 模式选择 ---------- */
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .mbtn{
+    pointer-events:auto;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:14px;padding:12px 5px 10px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    transition:transform .16s, border-color .16s, background .16s, box-shadow .16s;
+    position:relative;overflow:hidden;
+  }
+  .mbtn .mi{
+    width:40px;height:40px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:800;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.10);
+    color:#cfe0ff;
+  }
+  .mbtn b{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:.8px;}
+  .mbtn i{font-style:normal;font-size:10px;color:var(--ink-3);letter-spacing:.2px;}
+  .mbtn:hover{transform:translateY(-2px);background:rgba(255,255,255,.09);}
+  .mbtn.sel{border-color:rgba(255,182,72,.85);
+    background:linear-gradient(180deg,rgba(255,182,72,.20),rgba(255,122,168,.12));
+    box-shadow:0 0 0 1px rgba(255,182,72,.32), 0 8px 22px rgba(255,150,80,.24);}
+  .mbtn.sel b{color:#ffd9a0;}
+  .mbtn.sel .mi{background:rgba(255,182,72,.22);border-color:rgba(255,182,72,.4);color:#ffd9a0;}
+  .mbtn[data-mode="shoot"].sel{border-color:rgba(255,120,140,.85);
+    background:linear-gradient(180deg,rgba(255,110,130,.20),rgba(190,70,200,.12));
+    box-shadow:0 0 0 1px rgba(255,110,130,.30), 0 8px 22px rgba(255,110,130,.22);}
+  .mbtn[data-mode="shoot"].sel b{color:#ffb8c8;}
+  .mbtn[data-mode="shoot"].sel .mi{background:rgba(255,110,130,.22);border-color:rgba(255,110,130,.42);color:#ffc0cc;}
+  .mbtn[data-mode="dodge"].sel{border-color:rgba(120,220,255,.85);
+    background:linear-gradient(180deg,rgba(110,210,255,.20),rgba(130,110,255,.12));
+    box-shadow:0 0 0 1px rgba(110,210,255,.30), 0 8px 22px rgba(110,190,255,.22);}
+  .mbtn[data-mode="dodge"].sel b{color:#a8e8ff;}
+  .mbtn[data-mode="dodge"].sel .mi{background:rgba(110,210,255,.22);border-color:rgba(110,210,255,.42);color:#b0ecff;}
+
   /* ---------- 机型 / 难度选择 ---------- */
   .pick{margin:0 0 14px;text-align:left;}
   .pick h3{
@@ -328,7 +366,7 @@
   <div class="brand">
     <img src="data:image/png;base64,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" alt="梁英俊印鉴">
     <div class="txt">
-      <h1>飞机穿环小游戏<span class="by">by 梁英俊</span></h1>
+      <h1>飞机小游戏<span class="by">by 梁英俊</span></h1>
     </div>
   </div>
 </header>
@@ -359,8 +397,13 @@
   <!-- 开始 -->
   <div class="veil" id="veilStart">
     <div class="panel">
-      <h2>飞机穿环</h2>
-      <p class="sub">暮色高空 · 引擎全开<br>穿过能量光环，别撞上环壁与虚空晶核</p>
+      <h2>飞机小游戏</h2>
+      <p class="sub">三种玩法 · 四款战机 · 三档难度<br>先选模式，再定战机</p>
+
+      <div class="pick">
+        <h3>选择模式</h3>
+        <div class="modes" id="modePick"></div>
+      </div>
 
       <div class="pick">
         <h3>选择机型</h3>
@@ -402,7 +445,7 @@
       <div class="rank" id="uiRank">S</div>
       <h2 id="uiOverTitle">任务完成</h2>
       <p class="sub" id="uiOverSub">航迹已记录</p>
-      <div class="score-grid">
+      <div class="score-grid" id="overGrid">
         <div><b id="uiFScore" style="color:var(--brand)">0</b><span>总得分</span></div>
         <div><b id="uiFRings">0</b><span>穿环数</span></div>
         <div><b id="uiFPerfect">0</b><span>完美穿环</span></div>
@@ -512,6 +555,40 @@ var LEVELS = [
 
 var LV = LEVELS[1];      // 当前难度
 var PL = PLANES[0];      // 当前机型
+
+/* ================= 游戏模式 =================
+   ring    穿越圆环：原有玩法，穿过光环得分
+   shoot   飞机打怪：向前推进，自动开火击落来袭敌机
+   dodge   躲避子弹：躲弹幕，存活越久分越高
+*/
+var MODES = [
+  { id:'ring',  name:'穿越圆环', icon:'◎',
+    desc:'穿过金色光环', tip:'穿环得分 · 避开环壁与虚空晶核',
+    key:'by15_best_ring' },
+  { id:'shoot', name:'飞机打怪', icon:'⚔',
+    desc:'击落来袭敌机', tip:'自动开火 · 击坠得分 · 慎防撞击',
+    key:'by15_best_shoot' },
+  { id:'dodge', name:'躲避子弹', icon:'❋',
+    desc:'闪避密集弹幕', tip:'存活计时 · 被击中扣命',
+    key:'by15_best_dodge' }
+];
+var MD = MODES[0];       // 当前模式
+
+/* ---------- 模式专属参数（难度 × 模式） ---------- */
+function modeCfg(){
+  var L = LV, m = MD.id;
+  if(m==='ring'){
+    return { speed0:L.speed0, maxSpeed:L.maxSpeed, speedUp:L.speedUp,
+             spawnGap:L.gapT0, spawnGapEnd:L.gapT1, mult:L.mult };
+  }
+  if(m==='shoot'){
+    return { speed0:L.speed0*0.72, maxSpeed:L.maxSpeed*0.78, speedUp:L.speedUp*0.7,
+             fireGap:0.26, spawnGap:1.55, spawnGapEnd:1.05, mult:L.mult*1.15 };
+  }
+  // dodge：整体偏慢，但弹幕密度随难度陡增
+  return { speed0:L.speed0*0.30, maxSpeed:L.maxSpeed*0.34, speedUp:L.speedUp*0.3,
+           fireGap:1.30, spawnGap:2.10, spawnGapEnd:1.25, mult:L.mult };
+}
 
 /* ================= 画布尺寸 ================= */
 var W=0, H=0, DPR=1, cx=0, cy=0, FOCAL=1, PS=1, isTouch=false;
@@ -680,6 +757,13 @@ var AU = {
     this.tone(1960,0.26,'sine',0.07,0,0.10);
   },
   orb:function(){ this.tone(1180,0.10,'sine',0.11); this.tone(1760,0.13,'sine',0.06,0,0.04); },
+  shot:function(){ this.tone(1500,0.045,'square',0.045,620); },
+  explode:function(){
+    this.noise(0.42,0.20,1100);
+    this.tone(220,0.34,'sawtooth',0.12,55);
+    this.tone(96,0.4,'sine',0.10,40);
+  },
+  hit:function(){ this.noise(0.16,0.14,2600); this.tone(420,0.12,'square',0.07,180); },
   crash:function(){
     this.noise(0.55,0.26,900);
     this.tone(180,0.5,'sawtooth',0.16,42);
@@ -750,22 +834,24 @@ cv.addEventListener('contextmenu',function(e){ e.preventDefault(); });
 
 /* ================= 世界对象 ================= */
 var rings=[], orbs=[], hazards=[], parts=[], clouds=[];
+var foes=[], bullets=[], shots=[], pickups=[];
 var shake=0, flash=0, hitStop=0;
 var G = {
   state:'menu', t:0, score:0, dist:0, lives:LV.lives,
   speed:LV.speed0, px:0, py:0, vx:0, vy:0,
   combo:0, bestCombo:0, ringN:0, perfectN:0,
-  inv:0, roll:0, pitch:0, tail:[], lastZ:0
+  inv:0, roll:0, pitch:0, lastZ:0,
+  kills:0, waveN:0, shotT:0, survive:0
 };
 
 /* 云层 */
 function initClouds(){
   clouds.length=0;
-  var n = isTouch?11:17;
+  var n = isTouch?7:11;
   for(var i=0;i<n;i++){
     clouds.push({
-      x: rnd(-46,46), y: rnd(-4,30), z: rnd(20,150),
-      s: rnd(4,11), layer: i%3, a: rnd(0.10,0.26), ph: Math.random()*TAU
+      x: rnd(-46,46), y: rnd(2,30), z: rnd(20,150),
+      s: rnd(4,11), layer: i%3, a: rnd(0.08,0.18), ph: Math.random()*TAU
     });
   }
 }
@@ -908,6 +994,75 @@ function spawnAhead(){
   }
 }
 
+/* ================= 打怪 / 躲弹幕：生成 =================
+   两种模式都让世界继续向前推进（保持"飞行"体感），区别在于：
+   shoot —— 前方生成敌机，玩家子弹自动向前，击坠得分
+   dodge —— 前方生成弹幕发射源，子弹向玩家汇聚，纯粹求生存
+*/
+
+/* 敌机编队生成（打怪模式） */
+function spawnFoes(){
+  var MC = modeCfg();
+  var guard=0;
+  while(G.lastZ < leadLimit()*1.15 && guard++<8){
+    var gap = G.speed * lerp(MC.spawnGap, MC.spawnGapEnd, Math.min(1, G.waveN/22));
+    G.lastZ += gap;
+    var t = Math.min(1, G.waveN/24);
+    // 一波 1~3 架，呈横排或斜列；难度越高编队越密
+    var n = (G.waveN<3) ? 1 : rndInt(1, (LV.id==='hard'?3:(LV.id==='easy'?2:2)));
+    var baseY = rnd(-CFG.boundY*0.7, CFG.boundY*0.7);
+    var spread = clamp(3.0 + G.waveN*0.22, 3.0, CFG.boundX*1.25);
+    for(var i=0;i<n;i++){
+      var fx = clamp(baseX(i,n) + rnd(-0.7,0.7), -CFG.boundX*0.88, CFG.boundX*0.88);
+      var hp = Math.round(lerp(3, 1, t) + (LV.id==='hard' && Math.random()<0.3 ? 1:0));
+      foes.push({
+        x:fx, y:clamp(baseY + rnd(-1.2,1.2), -CFG.boundY*0.86, CFG.boundY*0.86),
+        // 起始 z 留足反应距离（约 2.5~3.5 秒）
+        z:G.lastZ + Math.abs(i-(n-1)/2)*rnd(1.5,4.0) + rnd(12,26),
+        hp:Math.max(1,hp), maxHp:Math.max(1,hp),
+        r: 1.25, ph:Math.random()*TAU, rot:Math.random()*TAU,
+        spd: rnd(0.6,1.25), kind: (Math.random()<0.28?'heavy':'light'),
+        fireT: rnd(0.6,2.6), dead:0, hitFlash:0
+      });
+    }
+    // 掉落：击坠后有机会掉能量球
+    G.waveN++;
+  }
+  function baseX(i,n){
+    if(n===1) return rnd(-CFG.boundX*0.5, CFG.boundX*0.5);
+    return -spread/2 + spread*(i/(n-1));
+  }
+}
+
+/* 弹幕发射源生成（躲子弹模式） */
+function spawnVolley(){
+  var guard=0;
+  while(G.lastZ < leadLimit()*1.1 && guard++<6){
+    var gap = G.speed * lerp(modeCfg().spawnGap, modeCfg().spawnGapEnd, Math.min(1, G.waveN/18));
+    G.lastZ += gap;
+    var n = 1 + ((G.waveN>2) ? rndInt(0, LV.id==='hard'?2:(LV.id==='easy'?1:1)) : 0);
+    for(var i=0;i<n;i++){
+      foes.push({
+        x: rnd(-CFG.boundX*0.82, CFG.boundX*0.82),
+        y: CFG.boundY*0.92,       // 弹幕从上方来，留出躲避空间
+        z: G.lastZ + i*rnd(3,9) + rnd(14,26),
+        r: 1.1, ph:Math.random()*TAU, rot:Math.random()*TAU,
+        spd: rnd(0.5,1.0), kind:'gun', fireT: rnd(0.05,0.9),
+        pattern: Math.random()<0.45 ? 'fan' : (Math.random()<0.5?'spread':'aim'),
+        dead:0, hitFlash:0, life: rnd(4.5,7.5)
+      });
+    }
+    G.waveN++;
+  }
+}
+
+/* 模式分发 */
+function spawnForMode(){
+  if(MD.id==='ring')     spawnAhead();
+  else if(MD.id==='shoot') spawnFoes();
+  else                    spawnVolley();
+}
+
 /* ================= 粒子 ================= */
 function spark(x,y,z,vx,vy,vz,life,col,size,grav){
   parts.push({k:'s',x:x,y:y,z:z,vx:vx,vy:vy,vz:vz,l:life,L:life,c:col,s:size||0.16,g:grav==null?0:grav});
@@ -932,18 +1087,22 @@ function trail(x,y,z){
 /* ================= 更新 ================= */
 function startGame(){
   AU.init(); AU.resume(); AU.ui();
+  var MC = modeCfg();
   G.state='play'; G.t=0; G.score=0; G.dist=0; G.lives=LV.lives;
-  G.speed=LV.speed0; G.px=0; G.py=0; G.vx=0; G.vy=0;
+  G.speed=MC.speed0; G.px=0; G.py=0; G.vx=0; G.vy=0;
   G.combo=0; G.bestCombo=0; G.ringN=0; G.perfectN=0; G.inv=0;
+  G.kills=0; G.waveN=0; G.shotT=0; G.survive=0;
   G.roll=0; G.pitch=0; G.lastZ = portraitLead();
   rings.length=0; orbs.length=0; hazards.length=0; parts.length=0;
+  foes.length=0; bullets.length=0; shots.length=0; pickups.length=0;
   resetPath();
   IN.tgt.x=0; IN.tgt.y=0; IN.ptr=false;
   shake=0; flash=0; hitStop=0;
   initClouds();
-  spawnAhead();
+  spawnForMode();
   ui.vStart.hidden=true; ui.vOver.hidden=true; ui.vPause.hidden=true;
   syncHUD();
+  setModeHint();
 }
 
 function gameOver(){
@@ -953,15 +1112,33 @@ function gameOver(){
   var isNew = G.score > best;
   if(isNew) writeBest(G.score);
   ui.fScore.textContent = fmt(G.score);
-  ui.fRings.textContent = G.ringN;
-  ui.fPerfect.textContent= G.perfectN;
-  ui.fCombo.textContent = G.bestCombo;
-  ui.fDist.textContent  = fmt(G.dist);
   ui.fBest.textContent  = fmt(Math.max(best,G.score));
+  // 三种模式的统计项不同：这里按模式换标签与取值
+  // 顺序固定为：格1 格2 格3 格4（格5=总得分、格6=历史最佳 不变）
+  var cells = (MD.id==='ring') ? [
+    [ui.fRings,   G.ringN,    '穿环数'],
+    [ui.fPerfect, G.perfectN,  '完美穿环'],
+    [ui.fCombo,   G.bestCombo, '最高连击'],
+    [ui.fDist,    G.dist,      '航程 m']
+  ] : (MD.id==='shoot') ? [
+    [ui.fRings,   G.kills,     '击坠数'],
+    [ui.fPerfect, G.bestCombo, '最高连击'],
+    [ui.fCombo,   G.ringN,     '波次'],
+    [ui.fDist,    G.dist,      '航程 m']
+  ] : [
+    [ui.fRings,   Math.round(G.survive), '存活秒数'],
+    [ui.fPerfect, G.bestCombo, '最高连击'],
+    [ui.fCombo,   G.dist,      '航程 m'],
+    [ui.fDist,    G.waveN,     '弹幕波次']
+  ];
+  var g = $('overGrid').children;
+  for(var i=0;i<4;i++){
+    cells[i][0].textContent = fmt(cells[i][1]);
+    if(g[i]) g[i].querySelector('span').textContent = cells[i][2];
+  }
   ui.rank.textContent = rankOf(G.score);
   ui.overTitle.textContent = isNew ? '新纪录！' : (G.score>0?'任务结束':'还没出发');
-  // 结算副标题带上本局配置，方便复盘
-  ui.overSub.textContent = PL.name + ' · ' + LV.name + ' · ' +
+  ui.overSub.textContent = MD.name + ' · ' + PL.name + ' · ' + LV.name + ' · ' +
     (isNew ? '这趟航迹无人超越' : '稳住节奏，再来一次');
   ui.vOver.hidden=false;
   ui.best.textContent = fmt(Math.max(best,G.score));
@@ -976,8 +1153,16 @@ function rankOf(s){
   if(d>=1) return 'C';
   return 'D';
 }
-function readBest(){ try{ return parseInt(localStorage.getItem(CFG.bestKey)||'0',10)||0; }catch(e){ return 0; } }
-function writeBest(v){ try{ localStorage.setItem(CFG.bestKey, String(v)); }catch(e){} }
+function readBest(){ try{ return parseInt(localStorage.getItem(MD.key)||'0',10)||0; }catch(e){ return 0; } }
+function writeBest(v){ try{ localStorage.setItem(MD.key, String(v)); }catch(e){} }
+/* 各模式的最佳成绩汇总（开始页展示用） */
+function totalBest(){
+  var s=0;
+  for(var i=0;i<MODES.length;i++){
+    try{ s += parseInt(localStorage.getItem(MODES[i].key)||'0',10)||0; }catch(e){}
+  }
+  return s;
+}
 
 function togglePause(){
   if(G.state==='play'){ G.state='paused'; ui.vPause.hidden=false; AU.engine(0,0); }
@@ -1009,6 +1194,23 @@ function popUp(text,color){
   ui.pop.classList.add('go');
 }
 
+/* 按模式切换底部操作提示 */
+function setModeHint(){
+  var k = '<b>按住并拖动</b> 屏幕操纵';
+  if(isTouch){
+    ui.foot.innerHTML = (MD.id==='shoot')
+      ? k + ' · 飞机自动开火，击落敌机得分'
+      : (MD.id==='dodge') ? k + ' · 闪避弹幕，活得越久分越高'
+      : k + ' · 穿过金色光环，别撞环壁';
+  } else {
+    var k2 = '<b>WASD / 方向键 / 拖动</b> 操纵';
+    ui.foot.innerHTML = (MD.id==='shoot')
+      ? k2 + ' · 自动开火，击落敌机'
+      : (MD.id==='dodge') ? k2 + ' · 闪避弹幕，活得越久分越高'
+      : k2 + ' · 穿过金色光环，别撞环壁';
+  }
+}
+
 var last = 0;
 function frame(ts){
   requestAnimationFrame(frame);
@@ -1030,9 +1232,10 @@ function frame(ts){
 function update(dt){
   G.t += dt;
 
-  // 速度：机型决定极速倍率，难度决定上限与增速
-  var vmax = LV.maxSpeed * PL.speed;
-  G.speed = Math.min(vmax, G.speed + LV.speedUp*dt);
+  // 速度：机型决定极速倍率，模式×难度共同决定区间
+  var MC = modeCfg();
+  var vmax = MC.maxSpeed * PL.speed;
+  G.speed = Math.min(vmax, G.speed + MC.speedUp*dt);
   var dz = G.speed*dt;
   G.dist += dz;
   G.lastZ -= dz;
@@ -1067,29 +1270,48 @@ function update(dt){
 
   if(G.inv>0) G.inv-=dt;
 
-  // 世界推进
+  // 粒子（三种模式共用）
+  for(var p=parts.length-1;p>=0;p--){
+    var q=parts[p];
+    q.l-=dt;
+    if(q.k==='s'){ q.x+=q.vx*dt; q.y+=q.vy*dt; q.z+=q.vz*dt; q.vy-=q.g*dt; }
+    else if(q.k==='t'){ q.z-=dz*0.42; q.r+=q.dr*dt*1.7; if(q.r<0.02) q.l=0; }
+    if(q.l<=0) parts.splice(p,1);
+  }
+  if(Math.random()<0.34){
+    var bx = G.px - Math.sin(G.roll)*1.0;
+    var by = G.py - Math.cos(G.roll)*0.9;
+    trail(bx, by, CFG.Z0-1.6);
+  }
+  if(Math.random()<0.14) trail(G.px+rnd(-1.6,1.6), G.py+rnd(-1.4,1.4), CFG.Z0-1.9);
+
+  updClouds(dt, dz);
+  AU.engine(1, G.speed);
+
+  // ---- 模式主体 ----
+  if(MD.id==='ring')       updRing(dt, dz, MC);
+  else if(MD.id==='shoot') updShoot(dt, dz, MC);
+  else                      updDodge(dt, dz, MC);
+}
+
+/* ================= 模式一：穿越圆环 ================= */
+function updRing(dt, dz, MC){
+  var pr = PL.r;
   for(var i=rings.length-1;i>=0;i--){
     var r=rings[i]; r.prev=r.z; r.z-=dz; r.rot+=r.spin*dt*0.5; r.ph+=dt;
-    // 穿环判定
     if(r.state===0 && r.prev>CFG.Z0 && r.z<=CFG.Z0){
-      var pr = PL.r;
       var dx=G.px-r.x, dy=G.py-r.y, d=Math.hypot(dx,dy);
       if(d < r.R-pr*0.55){
         var perfect = d < r.R*0.42;
         G.combo++; if(G.combo>G.bestCombo) G.bestCombo=G.combo;
-        // 得分 = 基础 + 连击 + 完美，再乘「难度倍率 × 机型倍率」
-        var gain = (10 + Math.min(G.combo,20)*2 + (perfect?40:0)) * LV.mult * PL.bonus;
-        gain = Math.round(gain);
+        var gain = Math.round((10 + Math.min(G.combo,20)*2 + (perfect?40:0)) * LV.mult * PL.bonus);
         G.score += gain;
         r.state=1;
         burst(r.x,r.y,r.z, perfect?26:16, perfect?'#fff0b8':'#9ff0ff', 3.6, 0.2);
         shock(r.x,r.y,r.z, perfect?'rgba(255,220,140,.95)':'rgba(150,240,255,.9)', r.R*2.1, 0.45);
-        if(perfect){ G.perfectN++; popUp('完美穿环 +'+(gain), '#ffd98a'); AU.perfect(); }
+        if(perfect){ G.perfectN++; popUp('完美穿环 +'+gain, '#ffd98a'); AU.perfect(); }
         else { popUp('+'+gain, '#9ff0ff'); AU.pass(G.combo); }
-        if(G.combo>=3){
-          ui.combo.textContent='连击 ×'+G.combo;
-          ui.combo.classList.add('on');
-        }
+        if(G.combo>=3){ ui.combo.textContent='连击 ×'+G.combo; ui.combo.classList.add('on'); }
       } else if(d <= r.R+0.5){
         r.state=2;
         if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
@@ -1108,7 +1330,7 @@ function update(dt){
     if(o.got===0 && Math.abs(o.z-CFG.Z0)<3.2){
       var ddx=G.px-o.x, ddy=G.py-o.y;
       if(ddx*ddx+ddy*ddy < (o.r+PL.r*1.1)*(o.r+PL.r*1.1)){
-        o.got=1; G.score+=25; burst(o.x,o.y,o.z,12,'#b9ffe6',2.6,0.16); AU.orb();
+        o.got=1; G.score+=Math.round(25*MC.mult*PL.bonus); burst(o.x,o.y,o.z,12,'#b9ffe6',2.6,0.16); AU.orb();
       }
     }
     if(o.z<-10) orbs.splice(j,1);
@@ -1125,24 +1347,221 @@ function update(dt){
     }
     if(z2.z<-10) hazards.splice(h,1);
   }
+}
 
-  // 尾迹
-  for(var p=parts.length-1;p>=0;p--){
-    var q=parts[p];
-    q.l-=dt;
-    if(q.k==='s'){ q.x+=q.vx*dt; q.y+=q.vy*dt; q.z+=q.vz*dt; q.vy-=q.g*dt; }
-    else if(q.k==='t'){ q.z-=dz*0.42; q.r+=q.dr*dt*1.7; if(q.r<0.02) q.l=0; }
-    if(q.l<=0) parts.splice(p,1);
+/* ================= 模式二：飞机打怪 ================= */
+function updShoot(dt, dz, MC){
+  // 注意：这里必须累加小数而不是每帧 round —— 每帧 dz 很小，
+  // Math.round(小数) 会反复归 0，导致"飞了半天还是 0 分"
+  G.score += dz*0.30*MC.mult*PL.bonus;
+  G.shotT -= dt;
+  var fireEvery = MC.fireGap / PL.speed;
+  if(G.shotT <= 0){
+    G.shotT = fireEvery;
+    // 双发齐射（宽体机四发）
+    var n = (PL.id==='gull') ? 4 : 2;
+    for(var k=0;k<n;k++){
+      var ox = n===1?0:(k/(n-1)-0.5)*(n>2?0.62:0.34);
+      shots.push({ x:G.px+ox, y:G.py+0.1, z:CFG.Z0+3,
+                   vx:G.vx*0.16, vy:G.vy*0.16, l:1.5, dmg:1 });
+    }
+    AU.shot();
   }
-  if(Math.random()<0.34){
-    var bx = G.px - Math.sin(G.roll)*1.0;
-    var by = G.py - Math.cos(G.roll)*0.9;
-    trail(bx, by, CFG.Z0-1.6);
+  // 玩家子弹前进
+  var svz = 118;
+  for(var s=shots.length-1;s>=0;s--){
+    var sh=shots[s];
+    sh.z += svz*dt; sh.x+=sh.vx*dt; sh.y+=sh.vy*dt; sh.l-=dt;
+    if(sh.z>300 || sh.l<=0){ shots.splice(s,1); continue; }
+    // 命中判定（子弹与敌机距离）
+    for(var fi=foes.length-1;fi>=0;fi--){
+      var f=foes[fi];
+      if(f.dead) continue;
+      var ddx=sh.x-f.x, ddy=sh.y-f.y, ddz=sh.z-f.z;
+      if(ddx*ddx+ddy*ddy+(ddz*ddz*0.30) < f.r*f.r){
+        f.hp -= sh.dmg; f.hitFlash=0.14;
+        spark(sh.x,sh.y,sh.z, rnd(-1,1),rnd(-1,1), rnd(-2,2), 0.24,'#ffd98a',0.16);
+        shots.splice(s,1);
+        if(f.hp<=0) killFoe(f);
+        break;
+      }
+    }
   }
-  if(Math.random()<0.14) trail(G.px+rnd(-1.6,1.6), G.py+rnd(-1.4,1.4), CFG.Z0-1.9);
+  // 敌机推进 + 开火 + 撞击
+  for(var i=foes.length-1;i>=0;i--){
+    var e=foes[i];
+    // 敌机自身也向前推进（比世界快），保证从生成到掠过是一段可控的航程
+    e.z -= dz*(0.9 + e.spd*0.6) + 10*dt;
+    e.ph += dt; e.rot += dt*(e.spd*0.9);
+    if(e.hitFlash>0) e.hitFlash-=dt;
+    if(e.kind!=='gun'){
+      // 横向摆动 + 缓慢追踪玩家高度
+      e.x += Math.sin(e.ph*1.3 + e.rot)*2.0*dt;
+      e.x = clamp(e.x, -CFG.boundX, CFG.boundX);
+      var tdx = G.px - e.x, tdy = G.py - e.y;
+      e.y = clamp(e.y + tdy*0.22*dt, -CFG.boundY, CFG.boundY);
+      // 抵近后发射
+      e.fireT -= dt;
+      if(e.fireT<=0 && e.z < CFG.Z0+62){
+        e.fireT = rnd(1.5,3.4);
+        fireEnemy(e.x, e.y, e.z, 1);
+      }
+      // 飞过玩家身后即脱离（不给"贴脸"机会，保持可玩性）
+      if(e.z < CFG.Z0+8){
+        if(e.z > CFG.Z0-3){
+          var ix=G.px-e.x, iy=G.py-e.y;
+          if(ix*ix+iy*iy < (e.r+PL.r)*(e.r+PL.r)){
+            burst(e.x,e.y,CFG.Z0,16,'#ff9a5c',4.4,0.24);
+            if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
+          }
+        }
+        foes.splice(i,1);
+        continue;
+      }
+    }
+    if(e.z < -14) foes.splice(i,1);
+  }
+  // 敌弹
+  for(var b=bullets.length-1;b>=0;b--){
+    var bl=bullets[b];
+    bl.z += bl.vz*dt; bl.x += bl.vx*dt; bl.y += bl.vy*dt; bl.l-=dt;
+    if(bl.z<CFG.Z0-6 || bl.z>320 || bl.l<=0){ bullets.splice(b,1); continue; }
+    if(Math.abs(bl.z-CFG.Z0)<2.6){
+      var bx=G.px-bl.x, by=G.py-bl.y;
+      if(bx*bx+by*by < (bl.r+PL.r*0.9)*(bl.r+PL.r*0.9)){
+        bl.z = CFG.Z0-40;
+        burst(bl.x,bl.y,CFG.Z0,10,'#ff9a5c',3.4,0.2);
+        if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
+      }
+    }
+  }
+  collectPickups(dz, MC);
+  spawnFoes();
+}
 
-  updClouds(dt, dz);
-  AU.engine(1, G.speed);
+function killFoe(f){
+  f.dead = 1;
+  var MC = modeCfg();          // 独立函数，取不到 updShoot 的局部变量，必须自己取
+  G.kills++;
+  var gain = Math.round((f.kind==='heavy'?80:50) * MC.mult * PL.bonus);
+  G.score += gain;
+  G.combo++; if(G.combo>G.bestCombo) G.bestCombo=G.combo;
+  burst(f.x,f.y,f.z, 24, '#ffb45c', 5.6, 0.26);
+  burst(f.x,f.y,f.z, 12, '#fff0c8', 7.0, 0.18);
+  shock(f.x,f.y,f.z,'rgba(255,170,90,.95)', f.r*5.5, 0.45);
+  shake = Math.max(shake, 5);
+  popUp('击坠 +'+gain, '#ffc46a');
+  AU.explode();
+  if(G.combo>=3){ ui.combo.textContent='连击 ×'+G.combo; ui.combo.classList.add('on'); }
+  // 掉落能量球
+  if(Math.random() < 0.45){
+    pickups.push({x:f.x, y:f.y, z:f.z, r:1.0, ph:Math.random()*TAU, t:0});
+  }
+  var idx = foes.indexOf(f);
+  if(idx>=0) foes.splice(idx,1);
+}
+
+/* 敌机开火 */
+function fireEnemy(x,y,z,spd){
+  var ddx = G.px-x, ddy = G.py-y;
+  var d = Math.hypot(ddx,ddy)||1;
+  bullets.push({x:x, y:y, z:z,
+    vx:ddx/d*22*spd, vy:ddy/d*22*spd, vz:16*spd, r:0.42, l:4.5, kind:'e'});
+}
+
+/* ================= 模式三：躲避子弹 ================= */
+function updDodge(dt, dz, MC){
+  // 纯生存：靠时间与距离累积分数（同样累加小数，避免逐帧 round 归零）
+  G.survive += dt;
+  G.score += dz*0.55*MC.mult*PL.bonus + dt*14*MC.mult*PL.bonus;
+
+  for(var i=foes.length-1;i>=0;i--){
+    var e=foes[i];
+    e.z -= dz + 6*dt;
+    e.ph += dt; e.rot += dt*0.6;
+    if(e.life>0) e.life -= dt;
+    if(e.hitFlash>0) e.hitFlash-=dt;
+    // 发射器横向游走
+    e.x += Math.sin(e.ph*0.9 + e.rot)*3.2*dt;
+    e.x = clamp(e.x, -CFG.boundX*0.9, CFG.boundX*0.9);
+
+    if(e.life>0){
+      e.fireT -= dt;
+      if(e.fireT<=0){
+        e.fireT = MC.fireGap * rnd(0.75,1.3) / (1 + G.waveN*0.02);
+        var nBullet = 3 + Math.floor(G.waveN/7);
+        nBullet = Math.min(nBullet, LV.id==='hard'?9:(LV.id==='easy'?5:7));
+        if(e.pattern==='fan'){
+          // 扇形弹幕：留出可钻的缝隙
+          var base = Math.atan2(G.py-e.y, G.px-e.x);
+          for(var b=0;b<nBullet;b++){
+            var a = base + (b/(nBullet-1)-0.5)*1.5;
+            bullets.push({x:e.x, y:e.y, z:e.z,
+              vx:Math.cos(a)*13, vy:Math.sin(a)*13, vz:9, r:0.46, l:6, kind:'b'});
+          }
+        } else if(e.pattern==='spread'){
+          // 环形散射
+          for(var b2=0;b2<nBullet;b2++){
+            var a2 = (b2/nBullet)*TAU + e.ph;
+            bullets.push({x:e.x, y:e.y, z:e.z,
+              vx:Math.cos(a2)*11, vy:Math.sin(a2)*11, vz:8, r:0.44, l:6, kind:'b'});
+          }
+        } else {
+          // 精准狙击：直接朝玩家当前位置
+          var dx=G.px-e.x, dy=G.py-e.y, d=Math.hypot(dx,dy)||1;
+          bullets.push({x:e.x, y:e.y, z:e.z, vx:dx/d*15, vy:dy/d*15, vz:10, r:0.5, l:6, kind:'b'});
+        }
+        AU.shot();
+      }
+    }
+    if(e.z < -14 || e.life<=0){
+      if(e.life<=0 && e.z>=0 && Math.random()<0.35){
+        burst(e.x,e.y,e.z,10,'#8fd8ff',2.6,0.16);
+      }
+      foes.splice(i,1);
+    }
+  }
+
+  for(var b=bullets.length-1;b>=0;b--){
+    var bl=bullets[b];
+    bl.z += bl.vz*dt; bl.x += bl.vx*dt; bl.y += bl.vy*dt; bl.l-=dt;
+    if(bl.z<CFG.Z0-6 || bl.z>320 || bl.l<=0){ bullets.splice(b,1); continue; }
+    if(Math.abs(bl.z-CFG.Z0)<2.8){
+      var bx=G.px-bl.x, by=G.py-bl.y;
+      if(bx*bx+by*by < (bl.r+PL.r*0.92)*(bl.r+PL.r*0.92)){
+        bl.z = CFG.Z0-40;
+        burst(bl.x,bl.y,CFG.Z0,12,'#ff8a9c',3.6,0.2);
+        if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
+      }
+    }
+  }
+  collectPickups(dz, MC);
+  spawnVolley();
+}
+
+/* 掉落的能量球（打怪 / 躲弹幕通用） */
+function collectPickups(dz, MC){
+  for(var i=pickups.length-1;i>=0;i--){
+    var p=pickups[i];
+    p.z -= dz*0.6; p.t += 1/60; p.ph += 0.05;
+    if(p.z<-10){ pickups.splice(i,1); continue; }
+    if(Math.abs(p.z-CFG.Z0)<3.4){
+      var dx=G.px-p.x, dy=G.py-p.y;
+      if(dx*dx+dy*dy < (p.r+PL.r*1.2)*(p.r+PL.r*1.2)){
+        p.got=1;
+        var g = Math.round(30*MC.mult*PL.bonus);
+        G.score += g;
+        burst(p.x,p.y,p.z,14,'#b9ffe6',3.0,0.18);
+        // 回血：加分同时补命，鼓励冒险
+        if(G.lives < LV.lives && Math.random()<0.30){
+          G.lives++; renderHearts(); popUp('+1 命','#8affc8');
+        }
+        popUp('+'+g,'#b9ffe6');
+        AU.orb();
+        pickups.splice(i,1);
+      }
+    }
+  }
 }
 
 function syncHUD(){
@@ -1291,8 +1710,203 @@ function drawClouds(){
   ctx.globalAlpha=1;
 }
 
-/* 世界对象按深度排序 */
+/* ================= 打怪 / 躲弹幕：渲染 ================= */
+function drawCombatWorld(){
+  var list=[];
+  for(var i=0;i<foes.length;i++){
+    var f=foes[i];
+    if(f.z<2||f.z>260) continue;
+    list.push({z:f.z, t:'f', o:f});
+  }
+  for(var k=0;k<pickups.length;k++){
+    var p=pickups[k];
+    if(p.z<2||p.z>260) continue;
+    list.push({z:p.z, t:'p', o:p});
+  }
+  list.sort(function(a,b){ return b.z-a.z; });
+  for(var m=0;m<list.length;m++){
+    if(list[m].t==='f') drawFoe(list[m].o);
+    else drawPickup(list[m].o);
+  }
+  drawBullets();
+  drawShots();
+}
+
+/* 敌机：装甲舰（heavy）/ 拦截机（light）/ 弹幕炮台（gun） */
+function drawFoe(f){
+  var s=sOf(f.z), R=f.r*s;
+  if(R<1.2) return;
+  var x=cx+f.x*s, y=cy-f.y*s;
+  if(x<-R*4||x>W+R*4 || y<-R*4||y>H+R*4) return;
+  var fade=clamp(1-(f.z-CFG.Z0)/240,0,1);
+  var isGun = (f.kind==='gun');
+  var heavy = (f.kind==='heavy');
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  if(isGun){
+    ctx.rotate(Math.sin(f.ph*0.8)*0.10);
+    ctx.globalCompositeOperation='lighter';
+    ctx.shadowColor='rgba(255,90,110,.9)'; ctx.shadowBlur=R*0.9;
+    ctx.fillStyle='rgba(46,30,60,.92)';
+    ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,120,140,'+(0.8*fade)+')';
+    ctx.lineWidth=Math.max(0.8,R*0.14);
+    ctx.beginPath(); ctx.arc(0,0,R*0.78,0,TAU); ctx.stroke();
+    for(var k2=0;k2<3;k2++){
+      var a = f.ph*1.2 + k2*TAU/3;
+      ctx.save(); ctx.rotate(a);
+      ctx.fillStyle='rgba(255,190,120,'+(0.85*fade)+')';
+      ctx.fillRect(R*0.35,-R*0.13, R*0.78, R*0.26);
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.globalCompositeOperation='source-over';
+    return;
+  }
+
+  ctx.rotate(Math.sin(f.ph*0.8)*0.10);
+  // 机体阴影
+  ctx.fillStyle='rgba(8,10,30,.45)';
+  foeShape(ctx, R*1.06, heavy); ctx.fill();
+  // 机体
+  var g;
+  if(heavy){
+    g=ctx.createLinearGradient(0,-R,0,R);
+    g.addColorStop(0,'#8b93b8'); g.addColorStop(.5,'#4a5480'); g.addColorStop(1,'#2a3154');
+  } else {
+    g=ctx.createLinearGradient(0,-R,0,R);
+    g.addColorStop(0,'#ff9a8a'); g.addColorStop(.5,'#c0486a'); g.addColorStop(1,'#6d2340');
+  }
+  ctx.fillStyle=g;
+  foeShape(ctx, R, heavy); ctx.fill();
+  ctx.strokeStyle='rgba(255,220,200,'+(0.55*fade)+')';
+  ctx.lineWidth=Math.max(0.6,R*0.07);
+  foeShape(ctx, R, heavy); ctx.stroke();
+
+  if(f.hitFlash>0){
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(255,255,255,'+clamp(f.hitFlash*3.6,0,1).toFixed(3)+')';
+    foeShape(ctx, R, heavy); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+  }
+  ctx.fillStyle='rgba(255,90,90,'+(0.85*fade)+')';
+  ctx.beginPath(); ctx.ellipse(0,-R*0.12,R*0.24,R*0.16,0,0,TAU); ctx.fill();
+  ctx.globalCompositeOperation='lighter';
+  navLight(ctx,-R*1.5, R*0.10, R*0.22,'255,70,90');
+  navLight(ctx, R*1.5, R*0.10, R*0.22,'255,200,90');
+  ctx.globalCompositeOperation='source-over';
+
+  if(f.hp < f.maxHp){
+    var bw=R*2.0, bh=Math.max(1.6, R*0.14);
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.fillRect(-bw/2, -R*1.42, bw, bh);
+    var ratio = f.hp/f.maxHp;
+    ctx.fillStyle = ratio > 0.5 ? '#6ee7a0' : (ratio > 0.25 ? '#ffd166':'#ff6b8a');
+    ctx.fillRect(-bw/2, -R*1.42, bw*ratio, bh);
+  }
+  ctx.restore();
+}
+
+/* 敌机轮廓（机头朝下 = 朝向玩家） */
+function foeShape(c, R, heavy){
+  c.beginPath();
+  if(heavy){
+    c.moveTo(0, R);
+    c.lineTo(R*0.62, R*0.46);
+    c.lineTo(R*1.05, -R*0.12);
+    c.lineTo(R*0.80, -R*0.62);
+    c.lineTo(R*0.30, -R*0.86);
+    c.lineTo(-R*0.30, -R*0.86);
+    c.lineTo(-R*0.80, -R*0.62);
+    c.lineTo(-R*1.05, -R*0.12);
+    c.lineTo(-R*0.62, R*0.46);
+  } else {
+    c.moveTo(0, R);
+    c.lineTo(R*0.44, R*0.10);
+    c.lineTo(R*1.34, -R*0.52);
+    c.lineTo(R*0.52, -R*0.50);
+    c.lineTo(R*0.22, -R*1.00);
+    c.lineTo(-R*0.22, -R*1.00);
+    c.lineTo(-R*0.52, -R*0.50);
+    c.lineTo(-R*1.34, -R*0.52);
+    c.lineTo(-R*0.44, R*0.10);
+  }
+  c.closePath();
+}
+
+function drawBullets(){
+  ctx.globalCompositeOperation='lighter';
+  for(var i=0;i<bullets.length;i++){
+    var b=bullets[i];
+    var s=sOf(b.z);
+    var R=b.r*s;
+    if(R<0.4 || R>220) continue;
+    var x=cx+b.x*s, y=cy-b.y*s;
+    var fade=clamp(1-(b.z-CFG.Z0)/240,0,1);
+    var c1 = b.kind==='b' ? '255,110,140' : '255,170,90';
+    var g=ctx.createRadialGradient(x,y,0,x,y,R*2.4);
+    g.addColorStop(0,'rgba('+c1+',.95)');
+    g.addColorStop(.32,'rgba('+c1+',.55)');
+    g.addColorStop(1,'rgba('+c1+',0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,R*2.4,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(255,255,245,'+(0.95*fade)+')';
+    ctx.beginPath(); ctx.arc(x,y,Math.max(0.45,R*0.42),0,TAU); ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+}
+
+function drawShots(){
+  ctx.globalCompositeOperation='lighter';
+  for(var i=0;i<shots.length;i++){
+    var p=shots[i];
+    var s=sOf(p.z);
+    var R=Math.max(0.55, 0.30*s);
+    var x=cx+p.x*s, y=cy-p.y*s;
+    ctx.strokeStyle='rgba(180,255,220,.85)';
+    ctx.lineWidth=R*1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y+R*5.5);
+    ctx.lineTo(x, y-R*0.6);
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,255,250,.95)';
+    ctx.beginPath(); ctx.arc(x,y-R*0.5,R*1.1,0,TAU); ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+}
+
+function drawPickup(p){
+  var s=sOf(p.z), R=p.r*s;
+  if(R<1 || R>200) return;
+  var x=cx+p.x*s, y=cy-p.y*s;
+  var bob=Math.sin(p.ph)*R*0.16;
+  var fade=clamp(1-(p.z-CFG.Z0)/240,0,1);
+  ctx.save();
+  ctx.translate(x,y+bob);
+  ctx.globalCompositeOperation='lighter';
+  ctx.shadowColor='rgba(120,255,200,.9)'; ctx.shadowBlur=R*1.4;
+  ctx.rotate(p.ph*0.6);
+  ctx.beginPath();
+  ctx.moveTo(0,-R); ctx.lineTo(R*0.7,0); ctx.lineTo(0,R); ctx.lineTo(-R*0.7,0);
+  ctx.closePath();
+  var g=ctx.createLinearGradient(-R,0,R,0);
+  g.addColorStop(0,'rgba(210,255,240,'+(0.95*fade)+')');
+  g.addColorStop(1,'rgba(70,220,180,'+(0.95*fade)+')');
+  ctx.fillStyle=g; ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.beginPath(); ctx.arc(0,0,R*1.8,0,TAU);
+  ctx.strokeStyle='rgba(140,255,220,'+(0.3*fade)+')';
+  ctx.lineWidth=Math.max(0.7,R*0.10); ctx.stroke();
+  ctx.restore();
+  ctx.globalCompositeOperation='source-over';
+}
+
+/* 世界对象按深度排序绘制 */
 function drawWorld(){
+  if(MD.id!=='ring'){ drawCombatWorld(); return; }
   var list=[];
   for(var i=0;i<rings.length;i++){
     var r=rings[i];
@@ -1960,11 +2574,37 @@ function briefText(){
   var speedU = clamp((PL.speed-0.9)/0.3,0,1);
   var agiU   = clamp((PL.agility-0.82)/0.46,0,1);
   var gripU  = clamp((PL.grip-8.4)/5.0,0,1);
-  return '<b>'+PL.name+'</b>（'+PL.tag+'）· '+PL.desc+'<br>'+
-    '极速 '+bar(speedU,5)+'　机动 '+bar(agiU,5)+'　跟手 '+bar(gripU,5)+'<br>'+
-    '难度 <u>'+LV.name+'</u>：'+LV.lives+' 条命 · 环径 '+LV.ring0.toFixed(1)+'→'+LV.ring1.toFixed(1)+
-    ' · 晶核 '+ (LV.hazard>0? Math.round(LV.hazard*100)+'%' : '无') +
-    ' · 得分 <u>×'+LV.mult.toFixed(2)+'</u>';
+  return '<b>'+MD.name+'</b> · '+MD.tip+'<br>'+
+    '<b>'+PL.name+'</b>（'+PL.tag+'）：极速 '+bar(speedU,5)+'　机动 '+bar(agiU,5)+'　跟手 '+bar(gripU,5)+'<br>'+
+    '难度 <u>'+LV.name+'</u>：'+LV.lives+' 条命 · 得分 <u>×'+LV.mult.toFixed(2)+'</u>';
+}
+
+function buildModePicker(){
+  var mp = $('modePick');
+  mp.innerHTML = '';
+  MODES.forEach(function(md){
+    var b = document.createElement('button');
+    b.className = 'mbtn' + (md.id===MD.id ? ' sel':'');
+    b.type = 'button';
+    b.setAttribute('data-mode', md.id);
+    var ic = document.createElement('span'); ic.className='mi'; ic.textContent = md.icon; b.appendChild(ic);
+    var nm = document.createElement('b'); nm.textContent = md.name; b.appendChild(nm);
+    var ds = document.createElement('i'); ds.textContent = md.desc; b.appendChild(ds);
+    b.addEventListener('click', function(){
+      MD = md;
+      var all = mp.querySelectorAll('.mbtn');
+      for(var i=0;i<all.length;i++) all[i].classList.remove('sel');
+      b.classList.add('sel');
+      G.kills=0; G.waveN=0;
+      $('uiBrief').innerHTML = briefText();
+      setModeHint();
+      AU.init(); AU.ui();
+      saveConfig();
+      refreshLastCfg();
+      syncHUD();          // 切模式后 HUD 的最佳分要跟着换成该模式的
+    });
+    mp.appendChild(b);
+  });
 }
 
 function buildPickers(){
@@ -2028,13 +2668,14 @@ function buildPickers(){
 
 var cfgKey = 'by15_cfg';
 function saveConfig(){
-  try{ localStorage.setItem(cfgKey, JSON.stringify({plane:PL.id, level:LV.id})); }catch(e){}
+  try{ localStorage.setItem(cfgKey, JSON.stringify({mode:MD.id, plane:PL.id, level:LV.id})); }catch(e){}
 }
 function loadConfig(){
   try{
     var raw = localStorage.getItem(cfgKey);
     if(!raw) return;
     var o = JSON.parse(raw);
+    if(o.mode)  MODES.forEach(function(m){ if(m.id===o.mode)  MD=m; });
     if(o.plane) PLANES.forEach(function(p){ if(p.id===o.plane) PL=p; });
     if(o.level) LEVELS.forEach(function(l){ if(l.id===o.level) LV=l; });
   }catch(e){}
@@ -2047,11 +2688,13 @@ $('btnResume').addEventListener('click', togglePause);
 $('btnQuit').addEventListener('click', function(){
   ui.vPause.hidden=true; ui.vStart.hidden=false; G.state='menu'; AU.engine(0,0);
   G.rings.length=0; G.orbs.length=0; G.hazards.length=0; G.parts.length=0;
+  G.foes.length=0; G.bullets.length=0; G.shots.length=0; G.pickups.length=0;
   renderHearts();
 });
 $('btnChange').addEventListener('click', function(){
   ui.vOver.hidden=true; ui.vStart.hidden=false; G.state='menu'; AU.engine(0,0);
   G.rings.length=0; G.orbs.length=0; G.hazards.length=0; G.parts.length=0;
+  G.foes.length=0; G.bullets.length=0; G.shots.length=0; G.pickups.length=0;
   renderHearts();
   refreshLastCfg();
 });
@@ -2062,7 +2705,7 @@ function refreshLastCfg(){
   var el = $('uiLastCfg');
   if(!el) return;
   var b = readBest();
-  el.textContent = b>0 ? ('上次 '+PL.name+' · '+LV.name) : '';
+  el.textContent = (b>0 ? ('本模式最佳 '+fmt(b)+' · 累计 '+fmt(totalBest())) : '');
 }
 
 document.addEventListener('visibilitychange', function(){
@@ -2081,12 +2724,11 @@ window.addEventListener('orientationchange', function(){ setTimeout(function(){
 }, 220); });
 
 isTouch = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
-if(isTouch){
-  ui.foot.innerHTML='<b>按住并拖动屏幕</b> 操纵飞机 · 穿过金色光环，别撞环壁';
-}
 
 loadConfig();
 G.lives = LV.lives;
+buildModePicker();
+setModeHint();
 ui.best.textContent = fmt(readBest());
 ui.best2.textContent = fmt(readBest());
 refreshLastCfg();
