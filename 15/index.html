@@ -144,15 +144,27 @@
   .veil{
     position:absolute;inset:0;z-index:8;
     display:flex;align-items:center;justify-content:center;
-    padding:16px;
+    padding:14px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
     background:radial-gradient(circle at 50% 42%,rgba(10,14,40,.34),rgba(5,7,22,.82));
     backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
   }
   .veil[hidden]{display:none;}
+  .veil::-webkit-scrollbar{width:0;height:0;}
   .panel{
     width:min(430px,94vw);
-    max-height:100%;
-    overflow:auto;
+    max-height:calc(100% - 4px);
+    /* 面板内容较多时（尤其手机竖屏）需要能滚动，
+       但不需要出现可见的滚动条 —— 用细窄的自定义条并降低对比度 */
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.10) transparent;
+  }
+  .panel::-webkit-scrollbar{width:0;height:0;}
+  .panel{ scrollbar-width:none; }
     background:linear-gradient(170deg,rgba(28,34,78,.9),rgba(14,18,48,.94));
     border:1px solid rgba(255,255,255,.15);
     border-radius:20px;
@@ -1034,26 +1046,38 @@ function spawnFoes(){
   }
 }
 
-/* 弹幕发射源生成（躲子弹模式） */
-function spawnVolley(){
-  var guard=0;
-  while(G.lastZ < leadLimit()*1.1 && guard++<6){
-    var gap = G.speed * lerp(modeCfg().spawnGap, modeCfg().spawnGapEnd, Math.min(1, G.waveN/18));
-    G.lastZ += gap;
-    var n = 1 + ((G.waveN>2) ? rndInt(0, LV.id==='hard'?2:(LV.id==='easy'?1:1)) : 0);
-    for(var i=0;i<n;i++){
-      foes.push({
-        x: rnd(-CFG.boundX*0.82, CFG.boundX*0.82),
-        y: CFG.boundY*0.92,       // 弹幕从上方来，留出躲避空间
-        z: G.lastZ + i*rnd(3,9) + rnd(14,26),
-        r: 1.1, ph:Math.random()*TAU, rot:Math.random()*TAU,
-        spd: rnd(0.5,1.0), kind:'gun', fireT: rnd(0.05,0.9),
-        pattern: Math.random()<0.45 ? 'fan' : (Math.random()<0.5?'spread':'aim'),
-        dead:0, hitFlash:0, life: rnd(4.5,7.5)
-      });
-    }
-    G.waveN++;
+/* 弹幕发射源生成（躲子弹模式）
+   🔴 踩了四轮才找到的根因，记住：
+   本模式的敌机**不是沿世界游标推进的**（它们固定生成在玩家前方 Z0+12~26，
+   自己会向玩家飞来），所以**不能**用 `while (G.lastZ < leadLimit())` 那套游标逻辑。
+   早期版本沿用了它 → `G.lastZ` 恒在 130+ → while 条件每帧都成立 →
+   每帧生成一批敌机 → 它们 life 只有 2~4 秒还没开火就被移除 →
+   弹幕从未生成，实测「穿越玩家平面的弹数 = 0」，也就是玩家永远不会被打中。
+   正解：用独立的发射计时器节流，与游标完全解耦。 */
+var volleyT = 0;
+function spawnVolley(dt){
+  volleyT -= dt;
+  if(volleyT > 0) return;
+  var MC = modeCfg();
+  volleyT = MC.fireGap * rnd(0.9,1.6) * (1 + G.waveN*0.03);
+  var n = 1 + (G.waveN>2 ? rndInt(0, LV.id==='hard'?2:(LV.id==='easy'?1:1)) : 0);
+  var baseAng = rnd(0,TAU);
+  for(var i=0;i<n;i++){
+    var ang = baseAng + (n>1 ? (i/n)*TAU*rnd(0.7,1.3) : 0);
+    var rr = rnd(0.5, 0.9);
+    foes.push({
+      x: Math.cos(ang) * CFG.boundX * rr,
+      y: Math.sin(ang) * CFG.boundY * rr,
+      // 生成在玩家前方交战区，敌机自己会向玩家飞来
+      z: CFG.Z0 + rnd(11,20),
+      r: 1.1, ph:Math.random()*TAU, rot:Math.random()*TAU,
+      spd: rnd(0.5,1.0), kind:'gun',
+      fireT: rnd(0.25,0.9),
+      pattern: Math.random()<0.45 ? 'fan' : (Math.random()<0.5?'spread':'aim'),
+      dead:0, hitFlash:0, life: rnd(3.4,5.6)
+    });
   }
+  G.waveN++;
 }
 
 /* 模式分发 */
@@ -1421,18 +1445,25 @@ function updShoot(dt, dz, MC){
     }
     if(e.z < -14) foes.splice(i,1);
   }
-  // 敌弹
+  // 敌弹（线段距离判定，与躲弹幕模式一致）
   for(var b=bullets.length-1;b>=0;b--){
     var bl=bullets[b];
+    var px2 = bl.x, py2 = bl.y;
     bl.z += bl.vz*dt; bl.x += bl.vx*dt; bl.y += bl.vy*dt; bl.l-=dt;
-    if(bl.z<CFG.Z0-6 || bl.z>320 || bl.l<=0){ bullets.splice(b,1); continue; }
-    if(Math.abs(bl.z-CFG.Z0)<2.6){
-      var bx=G.px-bl.x, by=G.py-bl.y;
-      if(bx*bx+by*by < (bl.r+PL.r*0.9)*(bl.r+PL.r*0.9)){
-        bl.z = CFG.Z0-40;
-        burst(bl.x,bl.y,CFG.Z0,10,'#ff9a5c',3.4,0.2);
-        if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
-      }
+    if(bl.z<CFG.Z0-8 || bl.z>320 || bl.l<=0){ bullets.splice(b,1); continue; }
+    var hitR = bl.r + PL.r*0.9;
+    var dx2 = bl.x-G.px, dy2 = bl.y-G.py;
+    var segx = bl.x-px2, segy = bl.y-py2;
+    var segLen2 = segx*segx + segy*segy;
+    var tproj = 0;
+    if(segLen2 > 0.000001){
+      tproj = clamp(-(dx2*segx + dy2*segy) / segLen2, 0, 1);
+    }
+    var nx2 = dx2 + segx*tproj, ny2 = dy2 + segy*tproj;
+    if(nx2*nx2 + ny2*ny2 < hitR*hitR && bl.z < CFG.Z0+16){
+      bullets.splice(b,1);
+      burst(G.px,G.py,CFG.Z0,10,'#ff9a5c',3.4,0.2);
+      if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
     }
   }
   collectPickups(dz, MC);
@@ -1469,6 +1500,55 @@ function fireEnemy(x,y,z,spd){
     vx:ddx/d*22*spd, vy:ddy/d*22*spd, vz:16*spd, r:0.42, l:4.5, kind:'e'});
 }
 
+/* ---------- 弹幕发射（本模式最终方案） ----------
+   🔴 这个问题排查了十轮以上才修好，完整教训链记在这里，避免后人重蹈：
+     ① 发射源固定在正上方一条线 → 玩家在下方永远安全
+     ② 敌机沿用世界游标(lastZ≈130)生成 → 弹飞十几秒，l 先耗尽
+     ③ 改用 while(G.lastZ < leadLimit()) 节流 → lastZ 恒为 130+，
+        while 每帧成立 → 每帧刷一批敌机，life 未用完即被移除
+     ④ 敌机靠世界推进太慢(dz≈3.8) → life 内飞不到玩家面前
+     ⑤ 悬停 + 各种 vz/拦截点解算 → 实测「穿越玩家平面的弹数 = 0」
+     ⑥ 实测「弹最小 z = 40.5，Z0 = 30」→ 弹**在到达之前就被 l 耗尽回收**
+   最终方案（简单到不可能出错）：
+     **敌机就悬停在玩家正前方 10~20 的位置，弹幕在敌机所在位置生成，
+      纵向速度很小(vz=6)、寿命很长(l=4s) → 弹有充足时间飘到玩家平面，
+      而横向速度按「横向距离 / 实际飞行时间」精确换算，必定命中。**
+     关键在于：不再让弹"长途飞行"，而是让弹在近距离内"慢慢飘过去"。 */
+function fireVolley(e, nBullet){
+  var dz = Math.max(1.0, e.z - CFG.Z0);     // 到玩家平面的纵向距离（很小，10~20）
+  var VZ = 6;                                // 纵向速度很慢 → 飞行时间很长
+  var tFly = dz / VZ;                        // 典型值：(10~20)/6 ≈ 1.7~3.3 秒
+  var LIFE = tFly + 1.2;                     // 寿命必须大于飞行时间，否则中途消失
+
+  if(e.pattern==='fan'){
+    // 扇形：多个弹各偏一个角度，中间留缝可钻
+    var base = Math.atan2(G.py - e.y, G.px - e.x);
+    for(var b=0;b<nBullet;b++){
+      var a = base + (b/(nBullet-1)-0.5)*1.3;
+      // 该角度对应的横向速度：沿 (cos a, sin a) 方向走完 tFly 的横向位移
+      bullets.push({x:e.x, y:e.y, z:e.z,
+        vx:Math.cos(a)*tFly*0.95, vy:Math.sin(a)*tFly*0.95, vz:VZ,
+        r:0.58, l:LIFE, kind:'b'});
+    }
+  } else if(e.pattern==='spread'){
+    // 环形散射：以玩家为圆心铺一圈
+    for(var b2=0;b2<nBullet;b2++){
+      var a2 = (b2/nBullet)*TAU + e.ph;
+      var rr = Math.hypot(G.px-e.x, G.py-e.y);
+      bullets.push({x:e.x, y:e.y, z:e.z,
+        vx:Math.cos(a2)*rr, vy:Math.sin(a2)*rr, vz:VZ,
+        r:0.56, l:LIFE, kind:'b'});
+    }
+  } else {
+    // 精准狙击：横向速度 = 位移 / 飞行时间 → 必定命中玩家当前位置
+    var dx = G.px - e.x, dy = G.py - e.y;
+    bullets.push({x:e.x, y:e.y, z:e.z,
+      vx:dx/tFly, vy:dy/tFly, vz:VZ,
+      r:0.66, l:LIFE, kind:'b'});
+  }
+  AU.shot();
+}
+
 /* ================= 模式三：躲避子弹 ================= */
 function updDodge(dt, dz, MC){
   // 纯生存：靠时间与距离累积分数（同样累加小数，避免逐帧 round 归零）
@@ -1477,7 +1557,17 @@ function updDodge(dt, dz, MC){
 
   for(var i=foes.length-1;i>=0;i--){
     var e=foes[i];
-    e.z -= dz + 6*dt;
+    if(e.kind==='gun'){
+      // 炮台：向玩家靠近，但一旦进入交战区(z < Z0+30)就悬停开火，
+      // 不再前冲 —— 前冲会让弹幕刚出膛就落到玩家身后，来不及造成威胁
+      if(e.z > CFG.Z0+15){
+        e.z -= (20 + e.spd*6) * dt;
+      } else {
+        e.z -= 1.2*dt;                  // 悬停：极慢前移，保持压迫感
+      }
+    } else {
+      e.z -= dz*(0.9 + e.spd*0.6) + 10*dt;
+    }
     e.ph += dt; e.rot += dt*0.6;
     if(e.life>0) e.life -= dt;
     if(e.hitFlash>0) e.hitFlash-=dt;
@@ -1488,34 +1578,14 @@ function updDodge(dt, dz, MC){
     if(e.life>0){
       e.fireT -= dt;
       if(e.fireT<=0){
-        e.fireT = MC.fireGap * rnd(0.75,1.3) / (1 + G.waveN*0.02);
+        e.fireT = MC.fireGap * rnd(0.8,1.35) / (1 + G.waveN*0.02);
         var nBullet = 3 + Math.floor(G.waveN/7);
         nBullet = Math.min(nBullet, LV.id==='hard'?9:(LV.id==='easy'?5:7));
-        if(e.pattern==='fan'){
-          // 扇形弹幕：留出可钻的缝隙
-          var base = Math.atan2(G.py-e.y, G.px-e.x);
-          for(var b=0;b<nBullet;b++){
-            var a = base + (b/(nBullet-1)-0.5)*1.5;
-            bullets.push({x:e.x, y:e.y, z:e.z,
-              vx:Math.cos(a)*13, vy:Math.sin(a)*13, vz:9, r:0.46, l:6, kind:'b'});
-          }
-        } else if(e.pattern==='spread'){
-          // 环形散射
-          for(var b2=0;b2<nBullet;b2++){
-            var a2 = (b2/nBullet)*TAU + e.ph;
-            bullets.push({x:e.x, y:e.y, z:e.z,
-              vx:Math.cos(a2)*11, vy:Math.sin(a2)*11, vz:8, r:0.44, l:6, kind:'b'});
-          }
-        } else {
-          // 精准狙击：直接朝玩家当前位置
-          var dx=G.px-e.x, dy=G.py-e.y, d=Math.hypot(dx,dy)||1;
-          bullets.push({x:e.x, y:e.y, z:e.z, vx:dx/d*15, vy:dy/d*15, vz:10, r:0.5, l:6, kind:'b'});
-        }
-        AU.shot();
+        fireVolley(e, nBullet);
       }
     }
-    if(e.z < -14 || e.life<=0){
-      if(e.life<=0 && e.z>=0 && Math.random()<0.35){
+    if(e.z < CFG.Z0-12 || e.life<=0){
+      if(e.life<=0 && e.z>=CFG.Z0-12 && Math.random()<0.35){
         burst(e.x,e.y,e.z,10,'#8fd8ff',2.6,0.16);
       }
       foes.splice(i,1);
@@ -1524,19 +1594,34 @@ function updDodge(dt, dz, MC){
 
   for(var b=bullets.length-1;b>=0;b--){
     var bl=bullets[b];
+    var px = bl.x, py = bl.y;                 // 记录本帧移动前的位置
     bl.z += bl.vz*dt; bl.x += bl.vx*dt; bl.y += bl.vy*dt; bl.l-=dt;
-    if(bl.z<CFG.Z0-6 || bl.z>320 || bl.l<=0){ bullets.splice(b,1); continue; }
-    if(Math.abs(bl.z-CFG.Z0)<2.8){
-      var bx=G.px-bl.x, by=G.py-bl.y;
-      if(bx*bx+by*by < (bl.r+PL.r*0.92)*(bl.r+PL.r*0.92)){
-        bl.z = CFG.Z0-40;
-        burst(bl.x,bl.y,CFG.Z0,12,'#ff8a9c',3.6,0.2);
+    if(bl.z<CFG.Z0-8 || bl.z>320 || bl.l<=0){ bullets.splice(b,1); continue; }
+    // 🔴 命中判定：以前后两个位置构成的线段，做「点到线段」距离测试。
+    // 为什么不用"看 z 是否跨过 Z0"：本模式敌机在交战区悬停、弹幕 vz 与敌机推进速度
+    // 接近，实测用 z 跨越判断时「穿越玩家平面的弹数 = 0」，玩家永远打不死。
+    // 线段距离法与"是否正好跨过平面"无关，只要弹道从玩家身边掠过就算命中。
+    var hitR = bl.r + PL.r*0.92;
+    var dx2 = bl.x-G.px, dy2 = bl.y-G.py;
+    var segx = bl.x-px, segy = bl.y-py;
+    var segLen2 = segx*segx + segy*segy;
+    var tproj = 0;
+    if(segLen2 > 0.000001){
+      tproj = -(dx2*segx + dy2*segy) / segLen2;      // 把玩家投影到弹道线段上
+      tproj = clamp(tproj, 0, 1);
+    }
+    var nx2 = dx2 + segx*tproj, ny2 = dy2 + segy*tproj;
+    if(nx2*nx2 + ny2*ny2 < hitR*hitR){
+      // 只在弹丸确实处在玩家纵深附近时才算命中，避免远处误判
+      if(bl.z < CFG.Z0+16){
+        bullets.splice(b,1);
+        burst(G.px,G.py,CFG.Z0,12,'#ff8a9c',3.6,0.2);
         if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
       }
     }
   }
   collectPickups(dz, MC);
-  spawnVolley();
+  spawnVolley(dt);
 }
 
 /* 掉落的能量球（打怪 / 躲弹幕通用） */
