@@ -200,6 +200,81 @@
   }
   .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;}
 
+  /* ---------- 机型 / 难度选择 ---------- */
+  .pick{margin:0 0 14px;text-align:left;}
+  .pick h3{
+    margin:0 0 7px;font-size:11px;letter-spacing:2.6px;color:var(--ink-3);
+    font-weight:700;text-transform:uppercase;display:flex;align-items:center;gap:7px;
+  }
+  .pick h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);}
+  .planes{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  }
+  .pbtn{
+    pointer-events:auto;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;padding:10px 4px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:transform .16s, border-color .16s, background .16s, box-shadow .16s;
+    color:var(--ink-2);
+  }
+  .pbtn canvas{width:100%;height:auto;display:block;}
+  .pbtn b{font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:.5px;margin-top:1px;}
+  .pbtn i{font-style:normal;font-size:9px;color:var(--ink-3);letter-spacing:.2px;white-space:nowrap;}
+  .pbtn:hover{transform:translateY(-2px);background:rgba(255,255,255,.09);}
+  .pbtn.sel{
+    border-color:rgba(255,182,72,.85);
+    background:linear-gradient(180deg,rgba(255,182,72,.20),rgba(255,122,168,.12));
+    box-shadow:0 0 0 1px rgba(255,182,72,.35), 0 6px 20px rgba(255,150,80,.24);
+  }
+  .pbtn.sel b{color:#ffd9a0;}
+
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .lbtn{
+    pointer-events:auto;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;padding:9px 4px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:transform .16s, border-color .16s, background .16s, box-shadow .16s;
+  }
+  .lbtn b{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:1px;}
+  .lbtn i{font-style:normal;font-size:9.5px;color:var(--ink-3);letter-spacing:.2px;}
+  .lbtn:hover{transform:translateY(-2px);background:rgba(255,255,255,.09);}
+  .lbtn.sel{
+    border-color:rgba(94,231,255,.8);
+    background:linear-gradient(180deg,rgba(94,231,255,.20),rgba(140,110,255,.12));
+    box-shadow:0 0 0 1px rgba(94,231,255,.3), 0 6px 20px rgba(80,190,255,.22);
+  }
+  .lbtn.sel b{color:#a8f0ff;}
+  .lbtn[data-lv="easy"].sel{
+    border-color:rgba(90,230,160,.8);
+    background:linear-gradient(180deg,rgba(90,230,160,.20),rgba(60,180,220,.12));
+    box-shadow:0 0 0 1px rgba(90,230,160,.3), 0 6px 20px rgba(70,210,160,.22);
+  }
+  .lbtn[data-lv="easy"].sel b{color:#a8f5cf;}
+  .lbtn[data-lv="hard"].sel{
+    border-color:rgba(255,90,120,.85);
+    background:linear-gradient(180deg,rgba(255,90,120,.22),rgba(190,60,200,.12));
+    box-shadow:0 0 0 1px rgba(255,90,120,.32), 0 6px 20px rgba(255,90,120,.24);
+  }
+  .lbtn[data-lv="hard"].sel b{color:#ffb0c0;}
+
+  .brief{
+    margin:0 0 13px;padding:9px 12px;border-radius:11px;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);
+    font-size:11.5px;color:var(--ink-2);line-height:1.65;text-align:left;
+  }
+  .brief b{color:var(--brand);font-weight:800;}
+  .brief u{color:var(--cyan);text-decoration:none;font-weight:700;}
+
+  @media (max-width:400px){
+    .planes{gap:5px;}
+    .pbtn b{font-size:11px;}
+    .pbtn i{font-size:8px;}
+  }
+
   .score-grid{
     display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 14px;
   }
@@ -286,16 +361,26 @@
     <div class="panel">
       <h2>飞机穿环</h2>
       <p class="sub">暮色高空 · 引擎全开<br>穿过能量光环，别撞上环壁与虚空晶核</p>
-      <div class="keys">
-        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键 操纵</div>
-        <div><kbd>拖动</kbd> 屏幕任意处操纵</div>
-        <div><kbd>P</kbd> 暂停 · <kbd>R</kbd> 重开</div>
-        <div><kbd>M</kbd> 音效开关</div>
+
+      <div class="pick">
+        <h3>选择机型</h3>
+        <div class="planes" id="planePick"></div>
       </div>
+
+      <div class="pick">
+        <h3>难度</h3>
+        <div class="levels" id="levelPick"></div>
+      </div>
+
+      <p class="brief" id="uiBrief"></p>
+
       <div class="btnrow">
         <button class="btn" id="btnStart">开始飞行</button>
       </div>
-      <p class="sub" style="margin:13px 0 0">最佳记录 <b id="uiBest2" style="color:var(--brand)">0</b> 分</p>
+      <p class="sub" style="margin:12px 0 0">
+        最佳记录 <b id="uiBest2" style="color:var(--brand)">0</b> 分 ·
+        <span id="uiLastCfg" style="color:var(--ink-3)"></span>
+      </p>
     </div>
   </div>
 
@@ -327,7 +412,12 @@
       </div>
       <div class="btnrow">
         <button class="btn" id="btnRetry">再来一局</button>
+        <button class="btn ghost" id="btnChange">换个飞机 / 难度</button>
       </div>
+      <p class="sub" style="margin:12px 0 0;font-size:11px">
+        <b style="color:var(--ink-2)">WASD / 方向键 / 拖动</b> 操纵 ·
+        <b style="color:var(--ink-2)">P</b> 暂停 · <b style="color:var(--ink-2)">R</b> 重开 · <b style="color:var(--ink-2)">M</b> 静音
+      </p>
     </div>
   </div>
 </div>
@@ -367,19 +457,61 @@ var CFG = {
   Z0: 30,            // 飞机所在的观察深度
   boundX: 11,        // 活动范围（世界单位）
   boundY: 7,
-  planeR: 0.95,      // 飞机碰撞半径
-  startSpeed: 25,
-  maxSpeed: 74,
-  speedUp: 0.30,
-  ringR0: 5.1,
-  ringR1: 3.25,
-  gapT0: 1.38,       // 环间距（秒）
-  gapT1: 1.05,
+  planeR: 0.95,      // 飞机碰撞半径（基准，实际由机型覆写）
   lives: 3,
   invuln: 1.6,
   leadZ: 118,        // 最远生成距离
   bestKey: 'by15_best'
 };
+
+/* ================= 机型库 =================
+   view  : 俯视机长的归一化尺寸（机头朝上），用于缩放
+   speed : 极速系数      agility: 机动系数      grip: 跟随输入的灵敏度
+   r     : 碰撞半径      bonus: 得分系数
+*/
+var PLANES = [
+  {
+    id:'swift', name:'疾隼', tag:'均衡',
+    desc:'轻巧灵活，适合入门与长期飞行',
+    speed:1.00, agility:1.00, grip:11.5, r:0.95, bonus:1.00, scale:0.62,
+    body:'#f2f6ff', shade:'#9aa8c9', accent:'#ff5a78', trim:'#5ec8ff'
+  },
+  {
+    id:'dart', name:'穿云', tag:'极速',
+    desc:'三角翼高速机，穿环快但转向需要提前量',
+    speed:1.18, agility:0.92, grip:10.2, r:0.86, bonus:1.18, scale:0.6,
+    body:'#e8edf8', shade:'#8d99b8', accent:'#ffc23d', trim:'#7f9dff'
+  },
+  {
+    id:'hawk', name:'苍隼', tag:'机动',
+    desc:'大后掠翼格斗机，机动极限最高，环距容错大',
+    speed:1.06, agility:1.26, grip:13.2, r:1.02, bonus:1.12, scale:0.64,
+    body:'#e6ebf5', shade:'#7f8aa8', accent:'#4de0a8', trim:'#ff8a4c'
+  },
+  {
+    id:'gull', name:'信天翁', tag:'宽体',
+    desc:'大翼展远程客机，惯性大但飞行平稳、得分高',
+    speed:0.92, agility:0.84, grip:8.6, r:1.18, bonus:1.30, scale:0.7,
+    body:'#fbfdff', shade:'#a8b3cc', accent:'#2f7fff', trim:'#ffb648'
+  }
+];
+
+/* ================= 难度 =================
+   speed0/max: 速度区间     ringShrink: 环缩小幅度
+   hazard:     晶核出现概率  gapT:      环间距（秒）
+   lives:      命数          mult:       得分倍率
+*/
+var LEVELS = [
+  { id:'easy', name:'轻松', speed0:19,  maxSpeed:52, speedUp:0.20,
+    ring0:5.6, ring1:4.5, gapT0:1.62, gapT1:1.34, lives:5, hazard:0,    mult:0.85 },
+  { id:'normal', name:'标准', speed0:25, maxSpeed:68, speedUp:0.28,
+    ring0:5.2, ring1:3.9, gapT0:1.38, gapT1:1.08, lives:3, hazard:0.30, mult:1.00 },
+  { id:'hard', name:'挑战', speed0:31, maxSpeed:88, speedUp:0.40,
+    ring0:4.9, ring1:3.35, gapT0:1.16, gapT1:0.86, lives:2, hazard:0.58, mult:1.45 }
+];
+
+var LV = LEVELS[1];      // 当前难度
+var PL = PLANES[0];      // 当前机型
 
 /* ================= 画布尺寸 ================= */
 var W=0, H=0, DPR=1, cx=0, cy=0, FOCAL=1, PS=1, isTouch=false;
@@ -620,8 +752,8 @@ cv.addEventListener('contextmenu',function(e){ e.preventDefault(); });
 var rings=[], orbs=[], hazards=[], parts=[], clouds=[];
 var shake=0, flash=0, hitStop=0;
 var G = {
-  state:'menu', t:0, score:0, dist:0, lives:CFG.lives,
-  speed:CFG.startSpeed, px:0, py:0, vx:0, vy:0,
+  state:'menu', t:0, score:0, dist:0, lives:LV.lives,
+  speed:LV.speed0, px:0, py:0, vx:0, vy:0,
   combo:0, bestCombo:0, ringN:0, perfectN:0,
   inv:0, roll:0, pitch:0, tail:[], lastZ:0
 };
@@ -646,7 +778,7 @@ function updClouds(dt, dz){
 }
 
 /* 生成 */
-function nextGap(){ return G.speed * lerp(CFG.gapT0, CFG.gapT1, Math.min(1,G.ringN/26)); }
+function nextGap(){ return G.speed * lerp(LV.gapT0, LV.gapT1, Math.min(1,G.ringN/26)); }
 
 /* 生成游标 cursor：随世界一起前移，保证圆环可以无限续接 */
 function portraitLead(){
@@ -656,42 +788,115 @@ function portraitLead(){
 function leadLimit(){
   return (H > W*1.15) ? 92 : CFG.leadZ;
 }
+
+/* ---------- 路径编排（圆周航线） ----------
+   踩过的坑：先后试过「随机游走」和「航向 + 边界反弹」两种写法，
+   离线仿真跑出来都出现步距 ≈ 0.4~1.5 的样本 —— 即相邻两环几乎重合，
+   画面上就是几个环叠成一坨，完全读不出航线。
+   根因：航向式写法在边界处"反弹"会把方向打反，飞机于是在两侧来回对穿。
+
+   现在改成"圆周参数"模型：航线由 (圆心 cx,cy · 半径 rad · 相位 ang) 描述，
+   每个环 = 在圆周上按角步长走一步。
+   - 角步长由「可达长度 ÷ 半径」反推  →  永远不会超出物理可达范围
+   - 圆周参数天然连续              →  步距恒定，不会出现重合
+   - 圆心缓慢回中                  →  不会长期贴着屏幕一侧飞
+   另外兜一层硬性下限 MIN_STEP，任何情况下相邻环都不会重叠。 */
+var PATH = { cx:0, cy:0, rad:4.2, ang:0, dirSign:1,
+             drift:0, driftLeft:4, px:null, py:null };
+
+function resetPath(){
+  PATH.cx = rnd(-2.5, 2.5);
+  PATH.cy = rnd(-1.2, 1.2);
+  PATH.rad = rnd(3.4, 5.2);
+  PATH.ang = rnd(0, TAU);
+  PATH.dirSign = (Math.random()<0.5) ? -1 : 1;
+  PATH.drift = 0; PATH.driftLeft = rndInt(3,6);
+  PATH.px = null; PATH.py = null;   // null 表示"还没发出第一个环"
+}
+
+/* 步长上限：由物理反推——这段时间内飞机最多能横移多少，再留 62% 余量 */
+function reachLimit(gap){
+  var t = gap / Math.max(1, G.speed);
+  var vmax = PL.agility * 30;
+  return Math.max(2.2, vmax * t * 0.62);
+}
+
+var MIN_STEP = 2.4;   // 相邻环的最小间距（仿真验证：≥2.4 时三档难度零重叠）
+
+function nextRingPos(gap){
+  var reach = reachLimit(gap);
+  var rad = Math.max(1.2, PATH.rad);
+
+  // 角步长：使弧长落在 [minStep, reach] 内；半径越小角步长自动越大
+  var minStep = Math.min(3.2, reach*0.60);
+  var angMax = Math.min(0.85, reach/rad);
+  var angMin = Math.min(angMax, minStep/rad);
+  PATH.ang += rnd(angMin, angMax) * PATH.dirSign;
+
+  // 圆心缓慢漂移 + 向中轴回归，避免长期偏在一侧
+  PATH.driftLeft--;
+  if(PATH.driftLeft <= 0){
+    PATH.drift = rnd(-0.30, 0.30);
+    PATH.driftLeft = rndInt(3,7);
+  }
+  PATH.cx = clamp(PATH.cx + PATH.drift - PATH.cx*0.055, -4.5, 4.5);
+  PATH.cy = clamp(PATH.cy + PATH.drift*0.55 - PATH.cy*0.055, -2.8, 2.8);
+  // 半径缓变，制造收放变化
+  PATH.rad  = clamp(PATH.rad + rnd(-0.22, 0.22), 2.6, 6.4);
+
+  var nx = clamp(PATH.cx + Math.cos(PATH.ang)*PATH.rad, -CFG.boundX*0.82, CFG.boundX*0.82);
+  var ny = clamp(PATH.cy + Math.sin(PATH.ang)*PATH.rad*0.72, -CFG.boundY*0.80, CFG.boundY*0.80);
+
+  // 硬性下限：与上一个环的距离必须 ≥ MIN_STEP
+  if(PATH.px !== null){
+    var dx = nx-PATH.px, dy = ny-PATH.py, d = Math.hypot(dx,dy);
+    if(d < MIN_STEP){
+      if(d < 0.0001){ dx = Math.cos(PATH.ang); dy = Math.sin(PATH.ang); d = 1; }
+      nx = clamp(PATH.px + dx/d*MIN_STEP, -CFG.boundX*0.82, CFG.boundX*0.82);
+      ny = clamp(PATH.py + dy/d*MIN_STEP, -CFG.boundY*0.80, CFG.boundY*0.80);
+    }
+  }
+  PATH.px = nx; PATH.py = ny;
+  return {x:nx, y:ny};
+}
+function rndInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+
 function spawnAhead(){
   var guard=0;
   while(G.lastZ < leadLimit() && guard++<12){
     var gap = nextGap();
     var t = Math.min(1, G.ringN/30);
-    var R  = lerp(CFG.ringR0, CFG.ringR1, t) * rnd(0.94,1.08);
-    var px0=0, py0=0;
-    if(rings.length){
-      var lr = rings[rings.length-1];
-      px0 = lr.x; py0 = lr.y;
-    }
-    var reach = Math.min(CFG.boundX*0.72, gap*G.speed*0.42);
-    var reachY= Math.min(CFG.boundY*0.68, gap*G.speed*0.36);
-    var nx = clamp(px0 + rnd(-reach,reach), -CFG.boundX*0.86, CFG.boundX*0.86);
-    var ny = clamp(py0 + rnd(-reachY,reachY), -CFG.boundY*0.84, CFG.boundY*0.84);
+    // 环半径：整体收窄，但保留呼吸感（每 5 个环小幅涨一次）
+    var breathe = (G.ringN%5===0) ? 1.07 : 1.0;
+    var R  = lerp(LV.ring0, LV.ring1, t) * breathe * rnd(0.96,1.05);
+
+    var pos = nextRingPos(gap);
+    var nx = pos.x, ny = pos.y;
 
     G.lastZ += gap;
     rings.push({
       x:nx, y:ny, z:G.lastZ, R:R,
-      k: rnd(0.34,1.0), rot: rnd(0,Math.PI),
+      // 倾角 k：不再取到 0.34 那种"极扁"的值，读图更清楚；
+      // 0.68~1.0 保证环始终像个环，同时保留立体倾斜感
+      k: rnd(0.68,1.0),
+      rot: rnd(0,Math.PI),
       spin: rnd(-0.5,0.5), ph: Math.random()*TAU,
       hue: rnd(0,360), state:0, prev:G.lastZ
     });
 
-    // 环间的能量球
-    if(Math.random() < 0.62){
+    // 环间的能量球：摆在两环连线的中点附近，奖励"走对路线"
+    if(Math.random() < 0.66){
+      var pv = rings[rings.length-2] || {x:nx,y:ny};
       orbs.push({
-        x: nx + rnd(-reach*0.5,reach*0.5),
-        y: ny + rnd(-reachY*0.5,reachY*0.5),
+        x: lerp(pv.x, nx, 0.5) + rnd(-0.5,0.5),
+        y: lerp(pv.y, ny, 0.5) + rnd(-0.4,0.4),
         z: G.lastZ - gap*0.5, r:0.85, ph:Math.random()*TAU, got:0
       });
     }
-    // 后期加入虚空晶核
-    if(G.ringN > 5 && Math.random() < Math.min(0.62, 0.1 + G.ringN*0.018)){
+    // 虚空晶核：只在难度允许时出现，且贴着环的外侧（不要堵死环心）
+    if(LV.hazard > 0 && G.ringN > 5 && Math.random() < LV.hazard){
       var a = Math.random()*TAU;
-      var rad = R*rnd(1.5,1.95);
+      var rad = R*rnd(1.55,2.0);
       hazards.push({
         x: clamp(nx+Math.cos(a)*rad,-CFG.boundX,CFG.boundX),
         y: clamp(ny+Math.sin(a)*rad,-CFG.boundY,CFG.boundY),
@@ -727,11 +932,12 @@ function trail(x,y,z){
 /* ================= 更新 ================= */
 function startGame(){
   AU.init(); AU.resume(); AU.ui();
-  G.state='play'; G.t=0; G.score=0; G.dist=0; G.lives=CFG.lives;
-  G.speed=CFG.startSpeed; G.px=0; G.py=0; G.vx=0; G.vy=0;
+  G.state='play'; G.t=0; G.score=0; G.dist=0; G.lives=LV.lives;
+  G.speed=LV.speed0; G.px=0; G.py=0; G.vx=0; G.vy=0;
   G.combo=0; G.bestCombo=0; G.ringN=0; G.perfectN=0; G.inv=0;
   G.roll=0; G.pitch=0; G.lastZ = portraitLead();
-  rings.length=0; orbs.length=0; hazards.length=0; parts.length=0; G.tail.length=0;
+  rings.length=0; orbs.length=0; hazards.length=0; parts.length=0;
+  resetPath();
   IN.tgt.x=0; IN.tgt.y=0; IN.ptr=false;
   shake=0; flash=0; hitStop=0;
   initClouds();
@@ -754,15 +960,20 @@ function gameOver(){
   ui.fBest.textContent  = fmt(Math.max(best,G.score));
   ui.rank.textContent = rankOf(G.score);
   ui.overTitle.textContent = isNew ? '新纪录！' : (G.score>0?'任务结束':'还没出发');
-  ui.overSub.textContent = isNew ? '这趟航迹无人超越' : '稳住节奏，再来一次';
+  // 结算副标题带上本局配置，方便复盘
+  ui.overSub.textContent = PL.name + ' · ' + LV.name + ' · ' +
+    (isNew ? '这趟航迹无人超越' : '稳住节奏，再来一次');
   ui.vOver.hidden=false;
   ui.best.textContent = fmt(Math.max(best,G.score));
 }
+/* 评级按难度分档：高难度的分数天然更高，门槛也要跟着抬高 */
 function rankOf(s){
-  if(s>=2600) return 'S';
-  if(s>=1800) return 'A';
-  if(s>=1100) return 'B';
-  if(s>=500)  return 'C';
+  var k = (LV.mult||1);
+  var a = s/(k*2600), b = s/(k*1800), c = s/(k*1100), d = s/(k*500);
+  if(a>=1) return 'S';
+  if(b>=1) return 'A';
+  if(c>=1) return 'B';
+  if(d>=1) return 'C';
   return 'D';
 }
 function readBest(){ try{ return parseInt(localStorage.getItem(CFG.bestKey)||'0',10)||0; }catch(e){ return 0; } }
@@ -819,8 +1030,9 @@ function frame(ts){
 function update(dt){
   G.t += dt;
 
-  // 速度
-  G.speed = Math.min(CFG.maxSpeed, G.speed + CFG.speedUp*dt);
+  // 速度：机型决定极速倍率，难度决定上限与增速
+  var vmax = LV.maxSpeed * PL.speed;
+  G.speed = Math.min(vmax, G.speed + LV.speedUp*dt);
   var dz = G.speed*dt;
   G.dist += dz;
   G.lastZ -= dz;
@@ -829,18 +1041,19 @@ function update(dt){
   var kd = keyDir();
   if(kd.x||kd.y){
     var l = Math.hypot(kd.x,kd.y);
-    var steer = 12.5;
+    var steer = 12.5 * PL.agility;
     IN.tgt.x = clamp(IN.tgt.x + kd.x/l*steer*dt, -CFG.boundX, CFG.boundX);
     IN.tgt.y = clamp(IN.tgt.y + kd.y/l*steer*dt, -CFG.boundY, CFG.boundY);
   }
-  // 弹簧跟随
-  var k = IN.ptr ? 15 : 11;
+  // 弹簧跟随：机型 grip 决定跟手程度
+  var k = (IN.ptr ? PL.grip*1.30 : PL.grip);
   var ax = (IN.tgt.x-G.px)*k*k, ay = (IN.tgt.y-G.py)*k*k;
   G.vx += (ax - G.vx*2*Math.sqrt(k))*dt;
   G.vy += (ay - G.vy*2*Math.sqrt(k))*dt;
-  var vmax = IN.ptr?46:34;
+  var vcap = 30 * PL.agility;
+  var vmaxMove = IN.ptr ? vcap*1.53 : vcap;
   var vm = Math.hypot(G.vx,G.vy);
-  if(vm>vmax){ G.vx=G.vx/vm*vmax; G.vy=G.vy/vm*vmax; }
+  if(vm>vmaxMove){ G.vx=G.vx/vm*vmaxMove; G.vy=G.vy/vm*vmaxMove; }
   G.px += G.vx*dt; G.py += G.vy*dt;
 
   // 越界保护（软墙）
@@ -859,11 +1072,14 @@ function update(dt){
     var r=rings[i]; r.prev=r.z; r.z-=dz; r.rot+=r.spin*dt*0.5; r.ph+=dt;
     // 穿环判定
     if(r.state===0 && r.prev>CFG.Z0 && r.z<=CFG.Z0){
+      var pr = PL.r;
       var dx=G.px-r.x, dy=G.py-r.y, d=Math.hypot(dx,dy);
-      if(d < r.R-CFG.planeR*0.55){
+      if(d < r.R-pr*0.55){
         var perfect = d < r.R*0.42;
         G.combo++; if(G.combo>G.bestCombo) G.bestCombo=G.combo;
-        var gain = 10 + Math.min(G.combo,20)*2 + (perfect?40:0);
+        // 得分 = 基础 + 连击 + 完美，再乘「难度倍率 × 机型倍率」
+        var gain = (10 + Math.min(G.combo,20)*2 + (perfect?40:0)) * LV.mult * PL.bonus;
+        gain = Math.round(gain);
         G.score += gain;
         r.state=1;
         burst(r.x,r.y,r.z, perfect?26:16, perfect?'#fff0b8':'#9ff0ff', 3.6, 0.2);
@@ -891,7 +1107,7 @@ function update(dt){
     var o=orbs[j]; o.z-=dz; o.ph+=dt*3;
     if(o.got===0 && Math.abs(o.z-CFG.Z0)<3.2){
       var ddx=G.px-o.x, ddy=G.py-o.y;
-      if(ddx*ddx+ddy*ddy < (o.r+CFG.planeR*1.1)*(o.r+CFG.planeR*1.1)){
+      if(ddx*ddx+ddy*ddy < (o.r+PL.r*1.1)*(o.r+PL.r*1.1)){
         o.got=1; G.score+=25; burst(o.x,o.y,o.z,12,'#b9ffe6',2.6,0.16); AU.orb();
       }
     }
@@ -902,7 +1118,7 @@ function update(dt){
     var z2=hazards[h]; z2.z-=dz; z2.rot+=z2.spin*dt; z2.ph+=dt;
     if(Math.abs(z2.z-CFG.Z0)<2.6){
       var hx=G.px-z2.x, hy=G.py-z2.y;
-      if(hx*hx+hy*hy < (z2.r+CFG.planeR)*(z2.r+CFG.planeR)){
+      if(hx*hx+hy*hy < (z2.r+PL.r)*(z2.r+PL.r)){
         z2.z = CFG.Z0-40;
         if(G.inv<=0) loseLife(G.px,G.py,CFG.Z0);
       }
@@ -931,8 +1147,17 @@ function update(dt){
 
 function syncHUD(){
   ui.best.textContent = fmt(readBest());
-  var hs = ui.hearts.children;
-  for(var i=0;i<3;i++) hs[i].className = (i<G.lives?'':'off');
+  renderHearts();
+}
+/* 命数图标数量随难度变化：轻松 5 · 标准 3 · 挑战 2 */
+function renderHearts(){
+  var box = ui.hearts, n = LV.lives;
+  while(box.children.length < n){
+    var i = document.createElement('i');
+    box.appendChild(i);
+  }
+  while(box.children.length > n) box.removeChild(box.lastChild);
+  for(var i=0;i<box.children.length;i++) box.children[i].className = (i<G.lives?'':'off');
 }
 function syncHudLive(){
   ui.score.textContent = fmt(G.score);
@@ -1303,128 +1528,23 @@ function drawParticles(){
   ctx.globalCompositeOperation='source-over';
 }
 
-/* 飞机 */
+/* ================= 飞机绘制（按机型分派） ================= */
 function drawPlane(){
-  var s=PS*0.92;
-  var x=cx+G.px*PS, y=cy-G.py*PS;
+  var s = PS * (PL.scale||0.62);
+  var x = cx+G.px*PS, y = cy-G.py*PS;
   var blink = G.inv>0 && ((G.t*12)|0)%2===0;
   var alpha = blink?0.30:1;
 
   ctx.save();
   ctx.translate(x,y);
 
-  // 引擎尾焰
-  var th = 0.72 + G.speed/CFG.maxSpeed*0.72;
-  ctx.globalCompositeOperation='lighter';
-  var fg=ctx.createLinearGradient(0,0,0,s*2.0*th);
-  fg.addColorStop(0,'rgba(255,246,214,'+(0.72*alpha)+')');
-  fg.addColorStop(.3,'rgba(255,168,90,'+(0.42*alpha)+')');
-  fg.addColorStop(.72,'rgba(255,90,120,'+(0.14*alpha)+')');
-  fg.addColorStop(1,'rgba(180,60,200,0)');
-  ctx.fillStyle=fg;
-  ctx.beginPath();
-  ctx.moveTo(-s*0.17, s*0.55);
-  ctx.quadraticCurveTo(-s*0.26, s*1.15*th, 0, s*1.95*th);
-  ctx.quadraticCurveTo(s*0.26, s*1.15*th, s*0.17, s*0.55);
-  ctx.closePath(); ctx.fill();
-  // 焰心
-  ctx.beginPath();
-  ctx.moveTo(-s*0.09, s*0.58);
-  ctx.quadraticCurveTo(-s*0.12, s*0.95, 0, s*1.25*th);
-  ctx.quadraticCurveTo(s*0.12, s*0.95, s*0.09, s*0.58);
-  ctx.closePath();
-  ctx.fillStyle='rgba(255,255,248,'+(0.8*alpha)+')';
-  ctx.fill();
-  ctx.globalCompositeOperation='source-over';
+  // ---- 尾焰（先画，位于机体之下）----
+  drawFlame(s, alpha);
 
   ctx.rotate(G.roll*0.42);
   ctx.scale(1, 1-Math.abs(G.pitch)*0.10);
 
-  // 机翼阴影层
-  ctx.fillStyle='rgba(10,14,40,.5)';
-  wingPath(ctx,s,2); ctx.fill();
-
-  // 主机翼
-  var wg=ctx.createLinearGradient(-s*1.7,0,s*1.7,0);
-  wg.addColorStop(0,'#cfd8ee');
-  wg.addColorStop(.5,'#f4f7ff');
-  wg.addColorStop(1,'#cfd8ee');
-  ctx.fillStyle=wg;
-  wingPath(ctx,s,0); ctx.fill();
-  ctx.strokeStyle='rgba(70,90,150,.5)'; ctx.lineWidth=Math.max(0.6,s*0.035);
-  wingPath(ctx,s,0); ctx.stroke();
-
-  // 翼端灯
-  ctx.globalCompositeOperation='lighter';
-  navLight(ctx,-s*1.62,-s*0.12,s*0.22,'255,90,120');
-  navLight(ctx, s*1.62,-s*0.12,s*0.22,'90,255,160');
-  ctx.globalCompositeOperation='source-over';
-
-  // 尾翼
-  ctx.fillStyle='#dbe3f6';
-  ctx.beginPath();
-  ctx.moveTo(-s*0.62,-s*0.42); ctx.lineTo(-s*0.30,-s*1.16);
-  ctx.lineTo(s*0.30,-s*1.16);  ctx.lineTo(s*0.62,-s*0.42);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle='rgba(70,90,150,.42)'; ctx.lineWidth=Math.max(0.6,s*0.03); ctx.stroke();
-
-  // 垂尾
-  ctx.fillStyle='#eef2ff';
-  ctx.beginPath();
-  ctx.moveTo(-s*0.10,-s*0.5); ctx.lineTo(-s*0.08,-s*1.52);
-  ctx.lineTo(s*0.08,-s*1.52);  ctx.lineTo(s*0.10,-s*0.5);
-  ctx.closePath(); ctx.fill();
-
-  // 机身
-  var bg=ctx.createLinearGradient(-s*0.5,0,s*0.5,0);
-  bg.addColorStop(0,'#aab6d4');
-  bg.addColorStop(.42,'#ffffff');
-  bg.addColorStop(1,'#9fabc9');
-  ctx.fillStyle=bg;
-  ctx.beginPath();
-  ctx.moveTo(0,-s*1.30);
-  ctx.quadraticCurveTo(s*0.34,-s*0.55, s*0.30, s*0.18);
-  ctx.quadraticCurveTo(s*0.26, s*0.70, 0, s*0.76);
-  ctx.quadraticCurveTo(-s*0.26,s*0.70, -s*0.30,s*0.18);
-  ctx.quadraticCurveTo(-s*0.34,-s*0.55, 0,-s*1.30);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle='rgba(60,80,140,.42)'; ctx.lineWidth=Math.max(0.6,s*0.032); ctx.stroke();
-
-  // 红条涂装
-  ctx.fillStyle='rgba(255,90,120,.85)';
-  ctx.fillRect(-s*0.26,-s*0.30,s*0.52,s*0.13);
-  ctx.fillStyle='rgba(90,190,255,.75)';
-  ctx.fillRect(-s*0.26,-s*0.10,s*0.52,s*0.07);
-
-  // 座舱
-  var cg=ctx.createLinearGradient(0,-s*1.10,0,-s*0.42);
-  cg.addColorStop(0,'#8fe3ff');
-  cg.addColorStop(.5,'#2b4f8f');
-  cg.addColorStop(1,'#16224a');
-  ctx.fillStyle=cg;
-  ctx.beginPath();
-  ctx.moveTo(0,-s*1.16);
-  ctx.quadraticCurveTo(s*0.22,-s*0.80, s*0.18,-s*0.48);
-  ctx.quadraticCurveTo(0,-s*0.38, -s*0.18,-s*0.48);
-  ctx.quadraticCurveTo(-s*0.22,-s*0.80, 0,-s*1.16);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.55)';
-  ctx.beginPath(); ctx.ellipse(-s*0.06,-s*0.86,s*0.07,s*0.16,-0.4,0,TAU); ctx.fill();
-
-  // 双发动机喷口
-  ctx.globalCompositeOperation='lighter';
-  var ey = s*0.76;
-  for(var i=0;i<2;i++){
-    var ex = (i?-1:1)*s*0.155;
-    var g2=ctx.createRadialGradient(ex,ey,0,ex,ey,s*0.20);
-    g2.addColorStop(0,'rgba(255,255,240,'+(0.95*alpha)+')');
-    g2.addColorStop(.45,'rgba(255,180,110,'+(0.6*alpha)+')');
-    g2.addColorStop(1,'rgba(255,120,90,0)');
-    ctx.fillStyle=g2;
-    ctx.beginPath(); ctx.arc(ex,ey,s*0.20,0,TAU); ctx.fill();
-  }
-  ctx.globalCompositeOperation='source-over';
-
+  drawPlaneBody(1, alpha);
   ctx.restore();
   ctx.globalAlpha=1;
 
@@ -1436,21 +1556,325 @@ function drawPlane(){
     ctx.globalCompositeOperation='lighter';
     ctx.strokeStyle='rgba(150,220,255,'+(0.55*(1-p)+0.20).toFixed(3)+')';
     ctx.lineWidth=Math.max(1.2,s*0.10);
-    ctx.beginPath(); ctx.ellipse(0,0,s*1.35,s*1.35,0,0,TAU); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0,0,s*1.5,s*1.5,0,0,TAU); ctx.stroke();
     ctx.restore();
     ctx.globalCompositeOperation='source-over';
   }
 }
-function wingPath(c,s,dy){
+
+/* 尾焰：随速度变长，双机型的喷口数量不同 */
+function drawFlame(s, alpha){
+  var th = 0.72 + (G.speed/(LV.maxSpeed*PL.speed))*0.80;
+  var n = (PL.id==='gull') ? 4 : 2;
+  ctx.globalCompositeOperation='lighter';
+  for(var i=0;i<n;i++){
+    var ox = n===1 ? 0 : (i/(n-1)-0.5) * s*0.40;
+    var w  = s*(n>2?0.085:0.17);
+    var len= s*1.95*th * (n>2?0.86:1);
+    var fg=ctx.createLinearGradient(0,s*0.55,0,s*0.55+len);
+    fg.addColorStop(0,'rgba(255,246,214,'+(0.72*alpha)+')');
+    fg.addColorStop(.3,'rgba(255,168,90,'+(0.42*alpha)+')');
+    fg.addColorStop(.72,'rgba(255,90,120,'+(0.14*alpha)+')');
+    fg.addColorStop(1,'rgba(180,60,200,0)');
+    ctx.fillStyle=fg;
+    ctx.beginPath();
+    ctx.moveTo(ox-w, s*0.55);
+    ctx.quadraticCurveTo(ox-w*1.5, s*0.55+len*0.58, ox, s*0.55+len);
+    ctx.quadraticCurveTo(ox+w*1.5, s*0.55+len*0.58, ox+w, s*0.55);
+    ctx.closePath(); ctx.fill();
+    // 焰心
+    ctx.beginPath();
+    ctx.moveTo(ox-w*0.5, s*0.58);
+    ctx.quadraticCurveTo(ox-w*0.66, s*0.55+len*0.4, ox, s*0.55+len*0.62);
+    ctx.quadraticCurveTo(ox+w*0.66, s*0.55+len*0.4, ox+w*0.5, s*0.58);
+    ctx.closePath();
+    ctx.fillStyle='rgba(255,255,248,'+(0.78*alpha)+')';
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+}
+
+/* 公共零件 */
+function bodyGrad(c,s,c1,c2){
+  var g=c.createLinearGradient(-s*0.5,0,s*0.5,0);
+  g.addColorStop(0, c2); g.addColorStop(.42, c1); g.addColorStop(1, c2);
+  return g;
+}
+function canopy(c,s,len,w,y0){
+  var cg=c.createLinearGradient(0,y0,0,y0+s*len);
+  cg.addColorStop(0,'#a8ecff');
+  cg.addColorStop(.45,'#2b4f8f');
+  cg.addColorStop(1,'#16224a');
+  c.fillStyle=cg;
+  c.beginPath();
+  c.moveTo(0, y0);
+  c.quadraticCurveTo(s*w, y0+s*len*0.42, s*w*0.82, y0+s*len);
+  c.quadraticCurveTo(0, y0+s*len*1.16, -s*w*0.82, y0+s*len);
+  c.quadraticCurveTo(-s*w, y0+s*len*0.42, 0, y0);
+  c.closePath(); c.fill();
+  c.fillStyle='rgba(255,255,255,.5)';
+  c.beginPath(); c.ellipse(-s*w*0.28, y0+s*len*0.44, s*w*0.30, s*len*0.34, -0.4,0,TAU); c.fill();
+}
+function nozzles(c,s,y,xs,r,alpha){
+  c.globalCompositeOperation='lighter';
+  for(var i=0;i<xs.length;i++){
+    var g2=c.createRadialGradient(xs[i],y,0,xs[i],y,r);
+    g2.addColorStop(0,'rgba(255,255,240,'+(0.95*alpha)+')');
+    g2.addColorStop(.45,'rgba(255,180,110,'+(0.6*alpha)+')');
+    g2.addColorStop(1,'rgba(255,120,90,0)');
+    c.fillStyle=g2;
+    c.beginPath(); c.arc(xs[i],y,r,0,TAU); c.fill();
+  }
+  c.globalCompositeOperation='source-over';
+}
+
+/* ---- ① 疾隼：常规后掠翼单发教练机 ---- */
+function drawSwift(s, alpha){
+  // 阴影层
+  ctx.fillStyle='rgba(10,14,40,.5)';
+  wingPath(ctx,s,2.5,1.66,-0.24,1.58,-0.02); ctx.fill();
+  // 主翼
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  wingPath(ctx,s,0,1.66,-0.24,1.58,-0.02); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.5)'; ctx.lineWidth=Math.max(0.6,s*0.035);
+  wingPath(ctx,s,0,1.66,-0.24,1.58,-0.02); ctx.stroke();
+  // 翼端灯
+  ctx.globalCompositeOperation='lighter';
+  navLight(ctx,-s*1.62,-s*0.12,s*0.22,'255,90,120');
+  navLight(ctx, s*1.62,-s*0.12,s*0.22,'90,255,160');
+  ctx.globalCompositeOperation='source-over';
+  // 平尾
+  ctx.fillStyle=PL.shade;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.62,-s*0.42); ctx.lineTo(-s*0.30,-s*1.16);
+  ctx.lineTo(s*0.30,-s*1.16);  ctx.lineTo(s*0.62,-s*0.42);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.42)'; ctx.lineWidth=Math.max(0.6,s*0.03); ctx.stroke();
+  // 垂尾
+  ctx.fillStyle=PL.body;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.10,-s*0.5); ctx.lineTo(-s*0.08,-s*1.52);
+  ctx.lineTo(s*0.08,-s*1.52);  ctx.lineTo(s*0.10,-s*0.5);
+  ctx.closePath(); ctx.fill();
+  // 机身
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  ctx.beginPath();
+  ctx.moveTo(0,-s*1.30);
+  ctx.quadraticCurveTo(s*0.34,-s*0.55, s*0.30, s*0.18);
+  ctx.quadraticCurveTo(s*0.26, s*0.70, 0, s*0.76);
+  ctx.quadraticCurveTo(-s*0.26,s*0.70, -s*0.30,s*0.18);
+  ctx.quadraticCurveTo(-s*0.34,-s*0.55, 0,-s*1.30);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(60,80,140,.42)'; ctx.lineWidth=Math.max(0.6,s*0.032); ctx.stroke();
+  // 涂装
+  ctx.fillStyle=hexA(PL.accent,.9); ctx.fillRect(-s*0.26,-s*0.30,s*0.52,s*0.13);
+  ctx.fillStyle=hexA(PL.trim,.8);  ctx.fillRect(-s*0.26,-s*0.10,s*0.52,s*0.07);
+  canopy(ctx,s,0.72,0.22,-s*1.16);
+  nozzles(ctx,s,s*0.76,[-s*0.155,s*0.155],s*0.20,alpha);
+}
+
+/* ---- ② 穿云：三角翼高速机，翼面积小、前掠尖 ---- */
+function drawDart(s, alpha){
+  // 三角翼（大后掠，根部厚）
+  ctx.fillStyle='rgba(10,14,40,.5)';
+  deltaWing(ctx,s,2.5); ctx.fill();
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  deltaWing(ctx,s,0); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.5)'; ctx.lineWidth=Math.max(0.6,s*0.035);
+  deltaWing(ctx,s,0); ctx.stroke();
+  ctx.globalCompositeOperation='lighter';
+  navLight(ctx,-s*1.44,s*0.16,s*0.20,'255,90,120');
+  navLight(ctx, s*1.44,s*0.16,s*0.20,'90,255,160');
+  ctx.globalCompositeOperation='source-over';
+  // 鸭翼（小前翼）
+  ctx.fillStyle=PL.shade;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.52,s*0.30); ctx.lineTo(-s*0.78,s*0.72);
+  ctx.lineTo(-s*0.44,s*0.78); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(s*0.52,s*0.30);  ctx.lineTo(s*0.78,s*0.72);
+  ctx.lineTo(s*0.44,s*0.78);  ctx.closePath(); ctx.fill();
+  // 单垂尾（尖细）
+  ctx.fillStyle=PL.body;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.08,-s*0.5); ctx.lineTo(0,-s*1.74);
+  ctx.lineTo(s*0.08,-s*0.5); ctx.closePath(); ctx.fill();
+  // 细长机身
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  ctx.beginPath();
+  ctx.moveTo(0,-s*1.52);
+  ctx.quadraticCurveTo(s*0.26,-s*0.55, s*0.22, s*0.22);
+  ctx.quadraticCurveTo(s*0.18, s*0.66, 0, s*0.70);
+  ctx.quadraticCurveTo(-s*0.18,s*0.66, -s*0.22,s*0.22);
+  ctx.quadraticCurveTo(-s*0.26,-s*0.55, 0,-s*1.52);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(60,80,140,.42)'; ctx.lineWidth=Math.max(0.6,s*0.03); ctx.stroke();
+  // 涂装：细长色带
+  ctx.fillStyle=hexA(PL.accent,.92); ctx.fillRect(-s*0.19,-s*0.24,s*0.38,s*0.10);
+  ctx.fillStyle=hexA(PL.trim,.72);  ctx.fillRect(-s*0.19,-s*0.06,s*0.38,s*0.05);
+  canopy(ctx,s,0.66,0.18,-s*1.38);
+  nozzles(ctx,s,s*0.70,[0],s*0.21,alpha);
+}
+
+/* ---- ③ 苍隼：大后掠翼 + 双垂尾，格斗机 ---- */
+function drawHawk(s, alpha){
+  // 大后掠翼（带折角）
+  ctx.fillStyle='rgba(10,14,40,.5)';
+  hawkWing(ctx,s,2.5); ctx.fill();
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  hawkWing(ctx,s,0); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.5)'; ctx.lineWidth=Math.max(0.6,s*0.035);
+  hawkWing(ctx,s,0); ctx.stroke();
+  // 翼身融合处的彩色识别带
+  ctx.strokeStyle=hexA(PL.accent,.75); ctx.lineWidth=Math.max(0.8,s*0.075);
+  ctx.beginPath();
+  ctx.moveTo(-s*0.30,s*0.34); ctx.lineTo(-s*1.06,s*0.14);
+  ctx.moveTo(s*0.30,s*0.34);  ctx.lineTo(s*1.06,s*0.14);
+  ctx.stroke();
+  ctx.globalCompositeOperation='lighter';
+  navLight(ctx,-s*1.62,s*0.02,s*0.20,'255,90,120');
+  navLight(ctx, s*1.62,s*0.02,s*0.20,'90,255,160');
+  ctx.globalCompositeOperation='source-over';
+  // 全动平尾
+  ctx.fillStyle=PL.shade;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.74,s*0.02); ctx.lineTo(-s*0.34,-s*0.72);
+  ctx.lineTo(s*0.34,-s*0.72);  ctx.lineTo(s*0.74,s*0.02);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.42)'; ctx.lineWidth=Math.max(0.6,s*0.03); ctx.stroke();
+  // 双垂尾
+  ctx.fillStyle=PL.body;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.26,-s*0.56); ctx.lineTo(-s*0.44,-s*1.62);
+  ctx.lineTo(-s*0.14,-s*1.56); ctx.lineTo(-s*0.08,-s*0.56);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(s*0.26,-s*0.56);  ctx.lineTo(s*0.44,-s*1.62);
+  ctx.lineTo(s*0.14,-s*1.56);  ctx.lineTo(s*0.08,-s*0.56);
+  ctx.closePath(); ctx.fill();
+  // 宽机身
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  ctx.beginPath();
+  ctx.moveTo(0,-s*1.36);
+  ctx.quadraticCurveTo(s*0.38,-s*0.55, s*0.34, s*0.20);
+  ctx.quadraticCurveTo(s*0.28, s*0.72, 0, s*0.78);
+  ctx.quadraticCurveTo(-s*0.28,s*0.72, -s*0.34,s*0.20);
+  ctx.quadraticCurveTo(-s*0.38,-s*0.55, 0,-s*1.36);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(60,80,140,.42)'; ctx.lineWidth=Math.max(0.6,s*0.032); ctx.stroke();
+  ctx.fillStyle=hexA(PL.trim,.85); ctx.fillRect(-s*0.28,-s*0.28,s*0.56,s*0.11);
+  canopy(ctx,s,0.74,0.24,-s*1.20);
+  nozzles(ctx,s,s*0.78,[-s*0.17,s*0.17],s*0.21,alpha);
+}
+
+/* ---- ④ 信天翁：宽体客机，四发 + 大翼展 ---- */
+function drawGull(s, alpha){
+  // 大展弦比机翼（前缘平直、后缘略后掠）
+  ctx.fillStyle='rgba(10,14,40,.5)';
+  gullWing(ctx,s,2.5); ctx.fill();
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  gullWing(ctx,s,0); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.45)'; ctx.lineWidth=Math.max(0.6,s*0.035);
+  gullWing(ctx,s,0); ctx.stroke();
+  // 翼上发动机挂架
+  ctx.fillStyle=PL.shade;
+  ctx.fillRect(-s*1.02,s*0.06,s*0.30,s*0.20);
+  ctx.fillRect( s*0.72,s*0.06,s*0.30,s*0.20);
+  ctx.globalCompositeOperation='lighter';
+  navLight(ctx,-s*1.78,s*0.30,s*0.20,'255,90,120');
+  navLight(ctx, s*1.78,s*0.30,s*0.20,'90,255,160');
+  ctx.globalCompositeOperation='source-over';
+  // 大平尾
+  ctx.fillStyle=PL.shade;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.86,-s*0.30); ctx.lineTo(-s*0.34,-s*1.06);
+  ctx.lineTo(s*0.34,-s*1.06);  ctx.lineTo(s*0.86,-s*0.30);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(70,90,150,.4)'; ctx.lineWidth=Math.max(0.6,s*0.03); ctx.stroke();
+  // 垂尾带公司色
+  ctx.fillStyle=PL.body;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.12,-s*0.44); ctx.lineTo(-s*0.10,-s*1.60);
+  ctx.lineTo(s*0.10,-s*1.60);  ctx.lineTo(s*0.12,-s*0.44);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle=hexA(PL.accent,.9); ctx.fillRect(-s*0.10,-s*1.42,s*0.20,s*0.28);
+  // 宽体机身
+  ctx.fillStyle=bodyGrad(ctx,s,PL.body,PL.shade);
+  ctx.beginPath();
+  ctx.moveTo(0,-s*1.44);
+  ctx.quadraticCurveTo(s*0.40,-s*0.60, s*0.36, s*0.22);
+  ctx.quadraticCurveTo(s*0.32, s*0.76, 0, s*0.82);
+  ctx.quadraticCurveTo(-s*0.32,s*0.76, -s*0.36,s*0.22);
+  ctx.quadraticCurveTo(-s*0.40,-s*0.60, 0,-s*1.44);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(60,80,140,.4)'; ctx.lineWidth=Math.max(0.6,s*0.032); ctx.stroke();
+  // 客舱窗列 + 腰线
+  ctx.fillStyle='rgba(20,40,80,.55)';
+  for(var i=0;i<6;i++){
+    var wy = s*(0.30 - i*0.155);
+    var ww = s*0.30*(1 - i*0.055);
+    ctx.beginPath(); ctx.ellipse(-s*0.16, wy, s*0.045, s*0.055,0,0,TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( s*0.16, wy, s*0.045, s*0.055,0,0,TAU); ctx.fill();
+  }
+  ctx.fillStyle=hexA(PL.trim,.9); ctx.fillRect(-s*0.32,-s*0.06,s*0.64,s*0.09);
+  // 驾驶舱窗
+  ctx.fillStyle='#1b2f5e';
+  ctx.beginPath();
+  ctx.moveTo(-s*0.20,-s*1.34); ctx.lineTo(s*0.20,-s*1.34);
+  ctx.lineTo(s*0.16,-s*1.18); ctx.lineTo(-s*0.16,-s*1.18);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.42)';
+  ctx.beginPath(); ctx.ellipse(-s*0.06,-s*1.30,s*0.06,s*0.035,-0.2,0,TAU); ctx.fill();
+  nozzles(ctx,s,s*0.80,[-s*0.24,-s*0.08,s*0.08,s*0.24],s*0.155,alpha);
+}
+
+/* 机翼轮廓 */
+function wingPath(c,s,dy,span,tipY,trailY){
   c.beginPath();
   c.moveTo(-s*0.26, s*0.10+dy);
-  c.lineTo(-s*1.66,-s*0.24+dy);
-  c.lineTo(-s*1.58,-s*0.02+dy);
+  c.lineTo(-s*span, s*tipY+dy);
+  c.lineTo(-s*(span-0.08), s*trailY+dy);
   c.lineTo(-s*0.22, s*0.40+dy);
   c.lineTo(s*0.22, s*0.40+dy);
-  c.lineTo(s*1.58,-s*0.02+dy);
-  c.lineTo(s*1.66,-s*0.24+dy);
+  c.lineTo(s*(span-0.08), s*trailY+dy);
+  c.lineTo(s*span, s*tipY+dy);
   c.lineTo(s*0.26, s*0.10+dy);
+  c.closePath();
+}
+function deltaWing(c,s,dy){
+  c.beginPath();
+  c.moveTo(-s*0.30, s*0.06+dy);
+  c.lineTo(-s*1.44, s*0.18+dy);
+  c.lineTo(-s*1.06, s*0.52+dy);
+  c.lineTo(-s*0.20, s*0.40+dy);
+  c.lineTo(s*0.20, s*0.40+dy);
+  c.lineTo(s*1.06, s*0.52+dy);
+  c.lineTo(s*1.44, s*0.18+dy);
+  c.lineTo(s*0.30, s*0.06+dy);
+  c.closePath();
+}
+function hawkWing(c,s,dy){
+  c.beginPath();
+  c.moveTo(-s*0.28, s*0.20+dy);
+  c.lineTo(-s*1.62, s*0.02+dy);      // 翼尖后掠起点
+  c.lineTo(-s*1.20, s*0.30+dy);      // 折角（后缘内折）
+  c.lineTo(-s*0.24, s*0.52+dy);
+  c.lineTo(s*0.24, s*0.52+dy);
+  c.lineTo(s*1.20, s*0.30+dy);
+  c.lineTo(s*1.62, s*0.02+dy);
+  c.lineTo(s*0.28, s*0.20+dy);
+  c.closePath();
+}
+function gullWing(c,s,dy){
+  c.beginPath();
+  c.moveTo(-s*0.32, s*0.24+dy);
+  c.lineTo(-s*1.78, s*0.30+dy);      // 大展弦比：翼尖在稍后位置
+  c.lineTo(-s*1.72, s*0.46+dy);
+  c.lineTo(-s*0.26, s*0.56+dy);
+  c.lineTo(s*0.26, s*0.56+dy);
+  c.lineTo(s*1.72, s*0.46+dy);
+  c.lineTo(s*1.78, s*0.30+dy);
+  c.lineTo(s*0.32, s*0.24+dy);
   c.closePath();
 }
 function navLight(c,x,y,r,rgb){
@@ -1468,7 +1892,8 @@ function hexA(hex,a){
 
 /* 速度线 */
 function drawSpeedLines(){
-  var t = clamp((G.speed-CFG.startSpeed)/(CFG.maxSpeed-CFG.startSpeed),0,1);
+  var vmax = LV.maxSpeed * PL.speed;
+  var t = clamp((G.speed-LV.speed0)/Math.max(1,vmax-LV.speed0),0,1);
   if(t<0.18 || G.state!=='play') return;
   var n = Math.round(t*26);
   ctx.globalCompositeOperation='lighter';
@@ -1486,6 +1911,135 @@ function drawSpeedLines(){
   ctx.globalCompositeOperation='source-over';
 }
 
+/* ================= 机型 / 难度 选择 ================= */
+
+/* 缩略图：复用真实绘制函数，保证选择时看到的就是游戏里飞的那架 */
+function renderThumb(cvEl, plane){
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var w = cvEl.clientWidth || 56;
+  var h = Math.round(w*1.52);
+  cvEl.width  = Math.round(w*dpr);
+  cvEl.height = Math.round(h*dpr);
+  cvEl.style.height = h+'px';
+  var c = cvEl.getContext('2d');
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,w,h);
+
+  var savedPL = PL, savedPS = PS, savedCtx = ctx;
+  var savedRoll = G.roll, savedPitch = G.pitch, savedSpd = G.speed;
+  PL = plane;
+  PS = w/2.9;                 // 补偿机型 scale，令缩略图里占满宽度
+  G.roll = 0; G.pitch = 0; G.speed = LV.speed0;
+  ctx = c;                    // 绘制函数统一走全局 ctx
+  c.save();
+  c.translate(w/2, h*0.44);    // 上移，给尾焰留位置
+  drawFlame(PS*(plane.scale||0.62)*0.9, 0.85);
+  c.translate(0, 0);
+  drawPlaneBody(1, 1);
+  c.restore();
+  ctx = savedCtx;
+  PL = savedPL; PS = savedPS; G.roll = savedRoll; G.pitch = savedPitch; G.speed = savedSpd;
+}
+
+/* 只画机体（不含尾焰/护盾/位移），供缩略图与主画面共用 */
+function drawPlaneBody(scaleMul, alpha){
+  var s = PS * (PL.scale||0.62) * (scaleMul||1);
+  if(alpha==null) alpha = 1;
+  if(PL.id==='swift') drawSwift(s, alpha);
+  else if(PL.id==='dart') drawDart(s, alpha);
+  else if(PL.id==='hawk') drawHawk(s, alpha);
+  else drawGull(s, alpha);
+}
+
+function bar(v, n){
+  // 生成"▮▮▮▯▯"这样的量化条，用于数值对比
+  var i = Math.round(clamp(v,0,1)*n);
+  return '▮'.repeat(i) + '▯'.repeat(n-i);
+}
+function briefText(){
+  var speedU = clamp((PL.speed-0.9)/0.3,0,1);
+  var agiU   = clamp((PL.agility-0.82)/0.46,0,1);
+  var gripU  = clamp((PL.grip-8.4)/5.0,0,1);
+  return '<b>'+PL.name+'</b>（'+PL.tag+'）· '+PL.desc+'<br>'+
+    '极速 '+bar(speedU,5)+'　机动 '+bar(agiU,5)+'　跟手 '+bar(gripU,5)+'<br>'+
+    '难度 <u>'+LV.name+'</u>：'+LV.lives+' 条命 · 环径 '+LV.ring0.toFixed(1)+'→'+LV.ring1.toFixed(1)+
+    ' · 晶核 '+ (LV.hazard>0? Math.round(LV.hazard*100)+'%' : '无') +
+    ' · 得分 <u>×'+LV.mult.toFixed(2)+'</u>';
+}
+
+function buildPickers(){
+  var pp = $('planePick');
+  pp.innerHTML = '';
+  PLANES.forEach(function(pl, idx){
+    var b = document.createElement('button');
+    b.className = 'pbtn' + (pl.id===PL.id ? ' sel':'');
+    b.type = 'button';
+    b.setAttribute('data-plane', pl.id);
+    var cvEl = document.createElement('canvas');
+    b.appendChild(cvEl);
+    var nm = document.createElement('b'); nm.textContent = pl.name; b.appendChild(nm);
+    var tg = document.createElement('i'); tg.textContent = pl.tag; b.appendChild(tg);
+    b.addEventListener('click', function(){
+      PL = pl;
+      var all = pp.querySelectorAll('.pbtn');
+      for(var i=0;i<all.length;i++) all[i].classList.remove('sel');
+      b.classList.add('sel');
+      // 重画所有缩略图（换色要同步到已选中的其他机型）
+      var cvs = pp.querySelectorAll('canvas');
+      for(var j=0;j<cvs.length;j++) renderThumb(cvs[j], PLANES[j]);
+      $('uiBrief').innerHTML = briefText();
+      AU.init(); AU.ui();
+      saveConfig();
+    });
+    pp.appendChild(b);
+  });
+  // 首次渲染缩略图（需等布局完成才有 clientWidth）
+  requestAnimationFrame(function(){
+    var cvs = pp.querySelectorAll('canvas');
+    for(var j=0;j<cvs.length;j++) renderThumb(cvs[j], PLANES[j]);
+  });
+
+  var lp = $('levelPick');
+  lp.innerHTML = '';
+  LEVELS.forEach(function(lv){
+    var b = document.createElement('button');
+    b.className = 'lbtn' + (lv.id===LV.id ? ' sel':'');
+    b.type = 'button';
+    b.setAttribute('data-lv', lv.id);
+    var nm = document.createElement('b'); nm.textContent = lv.name; b.appendChild(nm);
+    var tg = document.createElement('i');
+    tg.textContent = lv.lives+'命 · ×'+lv.mult.toFixed(2);
+    b.appendChild(tg);
+    b.addEventListener('click', function(){
+      LV = lv;
+      G.lives = lv.lives;
+      var all = lp.querySelectorAll('.lbtn');
+      for(var i=0;i<all.length;i++) all[i].classList.remove('sel');
+      b.classList.add('sel');
+      $('uiBrief').innerHTML = briefText();
+      renderHearts();
+      AU.init(); AU.ui();
+      saveConfig();
+    });
+    lp.appendChild(b);
+  });
+  $('uiBrief').innerHTML = briefText();
+}
+
+var cfgKey = 'by15_cfg';
+function saveConfig(){
+  try{ localStorage.setItem(cfgKey, JSON.stringify({plane:PL.id, level:LV.id})); }catch(e){}
+}
+function loadConfig(){
+  try{
+    var raw = localStorage.getItem(cfgKey);
+    if(!raw) return;
+    var o = JSON.parse(raw);
+    if(o.plane) PLANES.forEach(function(p){ if(p.id===o.plane) PL=p; });
+    if(o.level) LEVELS.forEach(function(l){ if(l.id===o.level) LV=l; });
+  }catch(e){}
+}
+
 /* ================= UI 绑定 ================= */
 $('btnStart').addEventListener('click', startGame);
 $('btnRetry').addEventListener('click', startGame);
@@ -1493,28 +2047,51 @@ $('btnResume').addEventListener('click', togglePause);
 $('btnQuit').addEventListener('click', function(){
   ui.vPause.hidden=true; ui.vStart.hidden=false; G.state='menu'; AU.engine(0,0);
   G.rings.length=0; G.orbs.length=0; G.hazards.length=0; G.parts.length=0;
+  renderHearts();
+});
+$('btnChange').addEventListener('click', function(){
+  ui.vOver.hidden=true; ui.vStart.hidden=false; G.state='menu'; AU.engine(0,0);
+  G.rings.length=0; G.orbs.length=0; G.hazards.length=0; G.parts.length=0;
+  renderHearts();
+  refreshLastCfg();
 });
 ui.btnPause.addEventListener('click', togglePause);
 ui.btnSound.addEventListener('click', toggleSound);
+
+function refreshLastCfg(){
+  var el = $('uiLastCfg');
+  if(!el) return;
+  var b = readBest();
+  el.textContent = b>0 ? ('上次 '+PL.name+' · '+LV.name) : '';
+}
 
 document.addEventListener('visibilitychange', function(){
   if(document.hidden && G.state==='play') togglePause();
 });
 window.addEventListener('resize', function(){
   resize(); initClouds();
+  // 缩略图尺寸跟着变，重画一次
+  var cvs = document.querySelectorAll('#planePick canvas');
+  for(var i=0;i<cvs.length;i++) renderThumb(cvs[i], PLANES[i]);
 });
-window.addEventListener('orientationchange', function(){ setTimeout(function(){ resize(); initClouds(); }, 220); });
+window.addEventListener('orientationchange', function(){ setTimeout(function(){
+  resize(); initClouds();
+  var cvs = document.querySelectorAll('#planePick canvas');
+  for(var i=0;i<cvs.length;i++) renderThumb(cvs[i], PLANES[i]);
+}, 220); });
 
-if(window.matchMedia && window.matchMedia('(pointer:coarse)').matches){
-  isTouch=true;
+isTouch = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+if(isTouch){
   ui.foot.innerHTML='<b>按住并拖动屏幕</b> 操纵飞机 · 穿过金色光环，别撞环壁';
-  document.querySelectorAll('.keys div:nth-child(1)').forEach(function(n){ n.style.display='none'; });
-  document.querySelectorAll('.keys div:nth-child(3)').forEach(function(n){ n.style.display='none'; });
 }
-if(document.querySelectorAll){}
 
+loadConfig();
+G.lives = LV.lives;
 ui.best.textContent = fmt(readBest());
 ui.best2.textContent = fmt(readBest());
+refreshLastCfg();
+buildPickers();
+renderHearts();
 resize();
 initClouds();
 requestAnimationFrame(frame);
