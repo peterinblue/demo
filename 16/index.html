@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>光伏运维平台</title>
+<link rel="icon" type="image/png" sizes="64x64" href="data:image/png;base64,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">
+<style>
+:root{
+  --bg:#eef2f8;
+  --card:#ffffff;
+  --line:#e3e9f2;
+  --line2:#eef2f8;
+  --txt:#1c2536;
+  --txt2:#5b6879;
+  --txt3:#8d99ab;
+  --pri:#0a9d6b;
+  --pri-d:#07855a;
+  --pri-l:#e6f7f0;
+  --blue:#2563eb;
+  --blue-l:#e8f0fe;
+  --amber:#e08a00;
+  --amber-l:#fff4e0;
+  --red:#e0483d;
+  --red-l:#fdecea;
+  --shadow:0 1px 2px rgba(20,35,60,.05), 0 8px 24px rgba(20,35,60,.06);
+  --shadow-s:0 1px 2px rgba(20,35,60,.06);
+  --r:14px;
+  --sb:232px;
+  --safe-b:env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg); color:var(--txt); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:14px;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+.hide{display:none !important}
+
+/* ============ 登录页 ============ */
+#login{
+  min-height:100vh; min-height:100dvh; display:flex;
+  background:var(--bg);
+}
+.login-brand{
+  display:none; position:relative; flex:1 1 46%; max-width:560px;
+  background:linear-gradient(150deg,#063d2c 0%,#0a7a55 46%,#12a06f 100%);
+  color:#fff; padding:44px 46px; flex-direction:column; justify-content:space-between;
+  overflow:hidden;
+}
+.login-brand::before{
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(760px 340px at 78% 8%, rgba(255,255,255,.20), transparent 62%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,.055) 0 2px, transparent 2px 30px);
+}
+.login-brand > *{position:relative; z-index:2}
+.lb-top{display:flex; align-items:center; gap:12px}
+.lb-mark{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.lb-mark svg{width:24px;height:24px}
+.lb-name{font-size:17px;font-weight:700;letter-spacing:.5px}
+.lb-sub{font-size:11.5px;opacity:.72;letter-spacing:2px;margin-top:1px}
+.lb-mid h1{font-size:34px;line-height:1.32;margin:0 0 14px;font-weight:700;letter-spacing:.5px}
+.lb-mid p{margin:0 0 26px;opacity:.82;font-size:13.5px;max-width:400px}
+.lb-feats{display:flex;flex-direction:column;gap:11px}
+.lb-feat{display:flex;align-items:center;gap:11px;font-size:13.5px;opacity:.94}
+.lb-feat i{width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;flex:none;font-style:normal;font-size:12px}
+.lb-stats{display:flex;gap:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.18)}
+.lb-stat b{display:block;font-size:21px;font-weight:700;letter-spacing:.5px}
+.lb-stat span{font-size:11.5px;opacity:.72}
+.lb-solar{position:absolute;left:-40px;bottom:-70px;width:340px;opacity:.09;z-index:1}
+
+.login-main{
+  flex:1 1 54%; display:flex; align-items:center; justify-content:center; padding:26px 18px;
+}
+.login-card{
+  width:100%; max-width:398px; background:var(--card); border-radius:18px;
+  box-shadow:var(--shadow); padding:28px 26px 24px; border:1px solid var(--line);
+}
+.lc-mlogo{display:flex;align-items:center;gap:11px;margin-bottom:20px}
+.lc-mlogo .m{width:40px;height:40px;border-radius:11px;
+  background:linear-gradient(140deg,#0a9d6b,#066f4d);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 5px 14px rgba(10,157,107,.3)}
+.lc-mlogo .m svg{width:22px;height:22px}
+.lc-mlogo b{font-size:16.5px;display:block;letter-spacing:.3px}
+.lc-mlogo span{font-size:11px;color:var(--txt3);letter-spacing:1.6px}
+.lc-title{font-size:19px;font-weight:700;margin:0 0 5px}
+.lc-desc{font-size:12.5px;color:var(--txt3);margin:0 0 18px}
+
+.tabs{display:flex;background:var(--line2);border-radius:10px;padding:3px;margin-bottom:18px}
+.tabs button{
+  flex:1;padding:8px 0;border-radius:8px;font-size:13px;font-weight:600;color:var(--txt2);
+  transition:.18s;
+}
+.tabs button.on{background:#fff;color:var(--pri);box-shadow:var(--shadow-s)}
+
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12.5px;color:var(--txt2);margin-bottom:6px;font-weight:600}
+.ibox{position:relative;display:flex;align-items:center}
+.ibox>svg{position:absolute;left:12px;width:16px;height:16px;color:var(--txt3);pointer-events:none}
+.ibox input{
+  width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe;
+  padding:0 13px 0 36px;outline:none;transition:.16s;
+}
+.ibox input:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 3px rgba(10,157,107,.11)}
+.ibox .eye{position:absolute;right:10px;width:30px;height:30px;display:flex;align-items:center;
+  justify-content:center;color:var(--txt3);border-radius:6px}
+.ibox .eye:hover{background:var(--line2);color:var(--txt2)}
+.ibox input.code{padding-right:118px;letter-spacing:2px;font-weight:600}
+.sendbtn{
+  position:absolute;right:5px;top:5px;height:34px;padding:0 11px;border-radius:8px;
+  background:var(--pri-l);color:var(--pri-d);font-size:12.5px;font-weight:600;white-space:nowrap;
+}
+.sendbtn:disabled{background:var(--line2);color:var(--txt3);cursor:not-allowed}
+
+.row{display:flex;align-items:center;justify-content:space-between;margin:4px 0 18px;flex-wrap:wrap;gap:8px}
+.ck{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--txt2);cursor:pointer;user-select:none}
+.ck input{width:15px;height:15px;accent-color:var(--pri);cursor:pointer;margin:0}
+.lnk{font-size:12.5px;color:var(--pri);font-weight:600}
+.lnk:hover{text-decoration:underline}
+
+.btn{
+  width:100%;height:46px;border-radius:11px;background:var(--pri);color:#fff;
+  font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;
+  box-shadow:0 5px 15px rgba(10,157,107,.26);transition:.16s;
+}
+.btn:hover{background:var(--pri-d)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
+.btn.ghost{background:#fff;color:var(--txt2);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{background:var(--line2)}
+.btn.sm{height:36px;font-size:13px;border-radius:9px;box-shadow:none;padding:0 14px;width:auto}
+
+.hint{
+  margin-top:16px;background:#f7f9fc;border:1px dashed var(--line);border-radius:10px;
+  padding:10px 12px;font-size:12px;color:var(--txt2);line-height:1.75;
+}
+.hint b{color:var(--txt);font-weight:600}
+.hint code{background:var(--pri-l);color:var(--pri-d);padding:1px 5px;border-radius:4px;
+  font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+.lc-foot{text-align:center;margin-top:16px;font-size:11.5px;color:var(--txt3)}
+
+.toast{
+  position:fixed;left:50%;top:70px;transform:translate(-50%,-14px);z-index:999;
+  background:rgba(28,37,54,.93);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
+  box-shadow:0 10px 30px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:.24s;max-width:82vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:rgba(190,50,42,.95)}
+.toast.ok{background:rgba(9,124,84,.95)}
+
+/* ============ 应用骨架 ============ */
+#app{display:flex;min-height:100vh;min-height:100dvh}
+.side{
+  display:none; width:var(--sb); flex:none; background:#0e2f24; color:#cfe6dc;
+  flex-direction:column;position:sticky;top:0;height:100vh;
+}
+.side-top{display:flex;align-items:center;gap:10px;padding:17px 16px;border-bottom:1px solid rgba(255,255,255,.09)}
+.side-top .m{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.14);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.side-top .m svg{width:19px;height:19px}
+.side-top b{color:#fff;font-size:14.5px;letter-spacing:.4px;display:block}
+.side-top span{font-size:10px;opacity:.55;letter-spacing:1.4px}
+.side-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:3px}
+.side-nav button{
+  display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:9px;
+  font-size:13.5px;color:#b6d5c9;transition:.15s;text-align:left;width:100%;position:relative;
+}
+.side-nav button svg{width:17px;height:17px;flex:none;opacity:.85}
+.side-nav button:hover{background:rgba(255,255,255,.07);color:#fff}
+.side-nav button.on{background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+.side-nav .badge{margin-left:auto;background:var(--red);color:#fff;font-size:10.5px;
+  min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:600}
+.side-foot{padding:12px;border-top:1px solid rgba(255,255,255,.09);font-size:11.5px;opacity:.5;text-align:center}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:30;background:rgba(255,255,255,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);padding:11px 16px;display:flex;align-items:center;gap:12px;
+}
+.tb-logo{display:flex;align-items:center;gap:9px;flex:none}
+.tb-logo .m{width:32px;height:32px;border-radius:9px;background:linear-gradient(140deg,#0a9d6b,#066f4d);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(10,157,107,.26)}
+.tb-logo .m svg{width:18px;height:18px}
+.tb-logo b{font-size:14.5px;display:block;letter-spacing:.3px}
+.tb-logo span{font-size:10px;color:var(--txt3);letter-spacing:1.3px;display:block}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.tb-clock{font-size:11.5px;color:var(--txt3);text-align:right;line-height:1.35}
+.tb-clock b{display:block;font-size:12.5px;color:var(--txt2);font-weight:600}
+.avatar{
+  width:34px;height:34px;border-radius:50%;background:linear-gradient(140deg,#0a9d6b,#2563eb);
+  color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;
+  cursor:pointer;
+}
+.iconbtn{
+  width:34px;height:34px;border-radius:9px;background:var(--line2);display:flex;align-items:center;
+  justify-content:center;color:var(--txt2);
+}
+.iconbtn:hover{background:var(--line)}
+.iconbtn svg{width:17px;height:17px}
+
+.content{flex:1;padding:16px 16px calc(84px + var(--safe-b));max-width:1280px;width:100%;margin:0 auto}
+.page{display:none;animation:fade .22s ease}
+.page.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.phead{margin-bottom:14px}
+.phead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.3px}
+.phead p{margin:0;color:var(--txt3);font-size:12.5px}
+
+/* 卡片 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-s)}
+.card-h{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--line2)}
+.card-h h3{margin:0;font-size:14.5px;font-weight:700}
+.card-h .sp{margin-left:auto;display:flex;align-items:center;gap:8px}
+.card-b{padding:16px}
+.muted{color:var(--txt3);font-size:12px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;box-shadow:var(--shadow-s);position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;right:-16px;top:-16px;width:60px;height:60px;border-radius:50%;opacity:.07}
+.kpi.k1::after{background:var(--amber)} .kpi.k2::after{background:var(--blue)}
+.kpi.k3::after{background:var(--red)}   .kpi.k4::after{background:var(--pri)}
+.kpi .lb{font-size:12px;color:var(--txt3);display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.kpi .lb i{width:6px;height:6px;border-radius:50%;background:var(--pri);display:block}
+.kpi.k1 .lb i{background:var(--amber)} .kpi.k2 .lb i{background:var(--blue)}
+.kpi.k3 .lb i{background:var(--red)} .kpi.k4 .lb i{background:var(--pri)}
+.kpi .vl{font-size:22px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.kpi .vl small{font-size:12px;font-weight:600;color:var(--txt3);margin-left:2px}
+.kpi .df{font-size:11.5px;margin-top:3px;color:var(--txt3);display:flex;align-items:center;gap:4px}
+.kpi .df.up{color:var(--red)} .kpi .df.dn{color:var(--pri)}
+
+/* 工具条 / 筛选 */
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-bottom:13px}
+.fld{display:flex;flex-direction:column;gap:5px;flex:1 1 150px;min-width:0}
+.fld label{font-size:11.5px;color:var(--txt3);font-weight:600}
+.fld select,.fld input{
+  height:38px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:0 10px;outline:none;
+  transition:.15s;width:100%;
+}
+.fld select:focus,.fld input:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(10,157,107,.1)}
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{
+  padding:6px 13px;border-radius:20px;background:#fff;border:1px solid var(--line);
+  font-size:12.5px;color:var(--txt2);white-space:nowrap;transition:.15s;font-weight:500;
+}
+.seg button.on{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
+.seg button .n{opacity:.7;font-size:11px;margin-left:2px}
+
+/* 表格 */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+th{
+  text-align:left;padding:10px 12px;font-size:11.5px;color:var(--txt3);font-weight:600;
+  background:#fafbfd;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:11px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafcff}
+.num{font-variant-numeric:tabular-nums;font-weight:600}
+.t-r{text-align:right}
+
+/* 账单主卡 */
+.bill-hero{
+  background:linear-gradient(135deg,#0b6b4a,#0a9d6b 55%,#22b183);color:#fff;border-radius:var(--r);
+  padding:18px;margin-bottom:12px;position:relative;overflow:hidden;box-shadow:0 8px 22px rgba(10,157,107,.2);
+}
+.bill-hero::before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.06) 0 2px,transparent 2px 26px)}
+.bill-hero>*{position:relative}
+.bh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.bh-top h3{margin:0;font-size:15.5px;font-weight:700}
+.bh-no{font-size:11.5px;opacity:.8;margin-top:3px;font-family:ui-monospace,Consolas,monospace}
+.bh-amt{text-align:right;flex:none}
+.bh-amt .l{font-size:11.5px;opacity:.82}
+.bh-amt .v{font-size:27px;font-weight:700;letter-spacing:-.6px;line-height:1.15}
+.bh-amt .v small{font-size:14px;font-weight:600;opacity:.9}
+.bh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:15px;
+  padding-top:13px;border-top:1px solid rgba(255,255,255,.18)}
+.bh-grid div span{font-size:11px;opacity:.78;display:block}
+.bh-grid div b{font-size:14px;font-weight:600}
+
+.bar{height:9px;border-radius:5px;background:var(--line2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:11px;margin-top:11px}
+.legend span{font-size:11.5px;color:var(--txt2);display:flex;align-items:center;gap:5px}
+.legend em{width:9px;height:9px;border-radius:3px;display:block}
+
+/* 告警 */
+.alarm{border:1px solid var(--line);border-radius:var(--r);background:#fff;margin-bottom:9px;
+  box-shadow:var(--shadow-s);overflow:hidden;transition:.15s}
+.alarm:hover{border-color:#cdd8e6}
+.al-top{display:flex;align-items:flex-start;gap:10px;padding:12px 13px}
+.al-bar{width:3px;align-self:stretch;border-radius:2px;flex:none;min-height:38px}
+.al-body{flex:1;min-width:0}
+.al-t{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px}
+.al-t b{font-size:13.8px;font-weight:600}
+.al-meta{font-size:11.5px;color:var(--txt3);display:flex;flex-wrap:wrap;gap:4px 11px;margin-top:3px}
+.al-meta i{font-style:normal;display:flex;align-items:center;gap:4px}
+.al-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:5px;font-weight:600;white-space:nowrap;line-height:1.6}
+.t-red{background:var(--red-l);color:var(--red)}
+.t-amber{background:var(--amber-l);color:var(--amber)}
+.t-blue{background:var(--blue-l);color:var(--blue)}
+.t-pri{background:var(--pri-l);color:var(--pri-d)}
+.t-gray{background:var(--line2);color:var(--txt3)}
+.al-detail{border-top:1px solid var(--line2);padding:12px 13px;background:#fbfcfe;display:none}
+.alarm.open .al-detail{display:block}
+.dt-row{display:flex;gap:9px;font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--line2)}
+.dt-row:last-of-type{border-bottom:none}
+.dt-row .k{color:var(--txt3);flex:none;width:66px}
+.dt-row .v{color:var(--txt);flex:1;min-width:0;word-break:break-all}
+.al-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.photos img{width:74px;height:74px;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:zoom-in}
+.done-note{background:var(--pri-l);border-left:3px solid var(--pri);border-radius:0 8px 8px 0;
+  padding:9px 11px;margin-top:9px;font-size:12.5px;color:#0b6b4a}
+.done-note b{display:block;font-size:11.5px;margin-bottom:3px;color:var(--pri-d)}
+
+/* 弹层 */
+.mask{
+  position:fixed;inset:0;background:rgba(16,26,40,.5);z-index:200;display:none;
+  align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(2px);
+}
+.mask.show{display:flex;animation:fade .2s}
+.modal{
+  background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:88vh;overflow:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.28);animation:up .24s ease;
+}
+@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.m-h{display:flex;align-items:center;gap:9px;padding:15px 17px;border-bottom:1px solid var(--line2);position:sticky;top:0;background:#fff;border-radius:16px 16px 0 0;z-index:2}
+.m-h h3{margin:0;font-size:15.5px;font-weight:700;flex:1}
+.m-h .x{width:30px;height:30px;border-radius:8px;background:var(--line2);display:flex;align-items:center;
+  justify-content:center;color:var(--txt2);font-size:17px;flex:none}
+.m-h .x:hover{background:var(--line)}
+.m-b{padding:17px}
+.m-f{display:flex;gap:9px;padding:13px 17px;border-top:1px solid var(--line2);position:sticky;bottom:0;background:#fff}
+.m-f .btn{flex:1}
+
+label.fl{display:block;font-size:12.5px;color:var(--txt2);font-weight:600;margin:0 0 6px}
+textarea{
+  width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  outline:none;resize:vertical;background:#fbfcfe;line-height:1.65;transition:.15s;
+}
+textarea:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 3px rgba(10,157,107,.11)}
+select.full,input.full{width:100%;height:42px;border:1px solid var(--line);border-radius:10px;
+  padding:0 12px;outline:none;background:#fbfcfe}
+select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 3px rgba(10,157,107,.11)}
+.opt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.opt{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13px;background:#fbfcfe;
+  display:flex;align-items:center;gap:8px;transition:.15s;text-align:left}
+.opt:hover{border-color:var(--pri);background:var(--pri-l)}
+.opt .ic{width:24px;height:24px;border-radius:7px;background:var(--pri-l);color:var(--pri-d);
+  display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}
+.opt span{font-size:11px;color:var(--txt3);display:block;line-height:1.4}
+
+.uploader{
+  border:1.5px dashed #cdd8e6;border-radius:11px;padding:16px;text-align:center;background:#fafcff;
+  transition:.16s;cursor:pointer;display:block;
+}
+.uploader:hover,.uploader.drag{border-color:var(--pri);background:var(--pri-l)}
+.uploader .ic{font-size:22px;margin-bottom:5px}
+.uploader b{font-size:13px;display:block}
+.uploader span{font-size:11.5px;color:var(--txt3)}
+.up-list{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.up-item{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:var(--line2)}
+.up-item img{width:100%;height:100%;object-fit:cover;display:block}
+.up-item .rm{position:absolute;top:3px;right:3px;width:19px;height:19px;border-radius:50%;
+  background:rgba(0,0,0,.62);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+.up-item .nm{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);color:#fff;
+  font-size:9.5px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.empty{text-align:center;padding:40px 18px;color:var(--txt3)}
+.empty .e{font-size:38px;margin-bottom:9px;opacity:.55}
+.empty b{display:block;font-size:14px;color:var(--txt2);margin-bottom:4px}
+
+/* 底部导航（手机） */
+.tabbar{
+  display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.96);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:5px 0 calc(5px + var(--safe-b));
+}
+.tabbar button{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;
+  font-size:10.5px;color:var(--txt3);position:relative;transition:.15s;
+}
+.tabbar button svg{width:20px;height:20px}
+.tabbar button.on{color:var(--pri);font-weight:600}
+.tabbar .badge{position:absolute;top:1px;right:50%;margin-right:-24px;background:var(--red);color:#fff;
+  font-size:9.5px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;padding:0 4px;font-weight:700}
+
+.me{display:flex;align-items:center;gap:12px;padding:16px}
+.me .av{width:52px;height:52px;border-radius:14px;background:linear-gradient(140deg,#0a9d6b,#2563eb);
+  color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.me .n b{font-size:16px;display:block}
+.me .n span{font-size:12px;color:var(--txt3)}
+.info-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--txt3)}
+
+/* 图表 */
+.chart{width:100%;display:block}
+.chart text{font-size:10px;fill:var(--txt3)}
+.chart .bar-r{fill:var(--pri)}
+.chart .bar-r:hover{fill:var(--pri-d)}
+
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.dist-row:last-child{margin-bottom:0}
+.dist-row .nm{width:88px;font-size:12.5px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dist-row .bw{flex:1;height:8px;background:var(--line2);border-radius:4px;overflow:hidden}
+.dist-row .bw i{display:block;height:100%;border-radius:4px}
+.dist-row .vv{width:56px;text-align:right;font-size:12.5px;font-weight:600;flex:none;font-variant-numeric:tabular-nums}
+
+/* ============ 平板 ============ */
+@media (min-width:700px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .content{padding:20px 22px 96px}
+  .up-list{grid-template-columns:repeat(5,1fr)}
+  .opt-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media (min-width:900px){
+  .up-list{grid-template-columns:repeat(6,1fr)}
+  .bill-hero{padding:22px}
+}
+/* ============ PC ============ */
+@media (min-width:1024px){
+  #login{flex-direction:row}
+  .login-brand{display:flex}
+  .side{display:flex}
+  .tabbar{display:none}
+  .content{padding:22px 26px 34px}
+  .topbar{padding:13px 26px}
+  .kpis{gap:12px}
+  .modal{border-radius:16px}
+}
+@media (min-width:1360px){
+  .content{padding:24px 34px 40px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 登录页 ================= -->
+<div id="login">
+  <div class="login-brand">
+    <svg class="lb-solar" viewBox="0 0 340 200" fill="none" aria-hidden="true">
+      <g stroke="#fff" stroke-width="2.2">
+        <path d="M0 60h340M0 100h340M0 140h340M0 180h340M60 40v160M120 40v160M180 40v160M240 40v160M300 40v160"/>
+      </g>
+      <circle cx="290" cy="46" r="26" fill="#fff"/>
+    </svg>
+    <div class="lb-top">
+      <div class="lb-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 18a5 5 0 0 0 .3-10A6.5 6.5 0 0 0 5 10a4 4 0 0 0 .8 7.97"/><path d="M12 12v8"/>
+          <path d="m9 17 3-5 3 5"/><path d="M12 12 9.5 15M12 12l2.5 3"/>
+        </svg>
+      </div>
+      <div>
+        <div class="lb-name">光伏运维平台</div>
+        <div class="lb-sub">PV O&amp;M PLATFORM</div>
+      </div>
+    </div>
+    <div class="lb-mid">
+      <h1>分布式光伏电站<br>全流程运维管理平台</h1>
+      <p>覆盖多园区光伏资产、电费结算、告警处置与运维留痕的云端管理系统，让每一张电费单、每一条告警都有据可查。</p>
+      <div class="lb-feats">
+        <div class="lb-feat"><i>¥</i>多园区电费结算单在线查询与明细核对</div>
+        <div class="lb-feat"><i>!</i>告警实时派发，处理过程拍照留档闭环</div>
+        <div class="lb-feat"><i>▤</i>组件 / 逆变器 / 电站资产全生命周期台账</div>
+        <div class="lb-feat"><i>☁</i>PC 与手机双端自适应，随时随地处理</div>
+      </div>
+    </div>
+    <div class="lb-stats">
+      <div class="lb-stat"><b id="lbA">5</b><span>接入园区</span></div>
+      <div class="lb-stat"><b id="lbB">28.6</b><span>装机容量 MW</span></div>
+      <div class="lb-stat"><b id="lbC">99.2%</b><span>设备在线率</span></div>
+    </div>
+  </div>
+
+  <div class="login-main">
+    <div class="login-card">
+      <div class="lc-mlogo">
+        <div class="m">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 18a5 5 0 0 0 .3-10A6.5 6.5 0 0 0 5 10a4 4 0 0 0 .8 7.97"/><path d="M12 12v8"/>
+            <path d="m9 17 3-5 3 5"/>
+          </svg>
+        </div>
+        <div>
+          <b>光伏运维平台</b>
+          <span>PV O&amp;M PLATFORM</span>
+        </div>
+      </div>
+
+      <h1 class="lc-title">欢迎登录</h1>
+      <p class="lc-desc">请选择登录方式，进入光伏运维管理后台</p>
+
+      <div class="tabs">
+        <button type="button" id="tabPwd" class="on" onclick="switchTab('pwd')">账号密码登录</button>
+        <button type="button" id="tabSms" onclick="switchTab('sms')">手机验证码登录</button>
+      </div>
+
+      <!-- 账号密码 -->
+      <div id="panePwd">
+        <div class="field">
+          <label for="lgUser">用户名</label>
+          <div class="ibox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <input id="lgUser" type="text" placeholder="请输入用户名" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin('pwd')">
+          </div>
+        </div>
+        <div class="field">
+          <label for="lgPwd">密码</label>
+          <div class="ibox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="lgPwd" type="password" placeholder="请输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin('pwd')">
+            <button class="eye" type="button" onclick="toggleEye('lgPwd')" aria-label="显示密码">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="ck"><input type="checkbox" id="lgRem" checked><span>记住我，7 天内免登录</span></label>
+          <span class="lnk" onclick="toast('演示环境：忘记密码请联系园区管理员重置','err')">忘记密码？</span>
+        </div>
+        <button class="btn" id="btnPwd" onclick="doLogin('pwd')">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          登 录
+        </button>
+        <div class="hint">
+          <b>演示账号</b>：用户名 <code>peterinblue</code> ／ 密码 <code>123456</code><br>
+          也可使用运维工号登录，如 <code>ops001</code> + <code>123456</code>
+        </div>
+      </div>
+
+      <!-- 手机验证码 -->
+      <div id="paneSms" class="hide">
+        <div class="field">
+          <label for="lgPhone">手机号</label>
+          <div class="ibox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+            <input id="lgPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="请输入 11 位手机号" oninput="this.value=this.value.replace(/\D/g,'')" onkeydown="if(event.key==='Enter')doLogin('sms')">
+          </div>
+        </div>
+        <div class="field">
+          <label for="lgCode">短信验证码</label>
+          <div class="ibox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="lgCode" class="code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位验证码" oninput="this.value=this.value.replace(/\D/g,'')" onkeydown="if(event.key==='Enter')doLogin('sms')">
+            <button class="sendbtn" id="btnCode" onclick="sendCode()">获取验证码</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="ck"><input type="checkbox" id="lgRem2" checked><span>记住我，7 天内免登录</span></label>
+        </div>
+        <button class="btn" id="btnSms" onclick="doLogin('sms')">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          登 录
+        </button>
+        <div class="hint">
+          <b>演示说明</b>：点击「获取验证码」后，验证码将直接显示在本页提示中<br>
+          演示手机号 <code>13800138000</code>，验证码为 6 位数字
+        </div>
+      </div>
+
+      <div class="lc-foot">© 2026 光伏运维平台 · by 梁英俊</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 主应用 ================= -->
+<div id="app" class="hide">
+  <!-- 侧边栏 PC -->
+  <aside class="side">
+    <div class="side-top">
+      <div class="m">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 18a5 5 0 0 0 .3-10A6.5 6.5 0 0 0 5 10a4 4 0 0 0 .8 7.97"/><path d="M12 12v8"/><path d="m9 17 3-5 3 5"/>
+        </svg>
+      </div>
+      <div><b>光伏运维平台</b><span>PV O&amp;M PLATFORM</span></div>
+    </div>
+    <nav class="side-nav" id="sideNav"></nav>
+    <div class="side-foot">v2.6.0 · 演示环境</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-logo">
+        <div class="m">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 18a5 5 0 0 0 .3-10A6.5 6.5 0 0 0 5 10a4 4 0 0 0 .8 7.97"/><path d="M12 12v8"/><path d="m9 17 3-5 3 5"/>
+          </svg>
+        </div>
+        <div class="tb-title"><b>光伏运维平台</b><span id="tbPark">全部园区</span></div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-clock"><b id="tbTime">--:--:--</b><span id="tbDate">加载中</span></div>
+        <button class="iconbtn" onclick="doRefresh()" title="刷新数据" aria-label="刷新数据">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+        </button>
+        <div class="avatar" id="tbAvatar" onclick="go('me')" title="我的">梁</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="page on" id="pgHome"></section>
+      <section class="page" id="pgBill"></section>
+      <section class="page" id="pgAlarm"></section>
+      <section class="page" id="pgMe"></section>
+    </div>
+  </div>
+
+  <!-- 底部导航 手机 -->
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 处理弹层 -->
+<div class="mask" id="mask">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="m-h">
+      <h3 id="mdTitle">告警处理</h3>
+      <button class="x" onclick="closeModal()" aria-label="关闭">×</button>
+    </div>
+    <div class="m-b" id="mdBody"></div>
+    <div class="m-f" id="mdFoot"></div>
+  </div>
+</div>
+
+<!-- 图片查看 -->
+<div class="mask" id="imgMask" style="background:rgba(10,14,20,.88)">
+  <img id="bigImg" style="max-width:92vw;max-height:88vh;border-radius:10px;display:block">
+</div>
+
+<script>
+/* =====================================================================
+   光伏运维平台 · 单文件应用
+   ===================================================================== */
+var LS = {
+  sess:'pvom_session_v1',
+  alarm:'pvom_alarms_v1',
+  bills:'pvom_billread_v1',
+  sms:'pvom_sms_code_v1'
+};
+var $ = function(s,r){ return (r||document).querySelector(s); };
+var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+
+/* ---------- 工具 ---------- */
+function toast(msg,kind){
+  var t=$('#toast');
+  t.textContent=msg;
+  t.className='toast show'+(kind?' '+kind:'');
+  clearTimeout(t._tm);
+  t._tm=setTimeout(function(){ t.className='toast'; },2400);
+}
+function pad(n){ return n<10?'0'+n:''+n; }
+function fmtMoney(n){
+  return (n<0?'-':'')+'¥'+Math.abs(n).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtNum(n,d){
+  return Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});
+}
+function beijing(){
+  return new Date(Date.now()+ (new Date().getTimezoneOffset()+480)*60000);
+}
+function fmtTime(iso){
+  var d=new Date(iso);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function fromNow(iso){
+  var s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+  if(s<60) return '刚刚';
+  if(s<3600) return Math.floor(s/60)+' 分钟前';
+  if(s<86400) return Math.floor(s/3600)+' 小时前';
+  if(s<86400*7) return Math.floor(s/86400)+' 天前';
+  return fmtTime(iso).slice(5,10);
+}
+function hashStr(s){
+  var h=2166136261;
+  for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); }
+  return h>>>0;
+}
+function mulberry(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function seedRand(key){
+  var r=mulberry(hashStr(key));
+  return function(){ return r(); };
+}
+
+/* ---------- 园区数据 ---------- */
+var PARKS = [
+  {id:'p1',name:'闵行航天城 806',short:'闵行 806',addr:'上海市闵行区航南路 806 号',cap:6.2,type:'分布式屋顶'},
+  {id:'p2',name:'闵行航天城 808',short:'闵行 808',addr:'上海市闵行区航南路 808 号',cap:5.4,type:'分布式屋顶'},
+  {id:'p3',name:'阜阳电子产业园',short:'阜阳产业园',addr:'安徽省阜阳市电子产业园 A 区',cap:8.8,type:'集中式电站'},
+  {id:'p4',name:'浦东智造园区',short:'浦东智造园',addr:'上海市浦东新区智造路 88 号',cap:4.6,type:'分布式屋顶'},
+  {id:'p5',name:'松江新能源基地',short:'松江基地',addr:'上海市松江区新能源大道 1 号',cap:3.6,type:'集中式电站'}
+];
+function parkName(id){ for(var i=0;i<PARKS.length;i++) if(PARKS[i].id===id) return PARKS[i].name; return '全部园区'; }
+function parkShort(id){ for(var i=0;i<PARKS.length;i++) if(PARKS[i].id===id) return PARKS[i].short; return '全部园区'; }
+
+/* ---------- 登录 ---------- */
+function switchTab(m){
+  var p=m==='sms';
+  $('#tabPwd').className=p?'':'on';
+  $('#tabSms').className=p?'on':'';
+  $('#panePwd').className=p?'hide':'';
+  $('#paneSms').className=p?'':'hide';
+  setTimeout(function(){ (p?$('#lgPhone'):$('#lgUser')).focus(); },60);
+}
+function toggleEye(id){
+  var el=document.getElementById(id);
+  el.type = el.type==='password' ? 'text' : 'password';
+}
+var smsCode='', smsTimer=null, smsLeft=0;
+function sendCode(){
+  var ph=$('#lgPhone').value.trim();
+  if(!/^1[3-9]\d{9}$/.test(ph)){ toast('请输入正确的 11 位手机号','err'); return; }
+  if(smsLeft>0) return;
+  smsCode = String(Math.floor(100000+Math.random()*900000));
+  try{ localStorage.setItem(LS.sms,JSON.stringify({c:smsCode,t:Date.now(),p:ph})); }catch(e){}
+  smsLeft=60;
+  var b=$('#btnCode');
+  b.disabled=true;
+  toast('验证码已发送至 '+ph.slice(0,3)+'****'+ph.slice(7)+'：'+smsCode,'ok');
+  clearInterval(smsTimer);
+  smsTimer=setInterval(function(){
+    smsLeft--;
+    b.textContent = smsLeft>0 ? smsLeft+' 秒后重发' : '获取验证码';
+    if(smsLeft<=0){ clearInterval(smsTimer); b.disabled=false; b.textContent='获取验证码'; }
+  },1000);
+  b.textContent='60 秒后重发';
+}
+var logging=false;
+function doLogin(mode){
+  if(logging) return;
+  var user='', ok=false;
+  if(mode==='pwd'){
+    user=$('#lgUser').value.trim();
+    var pwd=$('#lgPwd').value;
+    if(!user){ toast('请输入用户名','err'); $('#lgUser').focus(); return; }
+    if(!pwd){ toast('请输入密码','err'); $('#lgPwd').focus(); return; }
+    if(pwd!=='123456'){ toast('密码错误，演示密码为 123456','err'); $('#lgPwd').focus(); return; }
+    ok=true;
+  }else{
+    user=$('#lgPhone').value.trim();
+    var code=$('#lgCode').value.trim();
+    if(!/^1[3-9]\d{9}$/.test(user)){ toast('请输入正确的 11 位手机号','err'); $('#lgPhone').focus(); return; }
+    if(!code){ toast('请输入短信验证码','err'); $('#lgCode').focus(); return; }
+    var saved=null;
+    try{ saved=JSON.parse(localStorage.getItem(LS.sms)||'null'); }catch(e){}
+    if(!saved || Date.now()-saved.t>10*60*1000){ toast('验证码已失效，请重新获取','err'); return; }
+    if(code!==saved.c){ toast('验证码不正确，请重新输入','err'); $('#lgCode').focus(); return; }
+    ok=true;
+  }
+  if(!ok) return;
+  logging=true;
+  var btn = mode==='pwd' ? $('#btnPwd') : $('#btnSms');
+  var old = btn.innerHTML;
+  btn.disabled=true; btn.textContent='登录中…';
+  var rem = (mode==='pwd'?$('#lgRem'):$('#lgRem2')).checked;
+  setTimeout(function(){
+    var sess={u:user,m:mode,t:Date.now(),p:rem};
+    try{ localStorage.setItem(LS.sess,JSON.stringify(sess)); }catch(e){}
+    btn.disabled=false; btn.innerHTML=old; logging=false;
+    toast('登录成功，欢迎回来','ok');
+    boot();
+  },520);
+}
+function logout(){
+  if(!confirm('确定要退出登录吗？')) return;
+  try{ localStorage.removeItem(LS.sess); }catch(e){}
+  $('#app').classList.add('hide');
+  $('#login').classList.remove('hide');
+  document.body.style.overflow='';
+}
+
+/* ---------- 告警数据 ---------- */
+var ALARM_TYPES = [
+  {t:'逆变器直流输入电压异常',lv:2,dev:'逆变器'},
+  {t:'组串电流偏差超限',lv:1,dev:'光伏组串'},
+  {t:'汇流箱温度过高',lv:2,dev:'汇流箱'},
+  {t:'交流侧剩余电流跳闸',lv:2,dev:'交流配电柜'},
+  {t:'组件表面遮挡/积灰',lv:0,dev:'组件'},
+  {t:'监控通讯中断',lv:1,dev:'数据采集器'},
+  {t:'逆变器内部温度过高',lv:2,dev:'逆变器'},
+  {t:'直流拉弧疑似告警',lv:2,dev:'直流侧'},
+  {t:'并网点电压越上限',lv:1,dev:'并网点'},
+  {t:'防雷模块击穿动作',lv:1,dev:'防雷器'},
+  {t:'旋转编码器位置偏差',lv:0,dev:'逆变器'},
+  {t:'光伏板热斑红外预警',lv:2,dev:'组件'},
+  {t:'逆变器风扇故障停转',lv:1,dev:'逆变器'},
+  {t:'直流绝缘电阻偏低',lv:1,dev:'直流侧'},
+  {t:'组件背板疑似鼓包',lv:0,dev:'组件'},
+  {t:'箱变温度超限告警',lv:2,dev:'箱式变压器'},
+  {t:'电表通讯数据缺失',lv:0,dev:'电能表'},
+  {t:'清洗计划超期未执行',lv:0,dev:'运维工单'}
+];
+var LV = {2:{n:'紧急',c:'t-red',bar:'#e0483d'},1:{n:'重要',c:'t-amber',bar:'#e08a00'},0:{n:'一般',c:'t-blue',bar:'#2563eb'}};
+var HANDLE_WAYS=['现场检修处理','远程复位处理','更换备件','清洁除障','参数整定','误报确认关闭','转厂家售后'];
+var STAFF=['张建国','李慧敏','王振华','陈晓东','刘思远','赵倩'];
+
+function genAlarms(){
+  var rnd=seedRand('pv-alarm-v1');
+  var out=[];
+  var now=Date.now();
+  for(var i=0;i<32;i++){
+    var pk=PARKS[Math.floor(rnd()*PARKS.length)];
+    var ty=ALARM_TYPES[Math.floor(rnd()*ALARM_TYPES.length)];
+    var lv=rnd()<0.72 ? ty.lv : (ty.lv===2?1:2);
+    var mins=Math.floor(rnd()*1600)+8;
+    var time=new Date(now-mins*60000).toISOString();
+    var no='AL'+time.slice(2,10).replace(/-/g,'')+pad(100+i);
+    var done = rnd()<0.34;
+    var a={
+      id:'A'+i, no:no, park:pk.id, type:ty.t, lv:lv, dev:ty.dev,
+      eq: pk.id==='p3'||pk.id==='p5'
+            ? ty.dev+'#'+(1+Math.floor(rnd()*40))
+            : ty.dev+'-'+pk.short.replace(/[^0-9A-Za-z]/g,'')+'-'+pad(1+Math.floor(rnd()*24)),
+      time:time, status: done?'done':'wait',
+      desc: buildDesc(ty, pk, rnd),
+      way:'', note:'', photos:[], handler:'', handleAt:''
+    };
+    if(done){
+      a.way=HANDLE_WAYS[Math.floor(rnd()*HANDLE_WAYS.length)];
+      a.handler=STAFF[Math.floor(rnd()*STAFF.length)];
+      a.handleAt=new Date(new Date(time).getTime()+(20+Math.floor(rnd()*300))*60000).toISOString();
+      a.note='已到现场核查，'+a.way+'，设备恢复正常运行，告警已闭环。';
+    }
+    out.push(a);
+  }
+  out.sort(function(a,b){ return new Date(b.time)-new Date(a.time); });
+  return out;
+}
+function buildDesc(ty,pk,rnd){
+  var m={
+    '逆变器直流输入电压异常':'直流侧电压 '+ (760+Math.floor(rnd()*180)) +'V，超出设定阈值上限，已触发过压保护。',
+    '组串电流偏差超限':'该组串平均电流较同阵列偏低 '+(8+Math.floor(rnd()*26))+'%，疑似组件热斑或遮挡。',
+    '汇流箱温度过高':'箱内温度 '+(68+Math.floor(rnd()*22))+'℃ 超过告警阈值，疑似接线端子松动或散热不良。',
+    '交流侧剩余电流跳闸':'剩余电流 '+(28+Math.floor(rnd()*40))+'mA，交流断路器已动作，需排查绝缘。',
+    '组件表面遮挡/积灰':'红外热成像检测到局部温升异常，初步判断为积灰或周边物体遮挡。',
+    '监控通讯中断':'数据采集器连续 '+ (10+Math.floor(rnd()*40))+' 分钟无数据上报，链路可能中断。',
+    '逆变器内部温度过高':'机内温度 '+(72+Math.floor(rnd()*20))+'℃，风扇可能故障或环境温度过高。',
+    '直流拉弧疑似告警':'直流拉弧检测单元触发，检测到异常紫外/射频信号，需立即现场确认。',
+    '并网点电压越上限':'并网点电压 '+(241+Math.floor(rnd()*20))+'V，超过 235V 上限，存在设备损伤风险。',
+    '防雷模块击穿动作':'SPD 防雷模块状态为击穿，已失去雷击保护功能。',
+    '旋转编码器位置偏差':'编码器反馈位置与实际角度偏差 '+(3+Math.floor(rnd()*10))+'°，影响跟踪精度。',
+    '光伏板热斑红外预警':'红外巡检发现热斑，最高温度 '+(72+Math.floor(rnd()*26))+'℃，建议尽快处理。',
+    '逆变器风扇故障停转':'风扇电流检测为 0，风道堵塞或风扇损坏，需停机检查散热。',
+    '直流绝缘电阻偏低':'绝缘电阻降至 '+ (0.15+Math.floor(rnd()*20)/10).toFixed(1) +' MΩ，低于阈值，存在接地隐患。',
+    '组件背板疑似鼓包':'红外识别到背板鼓包脱层风险，长期可能导致绝缘失效。',
+    '箱变温度超限告警':'箱式变压器上层油温 '+(78+Math.floor(rnd()*18))+'℃，超过告警阈值。',
+    '电表通讯数据缺失':'电能表连续 '+ (20+Math.floor(rnd()*60))+' 分钟无数据帧上传。',
+    '清洗计划超期未执行':'距上次组件清洗已 '+ (35+Math.floor(rnd()*40))+' 天，超出计划周期，发电效率下降。'
+  };
+  return m[ty.t] + '（' + pk.name + '）';
+}
+var ALARMS = [];
+function loadAlarms(){
+  var base=genAlarms();
+  var saved=null;
+  try{ saved=JSON.parse(localStorage.getItem(LS.alarm)||'null'); }catch(e){}
+  if(saved && saved.map && saved.map.length){
+    var map={};
+    saved.map.forEach(function(x){ map[x.id]=x; });
+    base.forEach(function(a){
+      var s=map[a.id];
+      if(s && s.status==='done'){
+        a.status='done'; a.way=s.way; a.note=s.note; a.photos=s.photos||[];
+        a.handler=s.handler; a.handleAt=s.handleAt;
+      }
+    });
+  }
+  ALARMS=base;
+}
+function saveAlarms(){
+  try{
+    localStorage.setItem(LS.alarm,JSON.stringify({t:Date.now(),map:ALARMS.filter(function(a){return a.status==='done';})}));
+  }catch(e){}
+}
+function storePhoto(dataUrl){
+  try{ localStorage.setItem('pvom_tmp_photo',JSON.stringify(dataUrl)); return true; }
+  catch(e){
+    if(dataUrl.length<1600){ try{ localStorage.setItem('pvom_tmp_photo',JSON.stringify(dataUrl)); return true; }catch(e2){} }
+    return false;
+  }
+}
+
+/* ---------- 账单数据 ---------- */
+var TARIFF=[ // 峰谷平
+  {k:'尖',p:1.3120,c:'#e0483d',w:'00:00-08:00 时段'},
+  {k:'峰',p:1.0584,c:'#e08a00',w:'08:00-12:00 / 17:00-21:00'},
+  {k:'平',p:0.6820,c:'#2563eb',w:'12:00-17:00 / 21:00-24:00'},
+  {k:'谷',p:0.3210,c:'#0a9d6b',w:'08:00-11:00 / 14:00-17:00 等'}
+];
+var tariffNote='执行目录电价（一般工商业）';
+
+function ymList(){
+  var now=beijing(), out=[], y=now.getFullYear(), m=now.getMonth()+1;
+  for(var i=0;i<12;i++){
+    var mm=((m-1-i)%12+12)%12+1, yy=m-1-i<0?y-1:y;
+    out.push(yy+'-'+pad(mm));
+  }
+  return out;
+}
+function genBill(parkId, ym){
+  var y=parseInt(ym.slice(0,4),10), m=parseInt(ym.slice(5,7),10);
+  var pk=null; for(var i=0;i<PARKS.length;i++) if(PARKS[i].id===parkId) pk=PARKS[i];
+  if(!pk) return null;
+  var r=seedRand('bill-'+parkId+'-'+ym);
+  var monthMul=[1.06,1.12,0.94,1.02,1.15,1.20,1.24,1.18,1.08,0.98,0.92,1.04][m-1];
+  var base=pk.cap*1000*118*monthMul*(0.9+r()*0.2);
+  var vSharp=Math.round(base*0.055*(0.85+r()*0.3));
+  var vPeak=Math.round(base*0.34*(0.9+r()*0.2));
+  var vFlat=Math.round(base*0.395*(0.92+r()*0.16));
+  var vValley=Math.round(base*0.21*(0.85+r()*0.3));
+  var use=vSharp+vPeak+vFlat+vValley;
+  var e1=vSharp*TARIFF[0].p, e2=vPeak*TARIFF[1].p, e3=vFlat*TARIFF[2].p, e4=vValley*TARIFF[3].p;
+  var energy=e1+e2+e3+e4;
+  var basic=Math.round(pk.cap*1000*31*0.42*100)/100;
+  var demand=Math.round((pk.cap*1000*0.42*(0.9+r()*0.25))*0.32*100)/100;
+  var pf=(0.93+r()*0.055);
+  var adj = pf>0.95 ? -energy*0.0035 : energy*(0.0060-(pf-0.90)*0.02);
+  adj=Math.round(adj*100)/100;
+  var service=Math.round(energy*0.0035*100)/100;
+  var total=Math.round((energy+basic+demand+adj+service)*100)/100;
+  var feeBasic=Math.round((basic+demand)*100)/100;
+  var settled = (y<now0().getFullYear()) || (y===now0().getFullYear() && m < now0().getMonth()+1);
+  var gen=Math.round(use*(0.96+r()*0.10));
+  return {
+    parkId:parkId, ym:ym, no:'FE'+ym.replace('-','')+'-'+pk.id.toUpperCase(),
+    use:use, vSharp:vSharp, vPeak:vPeak, vFlat:vFlat, vValley:vValley,
+    price:total/use, energy:energy, basic:basic, demand:demand, pf:pf, adj:adj,
+    service:service, feeBasic:feeBasic, total:total, gen:gen,
+    selfRate:gen/use,
+    status: settled?'已结算':'待出账',
+    readAt: ym+'-'+pad(Math.min(28, Math.floor(r()*28)+1))+' 00:00',
+    settleAt: settled ? ym+'-'+pad(Math.min(28,Math.floor(r()*28)+1)) : '—',
+    invoice: settled ? (r()<0.85?'已开票':'待开票') : '—',
+    meter:'DL'+pk.id.toUpperCase()+pad(1+Math.floor(r()*3)),
+    cap:pk.cap, addr:pk.addr, type:pk.type, tariffNote:tariffNote
+  };
+}
+function now0(){ var d=beijing(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+
+/* ---------- 导航 ---------- */
+var NAV=[
+  {k:'home', n:'运行概览', ic:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/>'},
+  {k:'bill', n:'电费结算单', ic:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'},
+  {k:'alarm',n:'告警管理', ic:'<path d="M12 3a6 6 0 0 0-6 6v3.5L4.5 16h15L18 12.5V9a6 6 0 0 0-6-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/>'},
+  {k:'me',   n:'我的',     ic:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'}
+];
+var CUR='home';
+function buildNav(){
+  var wait=ALARMS.filter(function(a){return a.status!=='done';}).length;
+  $('#sideNav').innerHTML = NAV.map(function(n){
+    var b = n.k==='alarm' && wait ? '<span class="badge">'+wait+'</span>' : '';
+    return '<button type="button" data-k="'+n.k+'" class="'+(CUR===n.k?'on':'')+'" onclick="go(\''+n.k+'\')">'
+      +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+n.ic+'</svg>'
+      +'<span>'+n.n+'</span>'+b+'</button>';
+  }).join('');
+  $('#tabbar').innerHTML = NAV.map(function(n){
+    var b = n.k==='alarm' && wait ? '<span class="badge">'+wait+'</span>' : '';
+    return '<button type="button" data-k="'+n.k+'" class="'+(CUR===n.k?'on':'')+'" onclick="go(\''+n.k+'\')">'
+      +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+n.ic+'</svg>'
+      +'<span>'+n.n+'</span>'+b+'</button>';
+  }).join('');
+}
+function go(k){
+  CUR=k;
+  $$('.page').forEach(function(p){ p.classList.remove('on'); });
+  $('#pg'+k.charAt(0).toUpperCase()+k.slice(1)).classList.add('on');
+  $$('#sideNav button').forEach(function(b){ b.classList.toggle('on', b.dataset.k===k); });
+  $$('#tabbar button').forEach(function(b){ b.classList.toggle('on', b.dataset.k===k); });
+  window.scrollTo(0,0);
+}
+var TIMER=null;
+function startClock(){
+  if(TIMER) clearInterval(TIMER);
+  var f=function(){
+    var d=beijing(), wk='日一二三四五六'[d.getDay()];
+    $('#tbTime').textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+    $('#tbDate').textContent=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' 周'+wk+'（北京时间）';
+  };
+  f(); TIMER=setInterval(f,1000);
+}
+
+/* ---------- 页面：运行概览 ---------- */
+var billState={park:'p1', ym:''};
+var alarmState={park:'all', st:'wait', lv:'all', kw:''};
+function renderHome(){
+  var wait=ALARMS.filter(function(a){return a.status!=='done';});
+  var totalCap=PARKS.reduce(function(s,p){return s+p.cap;},0);
+  var todayGen = Math.round(totalCap*1000*4.35);
+  var monUse=0, monFee=0;
+  var ym=ymList()[0];
+  PARKS.forEach(function(p){ var b=genBill(p.id,ym); if(b){ monUse+=b.use; monFee+=b.total; } });
+  var doneCnt=ALARMS.length-wait.length;
+  var rate=ALARMS.length? Math.round(doneCnt/ALARMS.length*1000)/10 : 100;
+
+  var parkRows=PARKS.map(function(p){
+    var b=genBill(p.id,ym);
+    var w=ALARMS.filter(function(a){return a.park===p.id && a.status!=='done';}).length;
+    var gen=Math.round(p.cap*1000*4.35*(0.9+seedRand('g'+p.id)()*0.2));
+    return '<tr>'
+      +'<td><b>'+p.name+'</b><div class="muted">'+p.type+' · '+p.cap+' MWp</div></td>'
+      +'<td class="num t-r">'+fmtNum(gen)+' kWh</td>'
+      +'<td class="num t-r">'+(b?fmtMoney(b.total):'—')+'</td>'
+      +'<td class="t-r">'+(w?'<span class="tag t-red">'+w+' 条待处理</span>':'<span class="tag t-pri">正常</span>')+'</td>'
+      +'</tr>';
+  }).join('');
+
+  // 近 12 月全公司电费趋势
+  var ms=ymList().slice().reverse();
+  var series=ms.map(function(m){
+    var t=0; PARKS.forEach(function(p){ var b=genBill(p.id,m); if(b) t+=b.total; });
+    return {ym:m,v:t};
+  });
+  var max=Math.max.apply(null,series.map(function(x){return x.v;}))||1;
+  var W=680,H=132,pad0=34, iw=(W-pad0*2)/series.length;
+  var bars=series.map(function(s,i){
+    var h=Math.max(3,(s.v/max)*(H-34));
+    var x=pad0+i*iw+3, y=H-20-h;
+    return '<rect class="bar-r" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+(iw-7).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3"><title>'+s.ym+'　'+fmtMoney(s.v)+'</title></rect>'
+      +'<text x="'+(x+(iw-7)/2).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle">'+s.ym.slice(2).replace('-','.')+'</text>';
+  }).join('');
+
+  var lvCnt=[0,0,0];
+  wait.forEach(function(a){ lvCnt[a.lv]++; });
+  var maxLv=Math.max(lvCnt[0],lvCnt[1],lvCnt[2],1);
+  var lvBar=lvCnt.map(function(c,i){
+    var meta=LV[i];
+    return '<div class="dist-row"><span class="nm">'+meta.n+'</span>'
+      +'<span class="bw"><i style="width:'+(c/maxLv*100)+'%;background:'+meta.bar+'"></i></span>'
+      +'<span class="vv">'+c+' 条</span></div>';
+  }).join('');
+
+  var recent=ALARMS.slice(0,4).map(function(a){
+    var meta=LV[a.lv];
+    return '<div class="dt-row"><span class="k" style="width:auto">'
+      +'<span class="tag '+meta.c+'">'+meta.n+'</span></span>'
+      +'<span class="v"><a onclick="openAlarm(\''+a.id+'\')" style="cursor:pointer"><b>'+a.type+'</b></a>'
+      +'<div class="muted">'+parkShort(a.park)+' · '+a.eq+' · '+fromNow(a.time)+'</div></span></div>';
+  }).join('');
+
+  $('#pgHome').innerHTML =
+    '<div class="phead"><h2>运行概览</h2><p>全平台光伏运行与结算总览，数据截至 '+fmtTime(new Date().toISOString())+'</p></div>'
+    +'<div class="kpis">'
+      + kpi('k1','今日发电量',fmtNum(todayGen),' kWh','较昨日','+6.4%','up')
+      + kpi('k2','本月用电量',fmtNum(monUse),' kWh','本月电费',fmtMoney(monFee),'dn',1)
+      + kpi('k3','待处理告警',wait.length,' 条','其中紧急',lvCnt[2]+' 条','up')
+      + kpi('k4','告警闭环率',rate,' %','已处理',doneCnt+'/'+ALARMS.length,'dn')
+    +'</div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>园区运行与结算一览</h3>'
+      +'<span class="sp muted">结算月份 '+ym+'</span></div>'
+      +'<div class="tbl-wrap"><table><thead><tr><th>园区</th><th class="t-r">今日发电量</th><th class="t-r">本月电费</th><th class="t-r">告警状态</th></tr></thead>'
+      +'<tbody>'+parkRows+'</tbody></table></div></div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>近 12 个月电费总额</h3><span class="sp muted">单位：元</span></div>'
+      +'<div class="card-b"><svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:150px">'
+      +'<line x1="'+pad0+'" y1="'+ (H-20) +'" x2="'+(W-pad0+10)+'" y2="'+(H-20)+'" stroke="#e3e9f2" stroke-width="1"/>'
+      +bars+'</svg></div></div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>待处理告警级别分布</h3></div><div class="card-b">'+lvBar+'</div></div>'
+    +'<div class="card"><div class="card-h"><h3>最新告警动态</h3><span class="sp"><a class="lnk" onclick="go(\'alarm\')">查看全部 →</a></span></div>'
+      +'<div class="card-b">'+recent+'</div></div>';
+}
+function kpi(cls,lb,vl,unit,dl,dv,dir,plain){
+  return '<div class="kpi '+cls+'"><div class="lb"><i></i>'+lb+'</div>'
+    +'<div class="vl">'+vl+'<small>'+unit+'</small></div>'
+    +'<div class="df '+(dir||'')+'">'+(plain?'&nbsp;':(dir==='up'?'▲ ':dir==='dn'?'▼ ':''))+dl+' '+dv+'</div></div>';
+}
+
+/* ---------- 页面：电费结算单 ---------- */
+function renderBill(){
+  if(!billState.ym) billState.ym=ymList()[0];
+  var parkOpts='<option value="all">全部园区（合计）</option>'+PARKS.map(function(p){
+    return '<option value="'+p.id+'"'+(billState.park===p.id?' selected':'')+'>'+p.name+'</option>';}).join('');
+  var ymOpts=ymList().map(function(m){
+    return '<option value="'+m+'"'+(billState.ym===m?' selected':'')+'>'+m.replace('-',' 年 ')+' 月</option>';}).join('');
+
+  var body='';
+  if(billState.park==='all'){
+    body=renderBillAll();
+  }else{
+    var b=genBill(billState.park,billState.ym);
+    body=b?renderBillOne(b):'<div class="empty"><div class="e">📄</div><b>暂无结算单</b>该园区当月结算单尚未生成</div>';
+  }
+
+  $('#pgBill').innerHTML =
+    '<div class="phead"><h2>电费结算单</h2><p>按园区与结算年月查询用电计费明细，支持对账核对与导出</p></div>'
+    +'<div class="card" style="margin-bottom:13px"><div class="card-b" style="padding:13px 14px">'
+      +'<div class="toolbar" style="margin:0">'
+      +'<div class="fld"><label>选择园区</label><select onchange="billState.park=this.value;renderBill()">'+parkOpts+'</select></div>'
+      +'<div class="fld"><label>结算年月</label><select onchange="billState.ym=this.value;renderBill()">'+ymOpts+'</select></div>'
+      +'<button class="btn ghost sm" style="margin-left:auto" onclick="exportBill()">'
+        +'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 21h16"/></svg>导出明细</button>'
+      +'</div></div></div>'
+    + body;
+}
+function feeParts(b){
+  var tot=b.total||1;
+  return [
+    {n:'电度电费',v:b.energy,c:'#0a9d6b',d:'按峰谷平分时电价计算'},
+    {n:'基本电费 + 需量电费',v:b.feeBasic,c:'#2563eb',d:'按变压器容量计收'},
+    {n:'功率因数调整电费',v:b.adj,c:b.adj>=0?'#e0483d':'#12a06f',d:'功率因数 '+b.pf.toFixed(3)},
+    {n:'其他附加费用',v:b.service,c:'#e08a00',d:'政府性基金及附加'}
+  ];
+}
+function renderBillOne(b){
+  var parts=feeParts(b);
+  var tot=b.total||1;
+  var bar='<div class="bar">'+parts.map(function(p){
+    return '<i style="width:'+Math.max(0,p.v/tot*100)+'%;background:'+p.c+'"></i>';}).join('')+'</div>'
+    +'<div class="legend">'+parts.map(function(p){
+      return '<span><em style="background:'+p.c+'"></em>'+p.n+' '+fmtMoney(p.v)+'（'+(p.v/tot*100).toFixed(1)+'%）</span>';}).join('')+'</div>';
+  var rows=[
+    ['电度电费 · 尖峰',b.vSharp,TARIFF[0].p,'#e0483d'],
+    ['电度电费 · 峰',b.vPeak,TARIFF[1].p,'#e08a00'],
+    ['电度电费 · 平',b.vFlat,TARIFF[2].p,'#2563eb'],
+    ['电度电费 · 谷',b.vValley,TARIFF[3].p,'#0a9d6b']
+  ].map(function(r){
+    return '<tr><td><span style="display:inline-flex;align-items:center;gap:6px"><em style="width:8px;height:8px;border-radius:2px;background:'+r[3]+';display:block"></em>'+r[0]+'</span></td>'
+      +'<td class="num t-r">'+fmtNum(r[1])+'</td>'
+      +'<td class="num t-r">'+r[2].toFixed(4)+'</td>'
+      +'<td class="num t-r">'+fmtMoney(r[1]*r[2])+'</td></tr>';
+  }).join('');
+  return '<div class="bill-hero">'
+    +'<div class="bh-top"><div><h3>'+parkName(b.parkId)+'</h3><div class="bh-no">单号 '+b.no+'</div></div>'
+    +'<div class="bh-amt"><div class="l">结算金额（含税）</div><div class="v"><small>¥</small>'+fmtNum(b.total,2)+'</div></div></div>'
+    +'<div class="bh-grid">'
+      +'<div><span>结算年月</span><b>'+b.ym+'</b></div>'
+      +'<div><span>结算状态</span><b>'+b.status+'</b></div>'
+      +'<div><span>开票状态</span><b>'+b.invoice+'</b></div>'
+      +'<div><span>总用电量</span><b>'+fmtNum(b.use)+' kWh</b></div>'
+      +'<div><span>综合单价</span><b>'+b.price.toFixed(4)+' 元/kWh</b></div>'
+      +'<div><span>功率因数</span><b>'+b.pf.toFixed(3)+'</b></div>'
+    +'</div></div>'
+    +'<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>费用构成</h3></div><div class="card-b">'+bar+'</div></div>'
+    +'<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>电度电费明细（分时电量）</h3><span class="sp muted">'+b.tariffNote+'</span></div>'
+      +'<div class="tbl-wrap"><table><thead><tr><th>费用项</th><th class="t-r">电量 (kWh)</th><th class="t-r">单价 (元/kWh)</th><th class="t-r">金额</th></tr></thead>'
+      +'<tbody>'+rows
+      +'<tr><td><b>电度电费小计</b></td><td class="num t-r"><b>'+fmtNum(b.use)+'</b></td><td class="t-r">—</td><td class="num t-r"><b>'+fmtMoney(b.energy)+'</b></td></tr>'
+      +'</tbody></table></div></div>'
+    +'<div class="card"><div class="card-h"><h3>结算单信息</h3></div><div class="card-b" style="padding-top:4px">'
+      +infoRow('园区名称',parkName(b.parkId)) + infoRow('园区地址',b.addr)
+      + infoRow('站点类型',b.type+' · 装机 '+b.cap+' MWp') + infoRow('计量点表号',b.meter)
+      + infoRow('抄表时间',b.readAt) + infoRow('结算时间',b.settleAt)
+      + infoRow('当月发电量',fmtNum(b.gen)+' kWh') + infoRow('自发自用率',(b.selfRate*100).toFixed(1)+'%')
+      + infoRow('结算状态','<span class="tag '+(b.status==='已结算'?'t-pri':'t-amber')+'">'+b.status+'</span>')
+      + infoRow('开票状态','<span class="tag t-gray">'+b.invoice+'</span>')
+    +'</div></div>';
+}
+function renderBillAll(){
+  var rows=PARKS.map(function(p){
+    var b=genBill(p.id,billState.ym);
+    return '<tr><td><b>'+p.name+'</b><div class="muted">'+b.type+' · '+b.cap+' MWp</div></td>'
+      +'<td class="num t-r">'+fmtNum(b.use)+'</td>'
+      +'<td class="num t-r">'+fmtNum(b.gen)+'</td>'
+      +'<td class="num t-r">'+fmtMoney(b.adj)+'</td>'
+      +'<td class="num t-r"><b>'+fmtMoney(b.total)+'</b></td>'
+      +'<td class="t-r"><span class="tag '+(b.status==='已结算'?'t-pri':'t-amber')+'">'+b.status+'</span></td></tr>';
+  }).join('');
+  var tu=0,tb=0,tt=0;
+  PARKS.forEach(function(p){ var b=genBill(p.id,billState.ym); tu+=b.use; tb+=b.feeBasic; tt+=b.total; });
+  var avg=tt/tu;
+  // 近 12 月合计趋势
+  var ms=ymList().slice().reverse();
+  var series=ms.map(function(m){ var t=0; PARKS.forEach(function(p){ var b=genBill(p.id,m); t+=b.total; }); return {ym:m,v:t}; });
+  var max=Math.max.apply(null,series.map(function(x){return x.v;}))||1;
+  var W=680,H=132,pd=34,iw=(W-pd*2)/series.length;
+  var bars=series.map(function(s,i){
+    var h=Math.max(3,(s.v/max)*(H-34));
+    var x=pd+i*iw+3, y=H-20-h;
+    return '<rect class="bar-r" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+(iw-7).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3"><title>'+s.ym+'　'+fmtMoney(s.v)+'</title></rect>'
+      +'<text x="'+(x+(iw-7)/2).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle">'+s.ym.slice(2).replace('-','.')+'</text>';
+  }).join('');
+  return '<div class="kpis">'
+    + kpi('k4','合计电费',fmtNum(tt/10000,2),' 万元','结算年月',billState.ym,'dn',1)
+    + kpi('k2','合计用电量',fmtNum(tu),' kWh','平均单价',avg.toFixed(4),'dn',1)
+    + kpi('k1','基本+需量电费',fmtNum(tb),' 元','占比',(tb/tt*100).toFixed(1)+'%','up')
+    + kpi('k3','园区数量',PARKS.length,' 个','已结算',PARKS.filter(function(p){return genBill(p.id,billState.ym).status==='已结算';}).length,'dn')
+  +'</div>'
+  +'<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>各园区结算汇总（'+billState.ym+'）</h3></div>'
+    +'<div class="tbl-wrap"><table><thead><tr><th>园区</th><th class="t-r">用电量 (kWh)</th><th class="t-r">发电量 (kWh)</th><th class="t-r">力调电费</th><th class="t-r">结算金额</th><th class="t-r">状态</th></tr></thead>'
+    +'<tbody>'+rows
+    +'<tr style="background:#f7f9fc"><td><b>合计</b></td><td class="num t-r"><b>'+fmtNum(tu)+'</b></td><td class="num t-r"><b>'+fmtNum(PARKS.reduce(function(s,p){return s+genBill(p.id,billState.ym).gen;},0))+'</b></td>'
+    +'<td class="num t-r"><b>'+fmtMoney(PARKS.reduce(function(s,p){return s+genBill(p.id,billState.ym).adj;},0))+'</b></td>'
+    +'<td class="num t-r"><b style="color:var(--pri-d)">'+fmtMoney(tt)+'</b></td><td></td></tr>'
+    +'</tbody></table></div></div>'
+  +'<div class="card"><div class="card-h"><h3>全平台电费走势</h3><span class="sp muted">单位：元</span></div>'
+    +'<div class="card-b"><svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:150px">'
+    +'<line x1="'+pd+'" y1="'+(H-20)+'" x2="'+(W-pd+10)+'" y2="'+(H-20)+'" stroke="#e3e9f2" stroke-width="1"/>'+bars+'</svg></div></div>';
+}
+function infoRow(k,v){ return '<div class="info-row"><span class="k">'+k+'</span><span>'+v+'</span></div>'; }
+function exportBill(){
+  var head='园区,结算年月,用电量(kWh),发电量(kWh),电度电费,基本+需量电费,力调电费,其他费用,结算金额,状态\n';
+  var lines;
+  if(billState.park==='all'){
+    lines=PARKS.map(function(p){
+      var b=genBill(p.id,billState.ym);
+      return [b.addr.replace(/,/g,'、'),b.ym,b.use,b.gen,b.energy.toFixed(2),b.feeBasic.toFixed(2),b.adj.toFixed(2),b.service.toFixed(2),b.total.toFixed(2),b.status].join(',');
+    }).join('\n');
+  }else{
+    var b=genBill(billState.park,billState.ym);
+    lines=[[parkName(b.parkId),b.ym,b.use,b.gen,b.energy.toFixed(2),b.feeBasic.toFixed(2),b.adj.toFixed(2),b.service.toFixed(2),b.total.toFixed(2),b.status].join(',')].join('\n');
+  }
+  var csv='\ufeff'+head+lines;
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='光伏电费结算单_'+(billState.park==='all'?'全部园区':parkShort(billState.park))+'_'+billState.ym+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); },1000);
+  toast('结算单已导出为 CSV','ok');
+}
+
+/* ---------- 页面：告警管理 ---------- */
+function stTag(s){
+  if(s==='done') return '<span class="tag t-pri">已处理</span>';
+  if(s==='doing') return '<span class="tag t-blue">处理中</span>';
+  return '<span class="tag t-red">待处理</span>';
+}
+function filtered(){
+  return ALARMS.filter(function(a){
+    if(alarmState.park!=='all' && a.park!==alarmState.park) return false;
+    if(alarmState.st!=='all' && a.status!==alarmState.st) return false;
+    if(alarmState.lv!=='all' && String(a.lv)!==alarmState.lv) return false;
+    if(alarmState.kw){
+      var k=alarmState.kw.toLowerCase();
+      if((a.type+a.no+a.eq+a.dev+parkName(a.park)).toLowerCase().indexOf(k)<0) return false;
+    }
+    return true;
+  });
+}
+function renderAlarm(){
+  var all=ALARMS;
+  var cWait=all.filter(function(a){return a.status==='wait';}).length;
+  var cDoing=all.filter(function(a){return a.status==='doing';}).length;
+  var cDone=all.filter(function(a){return a.status==='done';}).length;
+  var list=filtered();
+
+  var parkOpts='<option value="all">全部园区</option>'+PARKS.map(function(p){
+    return '<option value="'+p.id+'"'+(alarmState.park===p.id?' selected':'')+'>'+p.name+'</option>';}).join('');
+  function segList(key,items){
+    return items.map(function(x){
+      return '<button type="button" class="'+(alarmState[key]===x[0]?'on':'')+'" onclick="setAlarm(\''+key+'\',\''+x[0]+'\')">'+x[1]
+           +(x[2]!==undefined?'<span class="n">'+x[2]+'</span>':'')+'</button>';
+    }).join('');
+  }
+  var segSt=segList('st',[['all','全部',all.length],['wait','待处理',cWait],['doing','处理中',cDoing],['done','已处理',cDone]]);
+  var segLv=segList('lv',[['all','不限级别'],['2','紧急'],['1','重要'],['0','一般']]);
+
+  var cards=list.length? list.map(alarmCard).join('') :
+    '<div class="card"><div class="empty"><div class="e">✅</div><b>没有符合条件的告警</b>换个筛选条件试试，或切换到「全部」查看</div></div>';
+
+  $('#pgAlarm').innerHTML =
+    '<div class="phead"><h2>告警管理</h2><p>全园区告警统一受理，支持现场拍照留档与处理情况回填</p></div>'
+    +'<div class="card" style="margin-bottom:12px"><div class="card-b" style="padding:13px 14px">'
+      +'<div class="toolbar" style="margin:0 0 10px">'
+      +'<div class="fld"><label>园区筛选</label><select onchange="setAlarm(\'park\',this.value)">'+parkOpts+'</select></div>'
+      +'<div class="fld" style="flex:2 1 220px"><label>搜索告警</label><input placeholder="告警编号 / 类型 / 设备编号" value="'+alarmState.kw.replace(/"/g,'&quot;')+'" oninput="onKw(this.value)"></div>'
+      +'</div>'
+      +'<div class="seg" style="margin-bottom:9px">'+segSt+'</div>'
+      +'<div class="seg">'+segLv+'</div>'
+    +'</div></div>'
+    + cards;
+}
+function onKw(v){ alarmState.kw=v; var p=renderAlarm; clearTimeout(alarmState._t); alarmState._t=setTimeout(function(){ renderAlarm(); setTimeout(function(){ var i=$('#pgAlarm input[placeholder^="告警编号"]'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length);} },0); },220); }
+function setAlarm(k,v){ alarmState[k]=v; renderAlarm(); }
+function alarmCard(a){
+  var meta=LV[a.lv];
+  var det='<div class="al-detail">'
+    + dt('告警编号',a.no) + dt('所属园区',parkName(a.park)) + dt('设备类型',a.dev)
+    + dt('设备编号',a.eq) + dt('发生时间',fmtTime(a.time)) + dt('当前状态',stTag(a.status))
+    + '<div class="dt-row"><span class="k">告警描述</span><span class="v">'+a.desc+'</span></div>';
+  if(a.status==='done'){
+    det += '<div class="done-note"><b>处理结果 · '+a.way+'</b>'+a.note
+      +'<div style="margin-top:6px;font-size:11.5px;opacity:.8">'+a.handler+' 于 '+fmtTime(a.handleAt)+' 处理完成</div>'
+      + (a.photos&&a.photos.length ? '<div class="photos">'+a.photos.map(function(p){ return '<img src="'+p+'" onclick="viewImg(this.src)" alt="处理照片">'; }).join('')+'</div>' : '')
+      + '</div>';
+  }
+  det += '<div class="al-actions">'
+    + (a.status==='done'
+        ? '<span class="btn ghost sm" style="cursor:default">已闭环</span>'
+        : '<button class="btn sm" onclick="event.stopPropagation();openHandle(\''+a.id+'\')">'
+          +'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 13 5 5L20 7"/></svg>处理告警</button>')
+    + '</div></div>';
+  return '<div class="alarm" id="al-'+a.id+'" onclick="toggleAlarm(\''+a.id+'\')">'
+    +'<div class="al-top">'
+      +'<span class="al-bar" style="background:'+meta.bar+'"></span>'
+      +'<div class="al-body"><div class="al-t"><b>'+a.type+'</b>'
+        +'<span class="tag '+meta.c+'">'+meta.n+'</span>'+stTag(a.status)+'</div>'
+        +'<div class="al-meta">'
+          +'<i>📍 '+parkName(a.park)+'</i>'
+          +'<i>🔧 '+a.eq+'</i>'
+          +'<i>🕐 '+fmtTime(a.time)+'</i>'
+        +'</div></div>'
+      +'<div class="al-right"><span class="muted">'+fromNow(a.time)+'</span></div>'
+    +'</div>'+det+'</div>';
+}
+function dt(k,v){ return '<div class="dt-row"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function toggleAlarm(id){
+  var el=document.getElementById('al-'+id);
+  if(el) el.classList.toggle('open');
+}
+function findAlarm(id){
+  for(var i=0;i<ALARMS.length;i++) if(ALARMS[i].id===id) return ALARMS[i];
+  return null;
+}
+function openAlarm(id){
+  toggleAlarm(id);
+  var el=document.getElementById('al-'+id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function viewImg(src){ $('#bigImg').src=src; $('#imgMask').classList.add('show'); }
+
+/* ---------- 告警处理弹层 ---------- */
+var CUR_ID='', PICK=[];
+function openHandle(id){
+  var a=findAlarm(id);
+  if(!a) return;
+  CUR_ID=id;
+  $('#mdTitle').textContent='处理告警 · '+a.no;
+  $('#mdBody').innerHTML =
+      dt('告警类型','<b>'+a.type+'</b>')
+    + dt('所属园区',parkName(a.park))
+    + dt('设备编号','<code style="background:var(--line2);padding:1px 5px;border-radius:4px">'+a.eq+'</code>')
+    + dt('发生时间',fmtTime(a.time))
+    + '<div class="dt-row" style="margin:6px 0 14px"><span class="k">告警描述</span><span class="v">'+a.desc+'</span></div>'
+    + '<div class="field" style="margin-bottom:14px"><label class="fl">处理方式 <span style="color:var(--red)">*</span></label>'
+      +'<select class="full" id="hWay"><option value="">请选择处理方式</option>'
+      + HANDLE_WAYS.map(function(w){ return '<option>'+w+'</option>'; }).join('') +'</select></div>'
+    + '<div class="field" style="margin-bottom:14px"><label class="fl">处理情况说明 <span style="color:var(--red)">*</span></label>'
+      +'<textarea id="hNote" placeholder="请描述现场核查情况、故障原因与处理结果，例如：逆变器 3 号风扇滤网堵塞导致散热不良，已清洁滤网并复位，设备恢复正常运行。"></textarea>'
+      +'<div class="muted" style="margin-top:5px">已输入 <b id="hLen">0</b> 字，建议不少于 10 字</div></div>'
+    + '<div class="field"><label class="fl">现场照片 <span class="muted" style="font-weight:400">（最多 6 张，选填但推荐上传）</span></label>'
+      +'<label class="uploader" id="upBox">'
+      +'<div class="ic">📷</div><b>点击选择照片 / 拍照</b>'
+      +'<span>支持 JPG、PNG，手机端可直接调用相机</span>'
+      +'<input type="file" id="upFile" accept="image/*" multiple class="hide"></label>'
+      +'<div class="up-list" id="upList"></div></div>'
+    + '<div style="background:var(--amber-l);border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#8a5a00">'
+      +'ⓘ 照片与处理情况将随工单一并归档，作为告警闭环凭证。演示数据保存在本机浏览器中。</div>';
+  $('#mdFoot').innerHTML =
+      '<button class="btn ghost" style="flex:0 0 96px" onclick="closeModal()">取消</button>'
+    + '<button class="btn" onclick="submitHandle()">'
+    +'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m4 13 5 5L20 7"/></svg>提交处理结果</button>';
+  PICK=[];
+  renderPick();
+  var nt=$('#hNote');
+  nt.addEventListener('input',function(){ $('#hLen').textContent=nt.value.trim().length; });
+  var box=$('#upBox'), f=$('#upFile');
+  box.addEventListener('click',function(e){ if(e.target!==f) f.click(); });
+  f.addEventListener('change',function(){
+    var fs=Array.prototype.slice.call(f.files||[]);
+    fs.forEach(addFile);
+    f.value='';
+  });
+  ['dragenter','dragover'].forEach(function(ev){ box.addEventListener(ev,function(e){ e.preventDefault(); box.classList.add('drag'); }); });
+  ['dragleave','drop'].forEach(function(ev){ box.addEventListener(ev,function(e){ e.preventDefault(); box.classList.remove('drag'); }); });
+  box.addEventListener('drop',function(e){
+    var fs=Array.prototype.slice.call((e.dataTransfer&&e.dataTransfer.files)||[]);
+    fs.forEach(addFile);
+  });
+  $('#mask').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function addFile(fileObj){
+  if(PICK.length>=6){ toast('最多上传 6 张照片','err'); return; }
+  if(!/^image\//.test(fileObj.type)){ toast('仅支持图片文件','err'); return; }
+  if(fileObj.size>12*1024*1024){ toast('单张照片不能超过 12MB','err'); return; }
+  var fr=new FileReader();
+  fr.onload=function(){ shrink(fr.result,function(small){ PICK.push({name:fileObj.name,src:small}); renderPick(); }); };
+  fr.readAsDataURL(fileObj);
+}
+function shrink(dataUrl,cb){
+  var img=new Image();
+  img.onload=function(){
+    var max=1080, w=img.width, h=img.height;
+    if(w>max||h>max){ var s=max/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+    var c=document.createElement('canvas'); c.width=w; c.height=h;
+    var ctx=c.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+    ctx.drawImage(img,0,0,w,h);
+    cb(c.toDataURL('image/jpeg',0.72));
+  };
+  img.onerror=function(){ cb(dataUrl); };
+  img.src=dataUrl;
+}
+function renderPick(){
+  var box=$('#upList');
+  if(!PICK.length){ box.innerHTML=''; return; }
+  box.innerHTML=PICK.map(function(p,i){
+    return '<div class="up-item"><img src="'+p.src+'" onclick="viewImg(this.src)" alt="'+p.name+'">'
+      +'<button type="button" class="rm" onclick="rmPick('+i+')" aria-label="删除">×</button>'
+      +'<span class="nm">'+p.name+'</span></div>';
+  }).join('');
+}
+function rmPick(i){ PICK.splice(i,1); renderPick(); }
+function submitHandle(){
+  var a=findAlarm(CUR_ID);
+  if(!a) return;
+  var way=$('#hWay').value;
+  var note=$('#hNote').value.trim();
+  if(!way){ toast('请选择处理方式','err'); $('#hWay').focus(); return; }
+  if(!note){ toast('请填写处理情况说明','err'); $('#hNote').focus(); return; }
+  if(note.length<10){ toast('处理情况建议不少于 10 字','err'); return; }
+  var btn=$('#mdFoot .btn:last-child');
+  btn.disabled=true; btn.textContent='提交中…';
+  setTimeout(function(){
+    a.status='done'; a.way=way; a.note=note;
+    a.photos=PICK.map(function(p){ return p.src; });
+    var u=(getSession()&&getSession().u)||'运维人员';
+    a.handler = /^1[3-9]\d{9}$/.test(u) ? u.slice(0,3)+'****'+u.slice(7) : u;
+    a.handleAt=new Date().toISOString();
+    // 照片过多时降级保存，避免超出本地存储
+    saveAlarms();
+    try{ localStorage.setItem(LS.alarm,JSON.stringify({t:Date.now(),map:ALARMS.filter(function(x){return x.status==='done';})})); }
+    catch(e){
+      ALARMS.forEach(function(x){ x.photos=(x.photos||[]).slice(0,1); });
+      try{ localStorage.setItem(LS.alarm,JSON.stringify({t:Date.now(),map:ALARMS.filter(function(x){return x.status==='done';})})); }catch(e2){}
+      toast('照片较大，仅保留每单 1 张用于本地演示','err');
+    }
+    closeModal();
+    buildNav();
+    renderAlarm();
+    toast('告警 '+a.no+' 已处理闭环','ok');
+  },620);
+}
+function closeModal(){
+  $('#mask').classList.remove('show');
+  document.body.style.overflow='';
+  CUR_ID=''; PICK=[];
+}
+
+/* ---------- 页面：我的 ---------- */
+function getSession(){ try{ return JSON.parse(localStorage.getItem(LS.sess)||'null'); }catch(e){ return null; } }
+function renderMe(){
+  var s=getSession()||{};
+  var u=s.u||'运维人员';
+  var disp=/^1[3-9]\d{9}$/.test(u)? u.slice(0,3)+'****'+u.slice(7) : u;
+  var done=ALARMS.filter(function(a){return a.status==='done';});
+  var mine=done.filter(function(a){return (a.handler||'').indexOf(u)===0 || (a.handler||'').indexOf('****')>0;});
+  var totalCap=PARKS.reduce(function(s2,p){return s2+p.cap;},0);
+  $('#pgMe').innerHTML =
+    '<div class="phead"><h2>我的</h2><p>账号信息与平台概况</p></div>'
+    +'<div class="card" style="margin-bottom:12px"><div class="me">'
+      +'<div class="av">'+(disp.charAt(0)||'运')+'</div>'
+      +'<div class="n"><b>'+disp+'</b><span>'+(s.m==='sms'?'手机号登录':'账号密码登录')+' · 园区运维管理员</span></div>'
+    +'</div><div class="card-b" style="border-top:1px solid var(--line2)">'
+      + infoRow('本次登录时间', fmtTime(new Date(s.t||Date.now()).toISOString()))
+      + infoRow('登录方式', s.m==='sms'?'手机号 + 短信验证码':'用户名 + 密码')
+      + infoRow('免登录时长', s.p?'7 天':'本次有效')
+      + infoRow('数据同步时间', fmtTime(new Date().toISOString())+'（北京时间）')
+    +'</div></div>'
+    +'<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>平台概况</h3></div><div class="card-b" style="padding-top:4px">'
+      + infoRow('接入园区', PARKS.length+' 个')
+      + infoRow('装机容量', totalCap.toFixed(1)+' MWp')
+      + infoRow('告警总量', ALARMS.length+' 条（已处理 '+done.length+' 条）')
+      + infoRow('本次会话处理', mine.length+' 条')
+      + infoRow('数据存储', '浏览器本地（演示环境，不上传服务器）')
+    +'</div></div>'
+    +'<button class="btn ghost" onclick="doRefresh()">'
+      +'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>重新同步数据</button>'
+    +'<div style="height:10px"></div>'
+    +'<button class="btn ghost" style="color:var(--red);border-color:#f3c9c5" onclick="logout()">'
+      +'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>退出登录</button>'
+    +'<p class="muted" style="text-align:center;margin-top:18px;font-size:11.5px">© 2026 光伏运维平台 · by 梁英俊</p>';
+}
+function doRefresh(){
+  if(CUR==='home') renderHome();
+  else if(CUR==='bill') renderBill();
+  else if(CUR==='alarm') renderAlarm();
+  else renderMe();
+  toast('数据已刷新','ok');
+}
+
+/* ---------- 启动 ---------- */
+function boot(){
+  loadAlarms();
+  if(!billState.ym) billState.ym=ymList()[0];
+  buildNav();
+  renderHome(); renderBill(); renderAlarm(); renderMe();
+  $('#login').classList.add('hide');
+  $('#app').classList.remove('hide');
+  var s=getSession();
+  var u=(s&&s.u)||'';
+  var av=$('#tbAvatar');
+  if(av) av.textContent=(/^1[3-9]\d{9}$/.test(u)?u.slice(0,3):(u.charAt(0)||'梁')).toUpperCase();
+  startClock();
+  go(CUR);
+}
+(function init(){
+  // 登录页品牌数据
+  var totalCap=PARKS.reduce(function(s,p){return s+p.cap;},0);
+  var la=$('#lbA'), lb=$('#lbB');
+  if(la) la.textContent=PARKS.length;
+  if(lb) lb.textContent=totalCap.toFixed(1);
+  // 图片遮罩点击关闭
+  $('#imgMask').addEventListener('click',function(){ $('#imgMask').classList.remove('show'); });
+  // 弹层遮罩点击关闭（处理弹层需二次确认）
+  $('#mask').addEventListener('click',function(e){
+    if(e.target===this && PICK.length===0) closeModal();
+    else if(e.target===this){ if(confirm('已上传的照片将不会保存，确定关闭吗？')) closeModal(); }
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      if($('#imgMask').classList.contains('show')) $('#imgMask').classList.remove('show');
+      else if($('#mask').classList.contains('show')) closeModal();
+    }
+  });
+  // 会话恢复
+  var s=getSession();
+  if(s && Date.now()-s.t < (s.p?7:1)*24*3600*1000) boot();
+  else { try{ localStorage.removeItem(LS.sess); }catch(e){} $('#lgUser').focus(); }
+})();
+</script>
+</body>
+</html>
