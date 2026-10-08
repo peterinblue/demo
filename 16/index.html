@@ -225,13 +225,20 @@ a{color:inherit;text-decoration:none}
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;box-shadow:var(--shadow-s);position:relative;overflow:hidden}
-.kpi::after{content:"";position:absolute;right:-16px;top:-16px;width:60px;height:60px;border-radius:50%;opacity:.07}
-.kpi.k1::after{background:var(--amber)} .kpi.k2::after{background:var(--blue)}
-.kpi.k3::after{background:var(--red)}   .kpi.k4::after{background:var(--pri)}
-.kpi .lb{font-size:12px;color:var(--txt3);display:flex;align-items:center;gap:5px;margin-bottom:5px}
-.kpi .lb i{width:6px;height:6px;border-radius:50%;background:var(--pri);display:block}
+/* 右上角平台 LOGO 水印（替代原装饰圆） */
+.kpi .wm{
+  position:absolute;right:12px;top:11px;width:36px;height:36px;pointer-events:none;
+  color:var(--kc,var(--pri));opacity:.22;transition:opacity .18s,transform .18s;
+}
+.kpi .wm svg{width:100%;height:100%;display:block}
+.kpi:hover .wm{opacity:.5;transform:scale(1.06)}
+.kpi.k1{--kc:var(--amber)} .kpi.k2{--kc:var(--blue)}
+.kpi.k3{--kc:var(--red)}   .kpi.k4{--kc:var(--pri)}
 .kpi.k1 .lb i{background:var(--amber)} .kpi.k2 .lb i{background:var(--blue)}
 .kpi.k3 .lb i{background:var(--red)} .kpi.k4 .lb i{background:var(--pri)}
+/* PC 端给数值让出位置，LOGO 不压字 */
+.kpi .lb{font-size:12px;color:var(--txt3);display:flex;align-items:center;gap:5px;margin-bottom:5px;padding-right:40px}
+.kpi .lb i{width:6px;height:6px;border-radius:50%;background:var(--pri);display:block}
 .kpi .vl{font-size:22px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
 .kpi .vl small{font-size:12px;font-weight:600;color:var(--txt3);margin-left:2px}
 .kpi .df{font-size:11.5px;margin-top:3px;color:var(--txt3);display:flex;align-items:center;gap:4px}
@@ -1065,7 +1072,7 @@ function renderHome(){
       + kpi('k1','今日发电量',fmtNum(todayGen),' kWh','较昨日','+6.4%','up')
       + kpi('k2','本月用电量',fmtNum(monUse),' kWh','本月电费',fmtMoney(monFee),'dn',1)
       + kpi('k3','待处理告警',wait.length,' 条','其中紧急',lvCnt[2]+' 条','up')
-      + kpi('k4','告警闭环率',rate,' %','已处理',doneCnt+'/'+ALARMS.length,'dn')
+      + kpi('k4','告警闭环率',rate,' %','已处理',doneCnt+'/'+ALARMS.length,'',1)
     +'</div>'
     +'<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>园区运行与结算一览</h3>'
       +'<span class="sp muted">结算月份 '+ym+'</span></div>'
@@ -1079,8 +1086,18 @@ function renderHome(){
     +'<div class="card"><div class="card-h"><h3>最新告警动态</h3><span class="sp"><a class="lnk" onclick="go(\'alarm\')">查看全部 →</a></span></div>'
       +'<div class="card-b">'+recent+'</div></div>';
 }
+/* 看板右上角 LOGO 水印：太阳能 + 光伏板 + 电流，随卡片强调色 currentColor 变化 */
+var KPI_LOGO = '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true">'
+  +'<circle cx="24.5" cy="7.5" r="3.6" fill="currentColor" opacity=".55"/>'
+  +'<path d="M3.2 17.6 L14.6 15.4 L14.6 24.2 L3.2 26.4 Z" fill="currentColor" opacity=".8"/>'
+  +'<path d="M17.4 15 L28.8 12.8 L28.8 20.6 L17.4 22.8 Z" fill="currentColor" opacity=".5"/>'
+  +'<path d="M3.2 17.6 L14.6 15.4 M17.4 15 L28.8 12.8 M3.2 26.4 L14.6 24.2 M17.4 22.8 L28.8 20.6" stroke="currentColor" stroke-width=".7" opacity=".65"/>'
+  +'<path d="M14.6 15.4 L14.6 24.2 M17.4 15 L17.4 22.8" stroke="#fff" stroke-width=".8" opacity=".7"/>'
+  +'<path d="M22.6 23.4 L19.4 29 L23.6 28.2 L25.4 31 L26.6 24.2 L23 25 Z" fill="currentColor"/>'
+  +'</svg>';
 function kpi(cls,lb,vl,unit,dl,dv,dir,plain){
-  return '<div class="kpi '+cls+'"><div class="lb"><i></i>'+lb+'</div>'
+  return '<div class="kpi '+cls+'"><span class="wm" aria-hidden="true">'+KPI_LOGO+'</span>'
+    +'<div class="lb"><i></i>'+lb+'</div>'
     +'<div class="vl">'+vl+'<small>'+unit+'</small></div>'
     +'<div class="df '+(dir||'')+'">'+(plain?'&nbsp;':(dir==='up'?'▲ ':dir==='dn'?'▼ ':''))+dl+' '+dv+'</div></div>';
 }
@@ -1193,7 +1210,7 @@ function renderBillAll(){
     + kpi('k4','合计电费',fmtNum(tt/10000,2),' 万元','结算年月',billState.ym,'dn',1)
     + kpi('k2','合计用电量',fmtNum(tu),' kWh','平均单价',avg.toFixed(4),'dn',1)
     + kpi('k1','基本+需量电费',fmtNum(tb),' 元','占比',(tb/tt*100).toFixed(1)+'%','up')
-    + kpi('k3','园区数量',PARKS.length,' 个','已结算',PARKS.filter(function(p){return genBill(p.id,billState.ym).status==='已结算';}).length,'dn')
+    + kpi('k3','园区数量',PARKS.length,' 个','已结算',PARKS.filter(function(p){return genBill(p.id,billState.ym).status==='已结算';}).length,'dn',1)
   +'</div>'
   +'<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>各园区结算汇总（'+billState.ym+'）</h3></div>'
     +'<div class="tbl-wrap"><table><thead><tr><th>园区</th><th class="t-r">用电量 (kWh)</th><th class="t-r">发电量 (kWh)</th><th class="t-r">力调电费</th><th class="t-r">结算金额</th><th class="t-r">状态</th></tr></thead>'
