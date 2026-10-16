@@ -1494,6 +1494,122 @@
     }
     .sp-panel.sp-dim { opacity: .62; }
     .sp-panel.sp-dim:hover { opacity: 1; }
+/* ===================================================================
+   【模块页层】危险作业 / 安全管理 —— 大屏底部按钮跳转的二级功能页
+   =================================================================== */
+.sp-page{position:fixed;inset:0;z-index:96;display:none;overflow-y:auto;
+  background:radial-gradient(ellipse 90% 55% at 50% -8%,rgba(34,96,180,.4),rgba(6,21,39,0) 62%),
+             radial-gradient(ellipse 70% 50% at 50% 108%,rgba(20,70,140,.28),rgba(6,21,39,0) 60%),
+             #061527}
+.sp-page.on{display:block}
+.sp-page::before{content:"";position:fixed;top:0;left:0;right:0;height:3px;z-index:99;
+  background:linear-gradient(90deg,rgba(76,201,255,0),#4cc9ff 30%,#9ae6ff 50%,#4cc9ff 70%,rgba(76,201,255,0));
+  box-shadow:0 0 12px rgba(76,201,255,.8)}
+.sp-page-head{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:16px;
+  padding:13px 28px;background:linear-gradient(180deg,rgba(17,60,122,.9),rgba(9,32,66,.72));
+  border-bottom:1px solid rgba(96,190,255,.28);backdrop-filter:blur(6px)}
+.sp-page-head h2{margin:0;font-size:1.12rem;font-weight:800;color:#fff;letter-spacing:3px;
+  text-shadow:0 0 14px rgba(120,200,255,.85)}
+.sp-back{margin-left:auto;cursor:pointer;user-select:none;padding:7px 20px;font-size:.78rem;
+  color:#cfe9ff;background:rgba(36,100,180,.35);border:1px solid rgba(96,190,255,.5);
+  clip-path:polygon(9px 0,100% 0,calc(100% - 9px) 100%,0 100%);transition:.2s}
+.sp-back:hover{background:rgba(70,150,235,.55);color:#fff;box-shadow:0 0 14px rgba(76,201,255,.4)}
+.sp-page-body{max-width:1560px;margin:0 auto;padding:22px 28px 46px}
+
+/* KPI 行 */
+.pg-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px}
+.pg-kpi{position:relative;padding:13px 15px;background:linear-gradient(180deg,rgba(16,54,106,.75),rgba(10,34,68,.65));
+  border:1px solid rgba(76,201,255,.3);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.pg-kpi .k{display:block;font-size:.68rem;color:rgba(175,215,255,.75);letter-spacing:1px}
+.pg-kpi .v{display:block;margin-top:5px;font-size:1.4rem;font-weight:800;color:#eaf7ff;font-family:'DIN Alternate','Bahnschrift',monospace}
+.pg-kpi .v small{font-size:.62rem;font-weight:400;color:rgba(175,215,255,.65);margin-left:3px}
+.pg-kpi .v.g{color:#4dffb8}.pg-kpi .v.a{color:#ffd85e}.pg-kpi .v.r{color:#ff7d95}.pg-kpi .v.c{color:#6fd3ff}
+
+/* 通用面板 */
+.pg-panel{position:relative;margin-bottom:16px;padding:36px 16px 15px;
+  background:linear-gradient(180deg,rgba(14,46,92,.62),rgba(8,26,52,.72));
+  border:1px solid rgba(76,201,255,.32);box-shadow:0 0 20px rgba(20,80,160,.25),inset 0 0 26px rgba(24,88,170,.1)}
+.pg-panel::before,.pg-panel::after{content:"";position:absolute;width:14px;height:14px;pointer-events:none}
+.pg-panel::before{top:-1px;left:-1px;border-top:2px solid #6fd9ff;border-left:2px solid #6fd9ff}
+.pg-panel::after{bottom:-1px;right:-1px;border-bottom:2px solid #6fd9ff;border-right:2px solid #6fd9ff}
+.pg-title{position:absolute;top:0;left:0;height:27px;display:flex;align-items:center;
+  padding:0 32px 0 15px;font-size:.87rem;font-weight:700;color:#fff;letter-spacing:1px;
+  background:linear-gradient(100deg,rgba(52,146,255,.96) 0%,rgba(30,88,196,.72) 82%,rgba(30,88,196,0) 100%);
+  clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,0 100%)}
+.pg-title .sub{margin-left:8px;font-size:.6rem;font-weight:400;color:rgba(210,236,255,.65)}
+
+/* 全流程横向步骤（箭头咬合） */
+.pg-flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:8px 0 4px}
+.pg-step{position:relative;flex:1;min-width:176px;padding:14px 16px 12px 22px;margin-right:26px;
+  background:linear-gradient(135deg,rgba(24,72,140,.5),rgba(12,38,76,.5));
+  border:1px solid rgba(76,201,255,.28);
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,0 100%,16px 50%)}
+.pg-step .no{position:absolute;top:-9px;left:18px;width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;color:#04203c;
+  background:linear-gradient(135deg,#8fe0ff,#2f8fff);box-shadow:0 0 10px rgba(76,201,255,.6)}
+.pg-step h4{margin:2px 0 6px;font-size:.82rem;color:#fff;letter-spacing:1px}
+.pg-step p{margin:0;font-size:.64rem;line-height:1.55;color:rgba(180,216,255,.72)}
+.pg-step.done{border-color:rgba(77,255,184,.4)}
+.pg-step.done .no{background:linear-gradient(135deg,#7dffc4,#00c878)}
+
+/* 台账表格 */
+.pg-table{width:100%;border-collapse:collapse;font-size:.72rem}
+.pg-table th{padding:8px 10px;text-align:left;color:rgba(150,200,250,.85);font-weight:600;letter-spacing:1px;
+  background:rgba(28,76,146,.45);border-bottom:1px solid rgba(76,201,255,.3)}
+.pg-table td{padding:8px 10px;color:#d8ecff;border-bottom:1px solid rgba(76,201,255,.12)}
+.pg-table tr:hover td{background:rgba(40,100,180,.18)}
+.pg-tag{display:inline-block;padding:2px 10px;font-size:.62rem;letter-spacing:1px;
+  border:1px solid currentColor;border-radius:2px}
+.pg-tag.run{color:#4dffb8}.pg-tag.ap{color:#ffd85e}.pg-tag.sup{color:#6fd3ff}.pg-tag.arc{color:#9aa8bd}
+
+/* 双列布局 */
+.pg-2col{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+.pg-2col .pg-panel{margin-bottom:0}
+
+/* 作业阶段分布条 */
+.pg-pipe{display:flex;height:30px;border-radius:3px;overflow:hidden;margin:10px 0 10px}
+.pg-pipe i{display:flex;align-items:center;justify-content:center;font-style:normal;
+  font-size:.62rem;color:#03213d;font-weight:700;min-width:34px}
+.pg-pipe-l{display:flex;flex-wrap:wrap;gap:12px;font-size:.66rem;color:rgba(180,216,255,.78)}
+.pg-pipe-l b{font-weight:600;color:#eaf7ff}
+.pg-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+
+/* 监督要点列表 */
+.pg-list{list-style:none;margin:0;padding:0}
+.pg-list li{padding:7px 2px;font-size:.72rem;color:#d8ecff;border-bottom:1px dashed rgba(76,201,255,.15);
+  display:flex;justify-content:space-between;align-items:center}
+.pg-list li:last-child{border-bottom:none}
+.pg-list .st{font-size:.64rem}
+.pg-list .st.ok{color:#4dffb8}.pg-list .st.warn{color:#ffd85e}.pg-list .st.bad{color:#ff7d95}
+
+/* 安全管理 11 模块卡片 */
+.pg-mods{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.pg-mod{position:relative;cursor:pointer;padding:16px 15px 14px;
+  background:linear-gradient(160deg,rgba(20,62,120,.55),rgba(9,30,60,.6));
+  border:1px solid rgba(76,201,255,.3);transition:.18s;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.pg-mod:hover{border-color:rgba(140,225,255,.8);box-shadow:0 0 22px rgba(76,201,255,.35);
+  background:linear-gradient(160deg,rgba(34,96,180,.65),rgba(14,44,88,.7));transform:translateY(-2px)}
+.pg-mod .mi{width:34px;height:34px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;
+  color:#7fdcff;background:rgba(40,110,200,.35);border:1px solid rgba(120,210,255,.4);border-radius:6px}
+.pg-mod .mi svg{width:18px;height:18px}
+.pg-mod h4{margin:0 0 6px;font-size:.84rem;color:#fff;letter-spacing:1px}
+.pg-mod h4 .idx{margin-right:6px;font-size:.66rem;color:#6fd3ff;font-family:'DIN Alternate',monospace}
+.pg-mod p{margin:0;font-size:.64rem;line-height:1.6;color:rgba(175,213,255,.7);padding-right:14px}
+
+/* 轻提示 */
+.pg-toast{position:fixed;left:50%;bottom:56px;transform:translateX(-50%) translateY(20px);z-index:120;
+  padding:10px 26px;font-size:.76rem;color:#eaf7ff;letter-spacing:1px;opacity:0;pointer-events:none;transition:.25s;
+  background:rgba(14,52,104,.95);border:1px solid rgba(96,190,255,.55);box-shadow:0 0 22px rgba(40,120,220,.5)}
+.pg-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:1100px){
+  .pg-kpis{grid-template-columns:repeat(3,1fr)}
+  .pg-mods{grid-template-columns:repeat(2,1fr)}
+  .pg-2col{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -1503,23 +1619,10 @@
      右侧：能源 + 消防 + 安防 综合态势
      =================================================================== -->
 
-<!-- 左上角工具条 -->
-<div class="sp-tools">
-  <div class="tb on" title="总览"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></div>
-  <div class="tb" title="全景"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7v10l10 5 10-5V7z"/><path d="M2 7l10 5 10-5M12 12v10"/></svg></div>
-  <div class="tb" title="安防"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l7-3v6a7 7 0 0 1-7 7z"/><path d="M22 7l-7-3v6a7 7 0 0 0 7 7z"/></svg></div>
-  <div class="tb" title="消防"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1.6.7-3 1.5-4 .2 1.3 1 2 2 2 .8 0 1.5-.7 1.5-1.7 0-2-1-5-1-5.3z"/></svg></div>
-  <div class="tb" title="能源"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
-  <div class="tb" title="设备"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>
-  <div class="tb" title="报表" onclick="exportReport()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
-</div>
-
 <!-- 中央标题（视频风格） -->
 <div class="sp-head">
-  <div class="crest">安</div>
   <div>
-    <h1 id="spHeadTitle">园区安全保障综合管控平台</h1>
-    <div class="sub" id="spHeadSub">SAFETY · ENERGY · FIRE · SECURITY　|　v3.0</div>
+    <h1 id="spHeadTitle">智慧园区平台</h1>
   </div>
 </div>
 
@@ -1690,9 +1793,164 @@
   <div class="sp-tab t-alarm" data-tab="alarm">告警处置</div>
   <div class="sp-tab" data-tab="security">安防态势</div>
   <div class="sp-tab" data-tab="energy">能源数据</div>
-  <div class="sp-tab" data-tab="hazard">隐患整改</div>
-  <div class="sp-tab" data-tab="drill">应急资源</div>
+  <div class="sp-tab" data-page="safety">安全管理</div>
+  <div class="sp-tab" data-page="dwork">危险作业</div>
+
+
+
+
+
+
 </div>
+
+<!-- ================= 模块页：危险作业全流程管理 ================= -->
+<div class="sp-page" id="pgDwork">
+  <div class="sp-page-head">
+    <h2>危险作业全流程管理</h2>
+    <div class="sp-back" onclick="SP_closePage()">← 返回大屏</div>
+  </div>
+  <div class="sp-page-body">
+
+    <div class="pg-kpis">
+      <div class="pg-kpi"><span class="k">本月作业</span><span class="v c">46<small>起</small></span></div>
+      <div class="pg-kpi"><span class="k">进行中</span><span class="v g">3<small>起</small></span></div>
+      <div class="pg-kpi"><span class="k">待审批</span><span class="v a">5<small>起</small></span></div>
+      <div class="pg-kpi"><span class="k">本年累计</span><span class="v">412<small>起</small></span></div>
+      <div class="pg-kpi"><span class="k">违章制止</span><span class="v r">2<small>起</small></span></div>
+      <div class="pg-kpi"><span class="k">票证归档率</span><span class="v g">100<small>%</small></span></div>
+    </div>
+
+    <div class="pg-panel">
+      <div class="pg-title">危险作业全流程<span class="sub">申请 → 审批 → 过程监督 → 归档</span></div>
+      <div class="pg-flow">
+        <div class="pg-step"><div class="no">1</div><h4>作业申请</h4><p>作业负责人提交申请，选择动火、受限空间、高处、吊装、临时用电、动土、断路、盲板抽堵八类作业，明确时间、地点与内容</p></div>
+        <div class="pg-step"><div class="no">2</div><h4>风险辨识</h4><p>JSA 作业安全分析，逐项辨识危害因素，制定并确认安全防范措施</p></div>
+        <div class="pg-step"><div class="no">3</div><h4>分级审批</h4><p>按风险等级三级审批：班组/车间审核 → 安全部门复核 → 重大作业报分管领导批准</p></div>
+        <div class="pg-step"><div class="no">4</div><h4>作业许可</h4><p>安全措施逐项核销确认后签发作业许可证，凭证作业、无票禁止</p></div>
+        <div class="pg-step"><div class="no">5</div><h4>过程监督</h4><p>现场监护人到位，气体检测定时记录，视频监控 AI 联动抓拍违章</p></div>
+        <div class="pg-step"><div class="no">6</div><h4>完工验收</h4><p>作业完毕清理现场，各方验收签字确认，许可证闭合注销</p></div>
+        <div class="pg-step done"><div class="no">7</div><h4>资料归档</h4><p>票证、影像、检测记录一键归档，自动更新危险作业台账并支持追溯</p></div>
+      </div>
+    </div>
+
+    <div class="pg-2col">
+      <div class="pg-panel">
+        <div class="pg-title">作业动态台账<span class="sub">进行中 / 待审批</span></div>
+        <table class="pg-table">
+          <tr><th>票号</th><th>作业类型</th><th>作业地点</th><th>负责人</th><th>监护人</th><th>当前环节</th></tr>
+          <tr><td>DH-1016-03</td><td>动火作业</td><td>东侧配电室</td><td>王 强</td><td>李 敏</td><td><span class="pg-tag sup">过程监督</span></td></tr>
+          <tr><td>GC-1016-01</td><td>高处作业</td><td>3号楼外立面</td><td>赵 磊</td><td>陈 晨</td><td><span class="pg-tag sup">作业许可</span></td></tr>
+          <tr><td>SX-1015-06</td><td>受限空间</td><td>污水处理井</td><td>刘 洋</td><td>周 凯</td><td><span class="pg-tag sup">过程监督</span></td></tr>
+          <tr><td>DL-1016-02</td><td>临时用电</td><td>联合车间 B2</td><td>孙 浩</td><td>—</td><td><span class="pg-tag ap">安全部门复核</span></td></tr>
+          <tr><td>DZ-1016-01</td><td>吊装作业</td><td>货运站</td><td>吴 斌</td><td>—</td><td><span class="pg-tag ap">分管领导审批</span></td></tr>
+          <tr><td>DH-1015-02</td><td>动火作业</td><td>锅炉房</td><td>郑 阳</td><td>李 敏</td><td><span class="pg-tag arc">已归档</span></td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="pg-panel">
+          <div class="pg-title">作业阶段分布<span class="sub">全厂实时</span></div>
+          <div class="pg-pipe">
+            <i style="flex:6;background:#6fd3ff">4</i>
+            <i style="flex:7;background:#ffd85e">5</i>
+            <i style="flex:5;background:#4dffb8">3</i>
+            <i style="flex:4;background:#9ae6ff">2</i>
+            <i style="flex:58;background:#2f8fff;color:#eaf7ff">434</i>
+          </div>
+          <div class="pg-pipe-l">
+            <span><i class="pg-dot" style="background:#6fd3ff"></i>申请中 <b>4</b></span>
+            <span><i class="pg-dot" style="background:#ffd85e"></i>审批中 <b>5</b></span>
+            <span><i class="pg-dot" style="background:#4dffb8"></i>作业中 <b>3</b></span>
+            <span><i class="pg-dot" style="background:#9ae6ff"></i>验收中 <b>2</b></span>
+            <span><i class="pg-dot" style="background:#2f8fff"></i>已归档 <b>434</b></span>
+          </div>
+        </div>
+        <div class="pg-panel" style="margin-top:16px">
+          <div class="pg-title">今日监督要点<span class="sub">实时</span></div>
+          <ul class="pg-list">
+            <li>气体检测记录<span class="st ok">12 次 · 全部合格</span></li>
+            <li>监护人在位率<span class="st ok">100%</span></li>
+            <li>安全措施核销确认<span class="st ok">21 / 21 项</span></li>
+            <li>AI 违章抓拍 · 未戴安全帽<span class="st bad">1 起 · 已制止</span></li>
+            <li>作业视频监控在线<span class="st ok">6 / 6 路</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 模块页：安全管理 ================= -->
+<div class="sp-page" id="pgSafety">
+  <div class="sp-page-head">
+    <h2>安全管理</h2>
+    <div class="sp-back" onclick="SP_closePage()">← 返回大屏</div>
+  </div>
+  <div class="sp-page-body">
+
+    <div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="pg-kpi"><span class="k">规章制度文件</span><span class="v c">128<small>份</small></span></div>
+      <div class="pg-kpi"><span class="k">特种设备在册</span><span class="v">46<small>台</small></span></div>
+      <div class="pg-kpi"><span class="k">持证上岗人员</span><span class="v g">213<small>人</small></span></div>
+      <div class="pg-kpi"><span class="k">受控危险源</span><span class="v a">61<small>处</small></span></div>
+    </div>
+
+    <div class="pg-panel">
+      <div class="pg-title">功能模块<span class="sub">共 11 个子模块 · 点击卡片进入</span></div>
+      <div class="pg-mods">
+
+        <div class="pg-mod" data-mod="安全统计看板">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="7" width="4" height="13"/><rect x="17" y="3" width="4" height="17"/></svg></div>
+          <h4><span class="idx">01</span>安全统计看板</h4><p>安全态势总览、台账查询、试验分布可视化</p>
+        </div>
+        <div class="pg-mod" data-mod="监督检查管理">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M21 21l-6.5-6.5"/></svg></div>
+          <h4><span class="idx">02</span>监督检查管理</h4><p>隐患排查、危险作业、相关方作业管理</p>
+        </div>
+        <div class="pg-mod" data-mod="职业安全环境体系">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h4><span class="idx">03</span>职业安全环境体系</h4><p>部门目标、策划、规章制度管理</p>
+        </div>
+        <div class="pg-mod" data-mod="应急管理模块">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v4M5 7l2 2M19 7l-2 2"/><path d="M4 17h16M7 17v-4a5 5 0 0 1 10 0v4"/></svg></div>
+          <h4><span class="idx">04</span>应急管理模块</h4><p>组织机构、资源、响应流程等</p>
+        </div>
+        <div class="pg-mod" data-mod="法规规则制度">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h13a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+          <h4><span class="idx">05</span>法规规则制度</h4><p>法律法规与规章制度文件查看</p>
+        </div>
+        <div class="pg-mod" data-mod="证书管理">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.4"/><path d="M14 9h5M14 13h5M5.5 16.5h4"/></svg></div>
+          <h4><span class="idx">06</span>证书管理</h4><p>人员证书全生命周期管理</p>
+        </div>
+        <div class="pg-mod" data-mod="危险源受控">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l2.5 6H21l-5 4 2 7-6-4.2L6 20l2-7-5-4h6.5z"/></svg></div>
+          <h4><span class="idx">07</span>危险源受控</h4><p>危险源辨识、评价、分级管控</p>
+        </div>
+        <div class="pg-mod" data-mod="危险点管理">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s7-6.1 7-11a7 7 0 0 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></div>
+          <h4><span class="idx">08</span>危险点管理</h4><p>全员危险点分布统计与管控</p>
+        </div>
+        <div class="pg-mod" data-mod="危化品管理">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3h4M11 3v5l-5.5 9A2.5 2.5 0 0 0 7.7 21h8.6a2.5 2.5 0 0 0 2.2-4L13 8V3"/><path d="M8 15h8"/></svg></div>
+          <h4><span class="idx">09</span>危化品管理</h4><p>出入库、库存、流向追溯管理</p>
+        </div>
+        <div class="pg-mod" data-mod="特种设备管理">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21h16M6 21V10l6-6 6 6v11"/><path d="M6 14h12M10 21v-4h4v4"/></svg></div>
+          <h4><span class="idx">10</span>特种设备管理</h4><p>设备台账、年检提醒、维修记录</p>
+        </div>
+        <div class="pg-mod" data-mod="应急预案管理">
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4h6a2 2 0 0 1 2 2v14H7V6a2 2 0 0 1 2-2z"/><path d="M10 8h4M10 12h4M12 16v3"/></svg></div>
+          <h4><span class="idx">11</span>应急预案管理</h4><p>演练计划、演练实施、设施管理</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="pg-toast" id="pgToast"></div>
 
   <div id="loader">
     <div class="loader-ring"></div>
@@ -7864,15 +8122,7 @@
   }
 
   /* ---- tab 切换：按 data-tab 过滤两侧面板 ---- */
-  var TAB_TITLE = {
-    overview: ['园区安全保障综合管控平台', 'SAFETY · ENERGY · FIRE · SECURITY　|　v3.0'],
-    fire: ['园区消防安全监控平台', 'FIRE SAFETY MONITOR　|　消防设施实时监测'],
-    alarm: ['园区安全告警处置平台', 'ALARM HANDLING　|　实时告警与处置闭环'],
-    security: ['园区安防态势综合平台', 'SECURITY SITUATION　|　视频监控与周界安防'],
-    energy: ['园区能源运行监控平台', 'ENERGY OPERATION　|　能耗与碳排放数据'],
-    hazard: ['园区隐患整改管理平台', 'HAZARD RECTIFICATION　|　隐患排查与整改跟踪'],
-    drill: ['园区应急资源管理平台', 'EMERGENCY RESOURCE　|　应急力量与预案管理']
-  };
+
   function applyTab(key) {
     document.querySelectorAll('#spTabs .sp-tab').forEach(function (b) {
       b.classList.toggle('on', b.getAttribute('data-tab') === key);
@@ -7898,10 +8148,6 @@
       el.classList.toggle('sp-focus', t === key && key !== 'overview');
       el.classList.toggle('sp-dim', key !== 'overview' && t !== key && !CORE[t]);
     });
-    var tt = TAB_TITLE[key] || TAB_TITLE.overview;
-    var h1 = document.getElementById('spHeadTitle'), sub = document.getElementById('spHeadSub');
-    if (h1) h1.textContent = tt[0];
-    if (sub) sub.textContent = tt[1];
     // 尺寸变化后重绘图表
     setTimeout(drawAll, 30);
   }
@@ -7909,7 +8155,11 @@
   function initSP() {
     drawHazard(); drawAlarms(); drawAll();
     document.querySelectorAll('#spTabs .sp-tab').forEach(function (b) {
-      b.addEventListener('click', function () { applyTab(b.getAttribute('data-tab')); });
+      b.addEventListener('click', function () {
+        var pg = b.getAttribute('data-page');
+        if (pg) { window.SP_openPage(pg); }
+        else { applyTab(b.getAttribute('data-tab')); }
+      });
     });
     // 楼层条
     document.querySelectorAll('#spFloors .fl').forEach(function (f) {
@@ -7940,6 +8190,41 @@
     initSP();
   }
 })();
+</script>
+<script>
+/* ===================================================================
+   【模块页逻辑】危险作业 / 安全管理 页面开关 + 卡片点击提示
+   =================================================================== */
+  window.SP_openPage = function (key) {
+    var pg = document.getElementById(key === 'dwork' ? 'pgDwork' : 'pgSafety');
+    if (!pg) return;
+    document.querySelectorAll('.sp-page').forEach(function (p) { p.classList.remove('on'); });
+    pg.classList.add('on');
+    document.body.style.overflow = 'hidden';
+  };
+  window.SP_closePage = function () {
+    document.querySelectorAll('.sp-page').forEach(function (p) { p.classList.remove('on'); });
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.SP_closePage();
+  });
+
+  /* 模块卡片点击：演示占位提示 */
+  var toastEl = document.getElementById('pgToast'), toastTimer = null;
+  window.SP_toast = function (msg) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2200);
+  };
+  document.querySelectorAll('.pg-mod').forEach(function (m) {
+    m.addEventListener('click', function () {
+      window.SP_toast('「' + m.getAttribute('data-mod') + '」功能模块（演示占位 · 业务数据待接入）');
+    });
+  });
+
 </script>
 </body>
 </html>
