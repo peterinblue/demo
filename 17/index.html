@@ -1621,20 +1621,19 @@
        —— 告警列表限高内部滚动，数据不丢失；底部永不压 tab
        =================================================================== */
     @media (min-width: 769px) {
-      .sp-side { gap: 10px; }
-      .sp-panel { padding: 28px 13px 10px; }
+      .sp-side { gap: 9px; }
+      .sp-panel { padding: 26px 13px 9px; }
       .sp-title { height: 23px; }
-      .sp-chart { height: 92px; }
-      .sp-chart.tall { height: 118px; }
+      .sp-chart { height: 84px; }
+      .sp-chart.tall { height: 106px; }
       .sp-grid { gap: 6px; }
-      .sp-cell { padding: 4px 7px; }
+      .sp-cell { padding: 3px 7px; }
       .sp-ring .rv { width: 52px; height: 52px; font-size: .92rem; }
-      .sp-bar-row { margin-bottom: 5px; }
-      .sp-alarm { gap: 4px; max-height: 152px; overflow-y: auto; }
-      .sp-alarm .it { padding: 4px 6px; }
-      .sp-alarm::-webkit-scrollbar { width: 3px; }
-      .sp-alarm::-webkit-scrollbar-thumb { background: rgba(95,208,255,.35); border-radius: 2px; }
-      .sp-lgd { margin-top: 5px; }
+      .sp-bar-row { margin-bottom: 4px; }
+      /* 告警列表完整显示全部条目，无内部滚动条 */
+      .sp-alarm { gap: 4px; }
+      .sp-alarm .it { padding: 3px 6px; }
+      .sp-lgd { margin-top: 4px; }
     }
 
 </style>
@@ -6460,6 +6459,19 @@
       }
     };
 
+    // 【第36轮】院所楼层条 → 相机：总览=缩小全貌+公转；其他=随机聚焦对应建筑
+    window.__unitView = function (unit) {
+      if (unit === '总览') {
+        setView('all');
+        if (!autoOrbit) toggleOrbit();      // 已在公转则保持，不来回切
+        return;
+      }
+      var list = UNIT_VIEWS[unit];
+      if (!list || !list.length) return;
+      var key = list[Math.floor(Math.random() * list.length)];
+      setView(key);
+    };
+
     /* ===================== 区域信息面板（第30轮） =====================
        点击办公楼某一层 / 任一厂房 → 屏幕右侧弹出固定信息面板：
          · 位置信息：所在区域 / 建筑·楼层 / 面积 / 层高 / 功能用途 / 计量点位
@@ -7750,7 +7762,42 @@
       pv: { pos: [0, 82, 10], target: [0, 42, 0] },
       charge: { pos: [40, 17, -45], target: [40, 0.7, -28.6] },
       tank: { pos: [-6, 30, -52], target: [-44, 4, -24] },
-      sub: { pos: [63, 7, -41], target: [69, 1.7, -54] }
+      sub: { pos: [63, 7, -41], target: [69, 1.7, -54] },
+      /* ---- 院所楼层条机位（第36轮首版 → 第37轮按真实包围盒重算）----
+         建筑实测尺寸（addXxx 的第 3~5 参）：
+           研发办公楼 (-38,18) 22×16，9 层 ×3.4 = **30.6m 高**（第 5 参是层数不是高度！）
+           主厂房    (0,-6)  46×30×12      生产车间 (40,-16) 28×20×9
+           储罐区    (-44,-24) 铺装 34×32，罐顶 12.3   配电站 (69,-54) 7.2×5×3
+           充电站    (40,-30.7) 20.1×5.6    门岗 (0,50)    停车场 (50,18) 24×16
+         垂直视场角 45°（半角 22.5°），画面高 = 0.828×距离。
+         第36轮按"高度=9m"估算距离，全部偏近 30%~45%，楼体被裁顶。
+         第37轮改按「投影高度 = h·cosθ + 垂直屏幕方向的水平进深·sinθ」反推距离，
+         并留 20% 余量；同时避开储罐防火堤（x-58.6~-29.4 / z-39.6~-8.4）与主厂房体量。 */
+      officeA: { pos: [5, 35, 48],   target: [-38, 15, 18] },   // 研发办公楼·东南 3/4（D≈52）
+      officeB: { pos: [-38, 35, 70], target: [-38, 15, 18] },   // 研发办公楼·正南（墙外，D≈52）
+      officeC: { pos: [-78, 35, -8], target: [-38, 15, 18] },   // 研发办公楼·西北（D≈52）
+      shopA:   { pos: [67, 22, -43], target: [40, 4, -16] },    // 生产车间·东北（D≈42）
+      shopB:   { pos: [13, 22, 11],  target: [40, 4, -16] },    // 生产车间·西南（D≈42）
+      hallA:   { pos: [36, 33, 30],  target: [0, 6, -6] },      // 主厂房·东南（D≈58）
+      hallB:   { pos: [0, 44, 40],   target: [0, 6, -6] },      // 主厂房·正南俯视（D≈60）
+      subB:    { pos: [87, 16, -34], target: [69, 1.7, -54] },  // 配电站·中景
+      tankB:   { pos: [-22, 30, 16], target: [-44, 6, -24] },   // 储罐区·东南（D≈53）
+      chargeB: { pos: [58, 12, -14], target: [40, 1, -30.7] },  // 充电站·东侧
+      gateA:   { pos: [0, 12, 72],   target: [0, 3, 50] },      // 南门岗·正南
+      gateB:   { pos: [24, 14, 60],  target: [0, 3, 50] },      // 南门岗·东侧
+      parkA:   { pos: [70, 18, 38],  target: [50, 1, 18] }      // 东南停车场
+    };
+
+    // 第36轮：院所 → 机位组（点击随机取一个，即"随机对应一栋建筑"）
+    const UNIT_VIEWS = {
+      '院部大楼': ['officeA', 'officeB', 'officeC'],
+      '八部':     ['shopA', 'shopB'],
+      '802所':    ['hallA', 'hallB'],
+      '803所':    ['sub', 'subB'],
+      '804所':    ['tank', 'tankB'],
+      '805所':    ['charge', 'chargeB'],
+      '806所':    ['gateA', 'gateB'],
+      '808所':    ['pv', 'parkA']
     };
 
     function setView(name, el) {
@@ -8188,11 +8235,12 @@
         else { applyTab(b.getAttribute('data-tab')); }
       });
     });
-    // 楼层条
+    // 楼层条：总览=全貌+公转，其他院所=随机聚焦对应建筑
     document.querySelectorAll('#spFloors .fl').forEach(function (f) {
       f.addEventListener('click', function () {
         document.querySelectorAll('#spFloors .fl').forEach(function (x) { x.classList.remove('on'); });
         f.classList.add('on');
+        if (window.__unitView) window.__unitView(f.textContent.trim());
       });
     });
     // 左上角工具条
