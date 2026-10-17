@@ -1187,6 +1187,29 @@
     .sp-side.right { right: 12px; }
     .sp-side > * { pointer-events: auto; }
 
+    /* ---- 第37轮：矮视口紧凑档 ----
+       右列 5 面板实测总高 898px（P4 告警 238），1080 屏容器仅 821px → 溢出出滚动条。
+       紧凑档（视口<1060px）：bottom 84→60（容器+24）、右列 gap 12→6、图表 84→70、
+       告警条目 padding 5→3px + font .62rem，右列总高压到 ~757px，980 视口余量 80+。
+       注意：.sp-alarm 规则必须加 .sp-side 前缀提高特异性，否则被后方同名规则覆盖。 */
+    @media (max-height: 1079px) {
+      .sp-side { bottom: 60px; }
+      .sp-side.right { gap: 6px; }
+      .sp-side.right .sp-chart { height: 70px; }
+      .sp-side.right .sp-lgd { margin-top: 3px; }
+      .sp-side .sp-alarm { gap: 4px; }
+      .sp-side .sp-alarm .it { padding: 3px 7px; font-size: .62rem; line-height: 1.15; }
+      .sp-side.right .sp-grid.c3 { margin-top: 4px !important; }
+    }
+    /* 极端矮屏（视口<960px）再收一档：右列总高 ~738px */
+    @media (max-height: 959px) {
+      .sp-side { bottom: 52px; }
+      .sp-side.right { gap: 3px; }
+      .sp-side.right .sp-chart { height: 60px; }
+      .sp-side .sp-alarm { gap: 3px; }
+      #spAlarmChart { height: 52px; }
+    }
+
     /* ---- 面板外壳：发光描边 + 四角切角 ---- */
     .sp-panel {
       --sp-bg: rgba(10,38,74,.76);
