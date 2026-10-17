@@ -1210,6 +1210,44 @@
       #spAlarmChart { height: 52px; }
     }
 
+    /* ---- 第38轮：标题下方顶栏按钮（左上时段组 / 右上看板收缩）---- */
+    .sp-seg, .sp-collapse {
+      position: absolute; top: 50px; z-index: 24;
+      display: flex; align-items: stretch; gap: 3px;
+    }
+    .sp-seg { left: 14px; }
+    .sp-collapse { right: 14px; }
+    .sp-seg .sg, .sp-collapse {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 11px 5px; font-size: .68rem; font-weight: 600;
+      color: rgba(214,238,255,.82); cursor: pointer; user-select: none;
+      background: linear-gradient(180deg, rgba(37,99,235,.52), rgba(15,52,102,.68));
+      border: 1px solid rgba(95,208,255,.34);
+      clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+      transition: background .18s, color .18s, box-shadow .18s;
+    }
+    .sp-seg .sg svg, .sp-collapse svg { width: 13px; height: 13px; flex: 0 0 13px; }
+    .sp-seg .sg:hover, .sp-collapse:hover {
+      background: linear-gradient(180deg, rgba(56,130,246,.72), rgba(20,64,124,.78));
+      color: #fff;
+    }
+    .sp-seg .sg.on {
+      background: linear-gradient(180deg, rgba(95,208,255,.92), rgba(37,99,235,.88));
+      color: #062a4e; border-color: rgba(160,230,255,.9);
+      box-shadow: 0 0 12px rgba(95,208,255,.55), inset 0 0 10px rgba(255,255,255,.25);
+    }
+    .sp-collapse {
+      background: linear-gradient(180deg, rgba(15,52,102,.72), rgba(10,38,74,.78));
+    }
+    /* 看板收缩态：两侧滑出 + 淡出（过渡 0.35s） */
+    .sp-side { transition: transform .35s ease, opacity .35s ease; }
+    body.sp-collapsed .sp-side.left  { transform: translateX(-118%); opacity: 0; pointer-events: none; }
+    body.sp-collapsed .sp-side.right { transform: translateX(118%);  opacity: 0; pointer-events: none; }
+    body.sp-collapsed .sp-collapse {
+      background: linear-gradient(180deg, rgba(95,208,255,.85), rgba(37,99,235,.85));
+      color: #062a4e; border-color: rgba(160,230,255,.9);
+    }
+
     /* ---- 面板外壳：发光描边 + 四角切角 ---- */
     .sp-panel {
       --sp-bg: rgba(10,38,74,.76);
@@ -1821,6 +1859,29 @@
     </div>
   </div>
 
+</div>
+
+<!-- ================= 第38轮：标题下方顶栏按钮 ================= -->
+<!-- 左上：白天/傍晚/晚间 时段切换（联动 3D 场景光照/天空/夜间照明） -->
+<div class="sp-seg" id="spSeg">
+  <div class="sg" data-t="light">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    <span>白天</span>
+  </div>
+  <div class="sg" data-t="dark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/></svg>
+    <span>傍晚</span>
+  </div>
+  <div class="sg" data-t="black">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <span>晚间</span>
+  </div>
+</div>
+
+<!-- 右上：所有看板收缩/展开 -->
+<div class="sp-collapse" id="spCollapse" title="收起/展开两侧看板">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+  <span>收起看板</span>
 </div>
 
 <!-- 视角楼层条 -->
@@ -7969,6 +8030,10 @@
       applyTheme(t);
       updateThemeBtn();
       syncAreaTheme();          // 第30轮：面板折线图配色跟随主题
+      // 第38轮：同步左上角「白天/傍晚/晚间」按钮组的激活态（自动定时切换时也跟着变）
+      document.querySelectorAll('#spSeg .sg').forEach(function (b) {
+        b.classList.toggle('on', b.getAttribute('data-t') === t);
+      });
     }
 
     function toggleTheme() {
@@ -7976,6 +8041,9 @@
       const i = THEME_ORDER.indexOf(currentTheme);
       setTheme(THEME_ORDER[(i + 1) % THEME_ORDER.length], true);
     }
+
+    // 第38轮：暴露给左上角时段按钮组（直接切指定时段，不再循环）
+    window.__setTheme = function (t) { setTheme(t, true); };
 
     function initTheme() {
       setTheme(autoThemeByClock(), false);
@@ -8273,6 +8341,27 @@
         t.classList.add('on');
       });
     });
+    // 第38轮：左上「白天/傍晚/晚间」时段按钮组
+    document.querySelectorAll('#spSeg .sg').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (window.__setTheme) window.__setTheme(b.getAttribute('data-t'));
+        document.querySelectorAll('#spSeg .sg').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      });
+    });
+    // 第38轮：右上「所有看板收缩/展开」
+    var colBtn = document.getElementById('spCollapse');
+    if (colBtn) {
+      colBtn.addEventListener('click', function () {
+        var collapsed = document.body.classList.toggle('sp-collapsed');
+        var span = colBtn.querySelector('span');
+        var svg = colBtn.querySelector('svg');
+        if (span) span.textContent = collapsed ? '展开看板' : '收起看板';
+        if (svg) svg.innerHTML = collapsed
+          ? '<polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>'
+          : '<polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/>';
+      });
+    }
     window.addEventListener('resize', drawAll);
     applyTab('overview');
   }
