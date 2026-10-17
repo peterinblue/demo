@@ -1179,7 +1179,17 @@
       flex-direction: column;
       gap: 12px;
       pointer-events: none;
+      /* 多比例自适应：内容超出容器高度时内部滚动，保证看板在任何比例大屏都完整可见 */
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(95,208,255,.4) transparent;
     }
+    .sp-side::-webkit-scrollbar { width: 4px; }
+    .sp-side::-webkit-scrollbar-thumb { background: rgba(95,208,255,.4); border-radius: 2px; }
+    .sp-side::-webkit-scrollbar-track { background: transparent; }
+    .sp-panel { flex-shrink: 0; }
     .sp-side.left  { left: 12px; }
     .sp-side.right { right: 12px; }
     .sp-side > * { pointer-events: auto; }
@@ -1330,7 +1340,7 @@
       border: 1px solid rgba(95,208,255,.22);
     }
     .sp-floors .fl {
-      min-width: 26px; padding: 3px 5px; text-align: center;
+      min-width: 46px; padding: 4px 6px; text-align: center; letter-spacing: 0;
       font-size: .58rem; color: rgba(190,220,248,.6); cursor: pointer;
       border-left: 2px solid transparent; transition: all .15s;
     }
@@ -1340,6 +1350,32 @@
       border-left-color: #ffd85e;
     }
 
+
+    /* ---- 矮屏（≤900px 高）压缩纵向占用，保证面板完整可见 ---- */
+    @media (max-height: 900px) {
+      .sp-side { top: 116px; bottom: 90px; gap: 9px; }
+      .sp-panel { padding: 30px 12px 10px; }
+      .sp-title { height: 22px; font-size: .78rem; padding: 0 22px 0 12px; }
+      .sp-chart { height: 92px; }
+      .sp-chart.tall { height: 116px; }
+      .sp-ring .rv { width: 52px; height: 52px; font-size: .92rem; border-width: 2px; }
+      .sp-grid { gap: 5px; }
+      .sp-cell { padding: 4px 7px; }
+      .sp-body { font-size: .7rem; }
+    }
+    @media (max-height: 760px) {
+      .sp-side { top: 100px; bottom: 84px; gap: 7px; }
+      .sp-panel { padding: 27px 11px 8px; }
+      .sp-title { height: 20px; font-size: .74rem; }
+      .sp-chart { height: 80px; }
+      .sp-chart.tall { height: 100px; }
+      .sp-ring .rv { width: 46px; height: 46px; font-size: .84rem; }
+      .sp-cell .v { font-size: .76rem; }
+      .sp-cell .k { font-size: .6rem; }
+      .sp-alarm .it { padding: 4px 6px; font-size: .62rem; }
+      .sp-bar-row { margin-bottom: 5px; }
+      .sp-lgd { margin-top: 5px; }
+    }
     /* ---- 图表容器 ---- */
     .sp-chart { width: 100%; height: 104px; }
     .sp-chart.tall { height: 132px; }
@@ -1776,14 +1812,15 @@
 
 <!-- 视角楼层条 -->
 <div class="sp-floors" id="spFloors">
-  <div class="fl on">总</div>
-  <div class="fl">F6</div>
-  <div class="fl">F5</div>
-  <div class="fl">F4</div>
-  <div class="fl">F3</div>
-  <div class="fl">F2</div>
-  <div class="fl">F1</div>
-  <div class="fl">B1</div>
+  <div class="fl on">总览</div>
+  <div class="fl">院部大楼</div>
+  <div class="fl">八部</div>
+  <div class="fl">802所</div>
+  <div class="fl">803所</div>
+  <div class="fl">804所</div>
+  <div class="fl">805所</div>
+  <div class="fl">806所</div>
+  <div class="fl">808所</div>
 </div>
 
 <!-- 底部梯形 tab -->
@@ -1791,7 +1828,7 @@
   <div class="sp-tab on" data-tab="overview">安全总览</div>
   <div class="sp-tab t-fire" data-tab="fire">消防监控</div>
   <div class="sp-tab t-alarm" data-tab="alarm">告警处置</div>
-  <div class="sp-tab" data-tab="security">安防态势</div>
+  <div class="sp-tab" data-tab="security">安全预警</div>
   <div class="sp-tab" data-tab="energy">能源数据</div>
   <div class="sp-tab" data-page="safety">安全管理</div>
   <div class="sp-tab" data-page="dwork">危险作业</div>
@@ -1989,7 +2026,6 @@
     <!-- 3D 场景 -->
     <div id="scene-container"></div>
     <div id="grade"></div>
-    <div class="scene-hint">拖动旋转 · 滚轮缩放 · 双指缩放</div>
 
     <!-- 中央顶部指标 -->
     <div class="panel center-top">
@@ -6235,9 +6271,8 @@
       return tipEl;
     }
     function showTip(text, sticky) {
-      // 第30轮：窄屏 + 面板已展开时，提示条会压在面板上（两者信息重复），直接不显示
-      if (text && window.innerWidth <= 768 && apEl && apEl.classList.contains('show')) text = '';
-      var el = ensureTip();
+      // 第35轮：按需求移除场景全部提示（悬停提示 / 点击提示 / 操作提示均不再显示）
+      return;
       if (!text) {
         el.style.opacity = '0';
         el.style.transform = 'translate(-50%,10px)';
@@ -8148,12 +8183,41 @@
       el.classList.toggle('sp-focus', t === key && key !== 'overview');
       el.classList.toggle('sp-dim', key !== 'overview' && t !== key && !CORE[t]);
     });
-    // 尺寸变化后重绘图表
+    // 尺寸变化后重绘图表 + 重新适配两侧看板
     setTimeout(drawAll, 30);
+    setTimeout(fitSides, 50);
+  }
+
+  /* ---- 多比例自适应：两侧看板内容超高时整体等比缩小，任何比例大屏一屏看全 ---- */
+  function fitSides() {
+    if (window.innerWidth <= 768) return;   /* 窄屏走底部横向布局，不缩放 */
+    document.querySelectorAll('.sp-side').forEach(function (side) {
+      side.style.width = '';
+      side.style.transform = 'none';
+      var W = side.offsetWidth;             /* 当前断点下的布局基准宽 */
+      var k = 1;
+      /* 两遍测量：加宽后文字重排可能改变所需高度，收敛一次 */
+      for (var pass = 0; pass < 2; pass++) {
+        var need = side.scrollHeight, box = side.clientHeight;
+        if (need > box + 2) {
+          k = (box - 2) / need;
+          side.style.width = (W / k) + 'px';
+        } else { k = 1; side.style.width = ''; }
+      }
+      if (k < 0.999) {
+        side.style.transformOrigin = side.classList.contains('left') ? 'top left' : 'top right';
+        side.style.transform = 'scale(' + k + ')';
+        side.style.overflowY = 'hidden';
+      } else {
+        side.style.transform = '';
+        side.style.overflowY = 'auto';
+      }
+    });
   }
 
   function initSP() {
-    drawHazard(); drawAlarms(); drawAll();
+    /* 图表库异常时不能拖垮整层交互：绘图包保护，tab/适配照常工作 */
+    try { drawHazard(); drawAlarms(); drawAll(); } catch (e) { /* 图表渲染失败静默降级 */ }
     document.querySelectorAll('#spTabs .sp-tab').forEach(function (b) {
       b.addEventListener('click', function () {
         var pg = b.getAttribute('data-page');
@@ -8175,8 +8239,9 @@
         t.classList.add('on');
       });
     });
-    window.addEventListener('resize', drawAll);
+    window.addEventListener('resize', function () { drawAll(); fitSides(); });
     applyTab('overview');
+    fitSides();
   }
 
   /* 报表导出占位（与 demo/04 顶部工具一致） */
