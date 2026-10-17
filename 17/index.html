@@ -1171,25 +1171,18 @@
     /* ---- 两侧看板容器 ---- */
     .sp-side {
       position: absolute;
-      top: 132px;
-      bottom: 96px;
+      top: 80px;
+      bottom: 84px;
       width: 336px;
       z-index: 12;
       display: flex;
       flex-direction: column;
       gap: 12px;
       pointer-events: none;
-      /* 多比例自适应：内容超出容器高度时内部滚动，保证看板在任何比例大屏都完整可见 */
+      /* 兜底：内容万一超出容器高度时内部滚动，避免溢出压到底部 tab 上 */
       overflow-y: auto;
       overflow-x: hidden;
-      overscroll-behavior: contain;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(95,208,255,.4) transparent;
     }
-    .sp-side::-webkit-scrollbar { width: 4px; }
-    .sp-side::-webkit-scrollbar-thumb { background: rgba(95,208,255,.4); border-radius: 2px; }
-    .sp-side::-webkit-scrollbar-track { background: transparent; }
-    .sp-panel { flex-shrink: 0; }
     .sp-side.left  { left: 12px; }
     .sp-side.right { right: 12px; }
     .sp-side > * { pointer-events: auto; }
@@ -1351,31 +1344,6 @@
     }
 
 
-    /* ---- 矮屏（≤900px 高）压缩纵向占用，保证面板完整可见 ---- */
-    @media (max-height: 900px) {
-      .sp-side { top: 116px; bottom: 90px; gap: 9px; }
-      .sp-panel { padding: 30px 12px 10px; }
-      .sp-title { height: 22px; font-size: .78rem; padding: 0 22px 0 12px; }
-      .sp-chart { height: 92px; }
-      .sp-chart.tall { height: 116px; }
-      .sp-ring .rv { width: 52px; height: 52px; font-size: .92rem; border-width: 2px; }
-      .sp-grid { gap: 5px; }
-      .sp-cell { padding: 4px 7px; }
-      .sp-body { font-size: .7rem; }
-    }
-    @media (max-height: 760px) {
-      .sp-side { top: 100px; bottom: 84px; gap: 7px; }
-      .sp-panel { padding: 27px 11px 8px; }
-      .sp-title { height: 20px; font-size: .74rem; }
-      .sp-chart { height: 80px; }
-      .sp-chart.tall { height: 100px; }
-      .sp-ring .rv { width: 46px; height: 46px; font-size: .84rem; }
-      .sp-cell .v { font-size: .76rem; }
-      .sp-cell .k { font-size: .6rem; }
-      .sp-alarm .it { padding: 4px 6px; font-size: .62rem; }
-      .sp-bar-row { margin-bottom: 5px; }
-      .sp-lgd { margin-top: 5px; }
-    }
     /* ---- 图表容器 ---- */
     .sp-chart { width: 100%; height: 104px; }
     .sp-chart.tall { height: 132px; }
@@ -1645,6 +1613,29 @@
   .pg-mods{grid-template-columns:repeat(2,1fr)}
   .pg-2col{grid-template-columns:1fr}
 }
+
+
+    /* ===================================================================
+       【第五轮·紧凑适配】保持 v2 看板视觉不变，仅收紧纵向间距：
+       —— 上移 + 紧凑后，1080p / 1136p 大屏两侧看板均可完整入屏
+       —— 告警列表限高内部滚动，数据不丢失；底部永不压 tab
+       =================================================================== */
+    @media (min-width: 769px) {
+      .sp-side { gap: 10px; }
+      .sp-panel { padding: 28px 13px 10px; }
+      .sp-title { height: 23px; }
+      .sp-chart { height: 92px; }
+      .sp-chart.tall { height: 118px; }
+      .sp-grid { gap: 6px; }
+      .sp-cell { padding: 4px 7px; }
+      .sp-ring .rv { width: 52px; height: 52px; font-size: .92rem; }
+      .sp-bar-row { margin-bottom: 5px; }
+      .sp-alarm { gap: 4px; max-height: 152px; overflow-y: auto; }
+      .sp-alarm .it { padding: 4px 6px; }
+      .sp-alarm::-webkit-scrollbar { width: 3px; }
+      .sp-alarm::-webkit-scrollbar-thumb { background: rgba(95,208,255,.35); border-radius: 2px; }
+      .sp-lgd { margin-top: 5px; }
+    }
 
 </style>
 </head>
@@ -8183,36 +8174,8 @@
       el.classList.toggle('sp-focus', t === key && key !== 'overview');
       el.classList.toggle('sp-dim', key !== 'overview' && t !== key && !CORE[t]);
     });
-    // 尺寸变化后重绘图表 + 重新适配两侧看板
+    // 尺寸变化后重绘图表
     setTimeout(drawAll, 30);
-    setTimeout(fitSides, 50);
-  }
-
-  /* ---- 多比例自适应：两侧看板内容超高时整体等比缩小，任何比例大屏一屏看全 ---- */
-  function fitSides() {
-    if (window.innerWidth <= 768) return;   /* 窄屏走底部横向布局，不缩放 */
-    document.querySelectorAll('.sp-side').forEach(function (side) {
-      side.style.width = '';
-      side.style.transform = 'none';
-      var W = side.offsetWidth;             /* 当前断点下的布局基准宽 */
-      var k = 1;
-      /* 两遍测量：加宽后文字重排可能改变所需高度，收敛一次 */
-      for (var pass = 0; pass < 2; pass++) {
-        var need = side.scrollHeight, box = side.clientHeight;
-        if (need > box + 2) {
-          k = (box - 2) / need;
-          side.style.width = (W / k) + 'px';
-        } else { k = 1; side.style.width = ''; }
-      }
-      if (k < 0.999) {
-        side.style.transformOrigin = side.classList.contains('left') ? 'top left' : 'top right';
-        side.style.transform = 'scale(' + k + ')';
-        side.style.overflowY = 'hidden';
-      } else {
-        side.style.transform = '';
-        side.style.overflowY = 'auto';
-      }
-    });
   }
 
   function initSP() {
@@ -8239,9 +8202,8 @@
         t.classList.add('on');
       });
     });
-    window.addEventListener('resize', function () { drawAll(); fitSides(); });
+    window.addEventListener('resize', drawAll);
     applyTab('overview');
-    fitSides();
   }
 
   /* 报表导出占位（与 demo/04 顶部工具一致） */
