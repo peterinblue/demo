@@ -1803,6 +1803,36 @@
     </div>
   </div>
 
+  <!-- 第41轮：消防专属板块（data-only：仅「消防监控」主题显示，不进安全总览） -->
+  <div class="sp-panel" data-tab="fire" data-only="1">
+    <div class="sp-title">消防水源设施<span class="sp-sub">完好率</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-fire"><span class="k">室内消火栓</span><span class="v g">486<small>/在位</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">室外消火栓</span><span class="v g">132<small>/在位</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">消防水泵</span><span class="v g">8<small>/正常</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">应急照明</span><span class="v c">342<small>/在位</small></span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">设施完好率</span><span class="bt"><i style="width:98%"></i></span><span class="bv">98.6%</span></div>
+      <div class="sp-bar-row"><span class="bk">月度巡检</span><span class="bt"><i style="width:94%"></i></span><span class="bv">96.2%</span></div>
+    </div>
+  </div>
+
+  <!-- 第41轮：安防专属板块（data-only：仅「安全预警」主题显示） -->
+  <div class="sp-panel" data-tab="security" data-only="1">
+    <div class="sp-title">视频巡查点位<span class="sp-sub">在线情况</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-secu"><span class="k">主干道球机</span><span class="v c">64<small>/66</small></span></div>
+        <div class="sp-cell k-secu"><span class="k">周界摄像机</span><span class="v g">48<small>/48</small></span></div>
+        <div class="sp-cell k-secu"><span class="k">楼层摄像机</span><span class="v c">96<small>/98</small></span></div>
+        <div class="sp-cell k-secu"><span class="k">门禁通道</span><span class="v g">48<small>正常</small></span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">录像存储可用</span><span class="bt"><i style="width:88%"></i></span><span class="bv">88.6%</span></div>
+      <div class="sp-bar-row"><span class="bk">AI 抓拍事件</span><span class="bt"><i style="width:26%"></i></span><span class="bv">12 起</span></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ============ 右侧看板 ============ -->
@@ -8323,7 +8353,10 @@
     panels.forEach(function (el) {
       (single ? leftBox : el.__home).appendChild(el);   // 重排：当前主题置顶
       var t = el.getAttribute('data-tab');
-      var on = (key === 'overview') || (t === key) || CORE[t];
+      /* 第41轮：data-only="1" 的专属板块只在对应主题显示（如消防水源设施只属消防监控），
+         不参与安全总览，避免总览两列被撑出滚动条 */
+      var only = el.getAttribute('data-only') === '1';
+      var on = only ? (t === key) : ((key === 'overview') || (t === key) || CORE[t]);
       el.style.display = on ? '' : 'none';
       // 当前主题面板加高亮描边
       el.classList.toggle('sp-focus', t === key && key !== 'overview');
