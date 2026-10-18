@@ -1245,6 +1245,13 @@
     body.sp-collapsed .sp-side.right { transform: translateX(118%);  opacity: 0; pointer-events: none; }
     /* 第39轮：看板收起时，视角楼层条贴到屏幕右边缘（展开时随 right:356px 还原） */
     body.sp-collapsed .sp-floors { right: 14px; }
+    /* 第40轮：单列模式（非安全总览）—— 看板全在左列，右侧空出来给 3D，楼层条贴右边缘 */
+    body.sp-single .sp-floors { right: 14px; }
+    /* 单列模式下左列要装下 7 个面板，统一收紧间距与图表高度，避免出现滚动条 */
+    body.sp-single .sp-side.left { gap: 6px; }
+    body.sp-single .sp-side.left .sp-chart { height: 62px; }
+    body.sp-single .sp-side.left .sp-panel { padding: 30px 13px 9px; }
+    body.sp-single .sp-side.left .sp-lgd { margin-top: 3px; }
     body.sp-collapsed .sp-collapse {
       background: linear-gradient(180deg, rgba(95,208,255,.85), rgba(37,99,235,.85));
       color: #062a4e; border-color: rgba(160,230,255,.9);
@@ -8301,6 +8308,12 @@
           既保持画面饱满，又让当前主题一目了然 */
     var CORE = { overview: 1, drill: 1 };
     var panels = Array.prototype.slice.call(document.querySelectorAll('.sp-panel'));
+    /* 第40轮：单列模式 —— 除「安全总览」外，各主题看板全部集中到左列，右侧留给 3D 场景；
+       楼层条随之贴到屏幕右边缘（body.sp-single），切回总览自动归位回原左右分布。 */
+    var single = key !== 'overview';
+    document.body.classList.toggle('sp-single', single);
+    var leftBox = document.getElementById('spLeft');
+    panels.forEach(function (p) { if (!p.__home) p.__home = p.parentNode; });
     panels.sort(function (a, b) {
       var ta = a.getAttribute('data-tab'), tb = b.getAttribute('data-tab');
       var pa = (ta === key ? 0 : (CORE[ta] ? 2 : 1));
@@ -8308,7 +8321,7 @@
       return pa - pb;
     });
     panels.forEach(function (el) {
-      el.parentNode.appendChild(el);           // 重排：当前主题置顶
+      (single ? leftBox : el.__home).appendChild(el);   // 重排：当前主题置顶
       var t = el.getAttribute('data-tab');
       var on = (key === 'overview') || (t === key) || CORE[t];
       el.style.display = on ? '' : 'none';
