@@ -1243,6 +1243,8 @@
     .sp-side { transition: transform .35s ease, opacity .35s ease; }
     body.sp-collapsed .sp-side.left  { transform: translateX(-118%); opacity: 0; pointer-events: none; }
     body.sp-collapsed .sp-side.right { transform: translateX(118%);  opacity: 0; pointer-events: none; }
+    /* 第39轮：看板收起时，视角楼层条贴到屏幕右边缘（展开时随 right:356px 还原） */
+    body.sp-collapsed .sp-floors { right: 14px; }
     body.sp-collapsed .sp-collapse {
       background: linear-gradient(180deg, rgba(95,208,255,.85), rgba(37,99,235,.85));
       color: #062a4e; border-color: rgba(160,230,255,.9);
@@ -1387,16 +1389,18 @@
     }
 
     /* ---- 视角楼层选择条（视频右侧那排 F1..B1） ---- */
+    /* 第39轮：整体放大（加长加宽、字号上调），右侧定位加过渡供收起动画用 */
     .sp-floors {
       position: absolute; right: 356px; top: 50%; transform: translateY(-50%);
-      z-index: 12; display: flex; flex-direction: column; gap: 2px;
-      padding: 4px 3px; background: rgba(6,22,46,.6);
+      z-index: 12; display: flex; flex-direction: column; gap: 4px;
+      padding: 7px 6px; background: rgba(6,22,46,.6);
       border: 1px solid rgba(95,208,255,.22);
+      transition: right .35s ease;
     }
     .sp-floors .fl {
-      min-width: 46px; padding: 4px 6px; text-align: center; letter-spacing: 0;
-      font-size: .58rem; color: rgba(190,220,248,.6); cursor: pointer;
-      border-left: 2px solid transparent; transition: all .15s;
+      min-width: 68px; padding: 8px 12px; text-align: center; letter-spacing: 1px;
+      font-size: .76rem; color: rgba(200,228,255,.72); cursor: pointer;
+      border-left: 3px solid transparent; transition: all .15s;
     }
     .sp-floors .fl:hover { color: #fff; background: rgba(76,201,255,.14); }
     .sp-floors .fl.on {
@@ -1901,9 +1905,9 @@
 <div class="sp-tabs" id="spTabs">
   <div class="sp-tab on" data-tab="overview">安全总览</div>
   <div class="sp-tab t-fire" data-tab="fire">消防监控</div>
+  <div class="sp-tab t-energy" data-tab="energy">能源数据</div>
   <div class="sp-tab t-alarm" data-tab="alarm">告警处置</div>
   <div class="sp-tab" data-tab="security">安全预警</div>
-  <div class="sp-tab" data-tab="energy">能源数据</div>
   <div class="sp-tab" data-page="safety">安全管理</div>
   <div class="sp-tab" data-page="dwork">危险作业</div>
 
@@ -8363,6 +8367,8 @@
       });
     }
     window.addEventListener('resize', drawAll);
+    /* 第39轮：暴露 applyTab 供模块页返回时恢复「安全总览」选中态与面板排序 */
+    window.applyTab = applyTab;
     applyTab('overview');
   }
 
@@ -8388,10 +8394,19 @@
     document.querySelectorAll('.sp-page').forEach(function (p) { p.classList.remove('on'); });
     pg.classList.add('on');
     document.body.style.overflow = 'hidden';
+    /* 第39轮：跳转模块页时，对应 tab 保持选中高亮（安全管理/危险作业） */
+    document.querySelectorAll('#spTabs .sp-tab').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-page') === key);
+    });
   };
   window.SP_closePage = function () {
     document.querySelectorAll('.sp-page').forEach(function (p) { p.classList.remove('on'); });
     document.body.style.overflow = '';
+    /* 第39轮：返回大屏时恢复「安全总览」选中 + 面板默认排序 */
+    if (window.applyTab) window.applyTab('overview');
+    else document.querySelectorAll('#spTabs .sp-tab').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tab') === 'overview');
+    });
   };
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') window.SP_closePage();
