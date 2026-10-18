@@ -8739,7 +8739,7 @@
   };
   window.DW_goto(1);
 
-  /* 模块卡片点击：演示占位提示 */
+  /* 轻提示（toast）：供子面板与流程操作台的按钮反馈使用 */
   var toastEl = document.getElementById('pgToast'), toastTimer = null;
   window.SP_toast = function (msg) {
     if (!toastEl) return;
@@ -8748,11 +8748,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2200);
   };
-  document.querySelectorAll('.pg-mod').forEach(function (m) {
-    m.addEventListener('click', function () {
-      window.SP_toast('「' + m.getAttribute('data-mod') + '」功能模块（演示占位 · 业务数据待接入）');
-    });
-  });
+  /* 模块卡片点击统一由上方 SP_subOpen 处理，此处不再弹占位提示 */
 
 </script>
 </body>
