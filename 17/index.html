@@ -200,28 +200,6 @@
       font-weight: 400;
     }
 
-    /* 左侧面板 */
-    .left-column {
-      left: 16px;
-      top: 80px;
-      width: 300px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      z-index: 12;
-    }
-
-    /* 右侧面板 */
-    .right-column {
-      right: 16px;
-      top: 80px;
-      width: 300px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      z-index: 12;
-    }
-
     /* 中央顶部综合效益 */
     .center-top {
       position: absolute;
@@ -340,38 +318,6 @@
       text-align: right;
       font-family: 'Consolas', 'SFMono-Regular', 'Menlo', 'Courier New', monospace;
       color: var(--primary);
-    }
-
-    /* 环保参数网格 */
-    .env-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .env-item {
-      background: rgba(76,201,255,0.05);
-      border: 1px solid rgba(76,201,255,0.12);
-      border-radius: 6px;
-      padding: 8px;
-      text-align: center;
-    }
-
-    .env-label {
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.55);
-      margin-bottom: 4px;
-    }
-
-    .env-value {
-      font-family: 'Consolas', 'SFMono-Regular', 'Menlo', 'Courier New', monospace;
-      font-size: 1rem;
-      color: #fff;
-    }
-
-    .env-unit {
-      font-size: 0.6rem;
-      color: rgba(255,255,255,0.45);
     }
 
     /* 图表容器 */
@@ -540,26 +486,8 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* 3D 提示 */
-    .scene-hint {
-      position: absolute;
-      bottom: 96px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.45);
-      background: rgba(0,0,0,0.35);
-      padding: 4px 12px;
-      border-radius: 12px;
-      pointer-events: none;
-    }
-
     /* 移动端适配 */
     @media (max-width: 1024px) {
-      .left-column, .right-column {
-        width: 260px;
-      }
       .center-top { width: 460px; }
       .benefit-value { font-size: 1.2rem; }
     }
@@ -573,21 +501,6 @@
       .header-side.left { left: 10px; gap: 8px; }
       .header-side.left span { display: none; }
       .header-logo { height: 26px; width: 26px; }
-
-      /* 左右看板：窄屏下始终贴边可见，不再隐藏 */
-      .left-column, .right-column {
-        position: fixed;
-        top: 56px;
-        width: 42vw;
-        max-height: 52vh;
-        overflow-y: auto;
-        padding: 10px;
-        gap: 10px;
-        transform: none;
-      }
-      .left-column { left: 0; right: auto; }
-      .right-column { right: 0; left: auto; }
-      .left-column.open, .right-column.open { transform: translateY(0); }
 
       .panel { padding: 10px; }
       .panel-title { font-size: 0.8rem; margin-bottom: 8px; }
@@ -610,16 +523,12 @@
       .func-btn svg { width: 16px; height: 16px; }
       .func-btn span { font-size: 0.55rem; }
 
-      .mobile-handle { display: none; }
-
       .left-nav { left: 4px; gap: 6px; }
       .nav-btn { width: 46px; min-height: 46px; font-size: 0.55rem; padding: 4px 2px; }
       .left-dash { left: 58px; width: 70vw; max-height: 80vh; }
 
       .scene-switch { left: 4px; top: 62px; padding: 2px; gap: 2px; }
       .ss-btn { min-width: 34px; height: 24px; padding: 0 5px; font-size: 0.56rem; letter-spacing: 0; }
-
-      .scene-hint { bottom: 150px; font-size: 0.55rem; }
     }
 
     /* ============ 区域信息面板（点击办公楼楼层 / 厂房时出现在屏幕右侧） ============ */
@@ -963,7 +872,6 @@
       .ap-stat-yoy { font-size: 0.5rem; padding: 1px 4px; margin-top: 4px; }
       .ap-chart-head { margin: 11px 0 4px; font-size: 0.63rem; gap: 5px; }
       .ap-tag { font-size: 0.5rem; padding: 1px 5px; }
-      .ap-hint { display: none; }
       .ap-chart { height: 126px; }
       .ap-foot { margin: 7px 11px 0; padding-top: 7px; font-size: 0.52rem; }
       .ap-foot-note { display: none; }
@@ -1011,18 +919,14 @@
     body.light .panel-title { color: #16304a; }
     body.light .panel-sub,
     body.light .benefit-label,
-    body.light .env-label,
     body.light .progress-label { color: rgba(30,50,80,0.60); }
 
     body.light .benefit-value { color: #0a6b8a !important; }
     body.light .benefit-trend { color: #0a8a5a; }
-    body.light .env-value { color: #16304a; }
     body.light .rank-name { color: rgba(30,50,80,0.85); }
     body.light .rank-value { color: #0a6b8a; }
     body.light .rank-num { background: rgba(0,140,180,0.12); color: #0a6b8a; }
     body.light .rank-num.top { background: rgba(0,160,120,0.16); color: #0a8a5a; }
-
-    body.light .env-item { background: rgba(0,140,180,0.06); border-color: rgba(0,140,180,0.15); }
     body.light .progress-track { background: rgba(20,40,70,0.10); }
 
     body.light .func-btn {
@@ -1060,8 +964,6 @@
       color: #12324a;
       box-shadow: 0 0 12px rgba(0, 150, 200, 0.25), inset 0 0 0 1px rgba(0, 140, 180, 0.45);
     }
-
-    body.light .scene-hint { color: rgba(30,50,80,0.60); background: rgba(255,255,255,0.55); }
     body.light .loader-ring { border-color: rgba(0,140,180,0.15); border-top-color: #0088aa; }
     body.light #loader { background: #e9eff6; }
     body.light #loader div:last-child { color: rgba(30,50,80,0.6); }
@@ -1107,18 +1009,14 @@
     body.black .panel-title { color: #bfe6ff; }
     body.black .panel-sub,
     body.black .benefit-label,
-    body.black .env-label,
     body.black .progress-label { color: rgba(170,200,225,0.6); }
 
     body.black .benefit-value { color: #5fd0ff !important; }
     body.black .benefit-trend { color: #00ff9d; }
-    body.black .env-value { color: #cfe6f5; }
     body.black .rank-name { color: rgba(200,225,245,0.85); }
     body.black .rank-value { color: #5fd0ff; }
     body.black .rank-num { background: rgba(95,208,255,0.12); color: #5fd0ff; }
     body.black .rank-num.top { background: rgba(0,255,157,0.14); color: #00ff9d; }
-
-    body.black .env-item { background: rgba(95,208,255,0.06); border-color: rgba(95,208,255,0.15); }
     body.black .progress-track { background: rgba(120,170,210,0.12); }
 
     body.black .func-btn {
@@ -1155,8 +1053,6 @@
       background: linear-gradient(180deg, rgba(76, 201, 255, 0.24), rgba(58, 155, 255, 0.14));
       color: #eaf6ff;
     }
-
-    body.black .scene-hint { color: rgba(180,210,235,0.6); background: rgba(8,18,34,0.55); }
     body.black .loader-ring { border-color: rgba(95,208,255,0.15); border-top-color: #5fd0ff; }
     body.black #loader { background: #050b16; }
     body.black #loader div:last-child { color: rgba(180,210,235,0.6); }
@@ -1428,13 +1324,6 @@
       background: linear-gradient(180deg, rgba(23,86,168,.92) 0%, rgba(12,44,88,.72) 70%, rgba(8,30,60,0) 100%);
       clip-path: polygon(26px 0, calc(100% - 26px) 0, 100% 100%, 0 100%);
     }
-    .sp-head .crest {
-      width: 26px; height: 26px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #ff8fa0, #d32d4d 70%);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .7rem; font-weight: 800; color: #fff;
-      box-shadow: 0 0 12px rgba(255,93,125,.6);
-    }
     .sp-head h1 {
       font-size: 1.16rem; font-weight: 800; letter-spacing: 2px; color: #fff;
       text-shadow: 0 0 14px rgba(120,200,255,.85), 0 2px 6px rgba(0,0,0,.5);
@@ -1520,11 +1409,6 @@
     .sp-head::after  { top: 30px; transform: translateX(-50%) scaleY(-1);
                        border-radius: 0 0 50% 50% / 0 0 22px 22px; opacity: .5; }
     .sp-head > * { pointer-events: auto; }
-    .sp-head .crest {
-      width: 30px; height: 30px; margin-right: 11px; position: relative; z-index: 2;
-      background: radial-gradient(circle at 34% 28%, #ff9aa8, #d32d4d 72%);
-      box-shadow: 0 0 14px rgba(255,93,125,.7), 0 0 0 2px rgba(255,255,255,.35);
-    }
     .sp-head > div:last-child {
       position: relative; z-index: 2; text-align: left;
       padding: 7px 46px 9px;
@@ -1658,9 +1542,6 @@
 .pg-list li:last-child{border-bottom:none}
 .pg-list .st{font-size:.64rem}
 .pg-list .st.ok{color:#4dffb8}.pg-list .st.warn{color:#ffd85e}.pg-list .st.bad{color:#ff7d95}
-
-/* 模块页内容区定位基准（子面板 absolute 覆盖其上） */
-.sp-page .pg-page-body{position:relative;padding-top:22px}
 .sp-page .pg-sub{top:62px}/* 让位给 sticky 页头，避免标题条被压住 */
 
 /* ================= 第42轮：模块页功能子面板 + 流程操作台 ================= */
@@ -2465,10 +2346,6 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    function togglePanel(id) {
-      const el = $(id);
-      el.classList.toggle('open');
-    }
 
     // ===================== 左侧可切换看板 =====================
     const rankData = [
@@ -2644,7 +2521,6 @@
     // 避免两处各写一份、改了一处漏另一处（拖到另一块屏后画质悄悄掉档）。
     const SUPERSAMPLE_MIN = 1.75;
     let glowTex = null;
-    function isNight(key) { return (key || currentTheme) === 'black'; }
     const container = $('scene-container');
     const ENV_CACHE = {};
 
@@ -4666,8 +4542,6 @@
          会整体平移，全园 71 棵树 / 灌木 / 草叶噪点跟着重排，跨版本像素对比又会被噪声淹没
          （第26轮刚为这件事把业务随机从 Math.random 解耦出来）。 */
 
-    // 4 边柱体转 45° 后 = 正方形截面；半径为 1 时的半边长 = cos45°
-    var CABIN_K = 0.7071;
 
     // 车轮（轮径可配：SUV/皮卡大轮、两厢小车小轮）
     function makeWheel(r) {
@@ -6431,7 +6305,6 @@
     var SHELLS = {};           // 厂房 / 车间的壳体配置
     var pickState = null;      // 当前展开状态 {key}
     var LIFT_OFFICE = 4.42;    // 楼层抬升量（addOfficeBuilding 里按真实层高覆盖）
-    var tipEl = null, tipTimer = 0;
 
     function regLift(g) {
       var u = { g: g, baseY: g.position.y, cur: g.position.y, target: g.position.y };
@@ -6546,43 +6419,6 @@
       return null;
     }
 
-    /* ---- 提示条（动态创建，挂在 3D 容器上；不用 HTML 里现成的样式，避免动到页面骨架）---- */
-    function ensureTip() {
-      if (tipEl) return tipEl;
-      tipEl = document.createElement('div');
-      // 第30轮：窄屏底栏在 bottom:96px —— 提示条固定 98px 会被底栏压住，按屏宽抬高
-      var tipBottom = (window.innerWidth <= 768) ? 156 : 98;
-      tipEl.style.cssText =
-        'position:absolute;left:50%;bottom:' + tipBottom + 'px;transform:translate(-50%,10px);max-width:88%;' +
-        'padding:9px 18px;border-radius:20px;background:rgba(10,18,28,.80);color:#eaf3fc;' +
-        'font:500 13px/1.55 system-ui,"Microsoft YaHei",sans-serif;letter-spacing:.2px;' +
-        'border:1px solid rgba(150,205,255,.24);box-shadow:0 10px 28px rgba(0,0,0,.36);' +
-        'pointer-events:none;opacity:0;transition:opacity .26s ease,transform .26s ease;' +
-        'z-index:40;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-      container.appendChild(tipEl);
-      return tipEl;
-    }
-    function showTip(text, sticky) {
-      // 第35轮：按需求移除场景全部提示（悬停提示 / 点击提示 / 操作提示均不再显示）
-      return;
-      if (!text) {
-        el.style.opacity = '0';
-        el.style.transform = 'translate(-50%,10px)';
-        return;
-      }
-      el.textContent = text;
-      el.style.opacity = '1';
-      el.style.transform = 'translate(-50%,0)';
-      if (tipTimer) { clearTimeout(tipTimer); tipTimer = 0; }
-      if (!sticky) tipTimer = setTimeout(function () { showTip(''); }, 2600);
-    }
-    function hideTip() { showTip(''); }
-
-    function hintOf(info) {
-      if (info.kind === 'floor') return '点击抽出 ' + (info.f + 1) + ' 层（上层升起 + 本层向右抽出 · 放大 2.0 倍）';
-      var sh = SHELLS[info.bld];
-      return '点击升起' + (sh ? sh.label + '屋盖' : '屋盖') + ' 并向右移开，完整露出室内平面';
-    }
 
     function collapseAll() {
       if (OFFICE) {
@@ -6609,7 +6445,6 @@
     function openPick(info) {
       if (pickState && pickState.key === info.key) {    // 同一目标再点一次 = 收起
         collapseAll();
-        hideTip();
         return;
       }
       collapseAll();
@@ -6634,8 +6469,6 @@
           cur.plan.visible = true;
         }
         showAreaPanel('office', info.f);          // 第30轮：右侧信息面板（位置 + 用能 + 趋势）
-        showTip((info.f + 1) + 'F ' + (cur && cur.name ? cur.name : '') +
-                '　·　已向右抽出 · 放大 2.0 倍 · 悬停展示　·　再次点击或点空白收回', true);
       } else {
         var sh = SHELLS[info.bld];
         if (!sh) return;
@@ -6644,7 +6477,6 @@
         if (!sh.built) { sh.build(sh.plan); sh.built = true; }
         sh.plan.visible = true;
         showAreaPanel(info.bld, -1);               // 第30轮：右侧信息面板
-        showTip(sh.label + '　·　屋盖已升起并向右侧移开，室内平面完整露出　·　再次点击或点空白收起', true);
       }
       pickState = { key: info.key };
     }
@@ -6671,8 +6503,6 @@
         hoverKey = key;
         dom.style.cursor = info ? 'pointer' : '';
         if (pickState) return;                  // 已展开时不覆盖状态提示
-        if (info) showTip(hintOf(info), true);
-        else hideTip();
       });
       dom.addEventListener('pointerup', function (e) {
         if (e.button !== 0 || !down) return;
@@ -6680,7 +6510,7 @@
         if (moved || performance.now() - t0 > 520) return;    // 拖动旋转 / 长按，不算点击
         var info = pickAt(e.clientX, e.clientY);
         if (info) openPick(info);
-        else { collapseAll(); hideTip(); }
+        else collapseAll();
       });
       dom.addEventListener('pointercancel', function () { down = false; });
       dom.addEventListener('pointerleave', function () {
@@ -6692,7 +6522,7 @@
     window.__expand = {
       floor: function (f) { openPick({ kind: 'floor', bld: 'office', f: f, key: 'office|' + f }); },
       shell: function (b) { openPick({ kind: 'shell', bld: b, key: b }); },
-      collapse: function () { collapseAll(); hideTip(); },
+      collapse: function () { collapseAll(); },
       area: function (kind, f) { showAreaPanel(kind, f === undefined ? -1 : f); },
       areaMode: function (m) { if (apState) { apState.mode = m; apApply(); apDrawChart(0); } },
       // 【第34轮】场景模式：__expand.sceneMode('full') / ('solo')
@@ -7123,7 +6953,7 @@
 
       $('apClose').addEventListener('click', function (e) {
         e.stopPropagation();
-        collapseAll(); hideTip();          // 关面板 = 收回 3D 展开，保持一致
+        collapseAll();                     // 关面板 = 收回 3D 展开，保持一致
       });
       // 点卡片切尺度（日 / 月 / 年）
       apNode.stats.querySelectorAll('.ap-stat').forEach(function (c) {
@@ -7340,7 +7170,7 @@
       apDrawChart(0);
     }
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { collapseAll(); hideTip(); }
+      if (e.key === 'Escape') { collapseAll(); }
     });
 
     // withLight：是否挂真实点光源。远景处的灯只保留光晕/光锥/地面光斑（表现"灯亮着"），
@@ -7538,11 +7368,6 @@
     function cityRoofMat() {
       return cityMat('roof', function () {
         return new THREE.MeshStandardMaterial({ color: C('#3f444b'), roughness: 0.90, metalness: 0.14, envMapIntensity: 0.50 });
-      });
-    }
-    function cityParaMat() {
-      return cityMat('para', function () {
-        return new THREE.MeshStandardMaterial({ color: C('#b6bcc3'), roughness: 0.66, metalness: 0.20, envMapIntensity: 0.80 });
       });
     }
 
@@ -8595,10 +8420,6 @@
     applyTab('overview');
   }
 
-  /* 报表导出占位（与 demo/04 顶部工具一致） */
-  window.exportReport = function () {
-    alert('安全日报导出中…\n（演示版本，已生成《园区安全态势日报》PDF）');
-  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSP);
