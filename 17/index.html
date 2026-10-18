@@ -1659,6 +1659,122 @@
 .pg-list .st{font-size:.64rem}
 .pg-list .st.ok{color:#4dffb8}.pg-list .st.warn{color:#ffd85e}.pg-list .st.bad{color:#ff7d95}
 
+/* 模块页内容区定位基准（子面板 absolute 覆盖其上） */
+.sp-page .pg-page-body{position:relative;padding-top:22px}
+.sp-page .pg-sub{top:62px}/* 让位给 sticky 页头，避免标题条被压住 */
+
+/* ================= 第42轮：模块页功能子面板 + 流程操作台 ================= */
+/* 子面板容器（覆盖模块页内容区） */
+.pg-sub{position:absolute;left:0;right:0;top:62px;bottom:0;z-index:10;display:none;flex-direction:column;
+  background:radial-gradient(ellipse 90% 55% at 50% -8%,rgba(34,96,180,.34),rgba(6,21,39,0) 62%),
+             radial-gradient(ellipse 70% 50% at 50% 108%,rgba(20,70,140,.24),rgba(6,21,39,0) 60%),
+             #061527;
+  padding:0;animation:pgSubIn .22s ease}
+.pg-sub.on{display:flex}
+@keyframes pgSubIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.pg-sub-head{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:linear-gradient(180deg,rgba(23,86,168,.55),rgba(10,34,68,.2));
+  border-bottom:1px solid rgba(95,208,255,.3)}
+.pg-sub-head .no{display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex:0 0 26px;
+  font-size:.72rem;font-weight:800;color:#062a4e;background:linear-gradient(135deg,#7fe6ff,#2f8fff);
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.pg-sub-head h3{margin:0;font-size:1rem;font-weight:700;color:#fff;letter-spacing:2px;
+  text-shadow:0 0 12px rgba(120,200,255,.7)}
+.pg-sub-head .desc{font-size:.66rem;color:rgba(175,215,255,.65);letter-spacing:1px}
+.pg-sub-back{margin-left:auto;padding:6px 16px;font-size:.68rem;color:#cfe8ff;cursor:pointer;
+  border:1px solid rgba(95,208,255,.45);background:rgba(28,76,146,.5);
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+.pg-sub-back:hover{background:linear-gradient(180deg,rgba(56,130,246,.8),rgba(20,64,124,.85));color:#fff}
+.pg-sub-body{flex:1;overflow-y:auto;padding:16px 16px 22px}
+
+/* 操作按钮 */
+.pg-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pg-btn{padding:7px 18px;font-size:.7rem;font-weight:600;letter-spacing:1px;cursor:pointer;
+  color:#cfe8ff;border:1px solid rgba(95,208,255,.45);background:linear-gradient(180deg,rgba(37,99,235,.6),rgba(15,52,102,.7));
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:.16s}
+.pg-btn:hover{background:linear-gradient(180deg,rgba(95,208,255,.9),rgba(37,99,235,.9));color:#062a4e;box-shadow:0 0 14px rgba(95,208,255,.5)}
+.pg-btn.primary{background:linear-gradient(180deg,rgba(95,208,255,.9),rgba(37,99,235,.88));color:#062a4e;border-color:rgba(160,230,255,.9)}
+.pg-btn.ok{background:linear-gradient(180deg,rgba(77,255,184,.85),rgba(20,140,100,.85));color:#032a1e;border-color:rgba(120,255,210,.8)}
+.pg-btn.warn{background:linear-gradient(180deg,rgba(255,216,94,.88),rgba(180,130,20,.85));color:#2b1c00;border-color:rgba(255,230,140,.85)}
+.pg-btn.danger{background:linear-gradient(180deg,rgba(255,125,149,.88),rgba(170,40,70,.85));color:#2b0008;border-color:rgba(255,160,180,.85)}
+.pg-btn[disabled]{opacity:.4;cursor:not-allowed;filter:grayscale(.5)}
+.pg-btn[disabled]:hover{background:linear-gradient(180deg,rgba(37,99,235,.6),rgba(15,52,102,.7));color:#cfe8ff;box-shadow:none}
+
+/* 表单 */
+.pg-form{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px}
+.pg-form .f{display:flex;flex-direction:column;gap:5px}
+.pg-form .f label{font-size:.64rem;color:rgba(175,215,255,.8);letter-spacing:1px}
+.pg-form .f input,.pg-form .f select,.pg-form .f textarea{
+  padding:7px 9px;font-size:.72rem;color:#e6f3ff;background:rgba(8,28,58,.8);
+  border:1px solid rgba(95,208,255,.35);outline:none;font-family:inherit}
+.pg-form .f input:focus,.pg-form .f select:focus,.pg-form .f textarea:focus{border-color:rgba(140,225,255,.9);box-shadow:0 0 10px rgba(95,208,255,.25)}
+.pg-form .f.wide{grid-column:1/-1}
+.pg-form .f select option{background:#0a2144;color:#e6f3ff}
+
+/* 勾选项（过程监督） */
+.pg-chk{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pg-chk label{display:flex;align-items:center;gap:8px;padding:8px 11px;font-size:.7rem;color:#d8ecff;cursor:pointer;
+  background:rgba(14,46,92,.55);border:1px solid rgba(95,208,255,.25)}
+.pg-chk input{appearance:none;width:15px;height:15px;flex:0 0 15px;cursor:pointer;position:relative;
+  border:1px solid rgba(95,208,255,.6);background:rgba(8,28,58,.8)}
+.pg-chk input:checked{background:linear-gradient(135deg,#7fe6ff,#2f8fff);border-color:#9fe9ff}
+.pg-chk input:checked::after{content:"\2713";position:absolute;left:2px;top:-3px;font-size:.76rem;color:#062a4e;font-weight:800}
+.pg-chk label.done{color:#4dffb8;border-color:rgba(77,255,184,.4)}
+
+/* 审批链 */
+.pg-chain{display:flex;align-items:center;gap:0;margin:6px 0 2px;flex-wrap:wrap}
+.pg-chain .nd{flex:1;min-width:150px;position:relative;padding:12px 14px 12px 26px;margin-right:20px;
+  background:linear-gradient(135deg,rgba(24,72,140,.5),rgba(12,38,76,.5));border:1px solid rgba(76,201,255,.28);
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%)}
+.pg-chain .nd h5{margin:0 0 3px;font-size:.72rem;color:#dceeff;font-weight:700}
+.pg-chain .nd p{margin:0;font-size:.62rem;color:rgba(175,215,255,.7)}
+.pg-chain .nd .sg{margin-top:6px;font-size:.62rem;letter-spacing:1px}
+.pg-chain .nd .sg.ok{color:#4dffb8}
+.pg-chain .nd .sg.wait{color:#ffd85e}
+.pg-chain .nd .sg.no{color:#ff7d95}
+.pg-chain .nd::after{content:"";position:absolute;top:50%;right:-14px;width:12px;height:12px;transform:translateY(-50%) rotate(45deg);
+  border-top:1px solid rgba(76,201,255,.45);border-right:1px solid rgba(76,201,255,.45)}
+.pg-chain .nd:last-child::after{display:none}
+
+/* 流程步骤条（危险作业操作台） */
+.pg-fbar{display:flex;gap:0;margin-bottom:14px}
+.pg-fbar .fs{position:relative;flex:1;min-width:150px;padding:11px 14px 11px 30px;cursor:pointer;margin-right:20px;
+  background:linear-gradient(135deg,rgba(24,72,140,.42),rgba(12,38,76,.42));border:1px solid rgba(76,201,255,.26);
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,16px 50%);transition:.18s}
+.pg-fbar .fs:hover{background:linear-gradient(135deg,rgba(40,100,190,.6),rgba(16,48,96,.6))}
+.pg-fbar .fs .n{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#062a4e;
+  background:linear-gradient(135deg,#7fe6ff,#2f8fff);border-radius:50%}
+.pg-fbar .fs h5{margin:0;font-size:.74rem;color:#cfe6ff;font-weight:700}
+.pg-fbar .fs p{margin:2px 0 0;font-size:.6rem;color:rgba(175,215,255,.62)}
+.pg-fbar .fs.on{background:linear-gradient(180deg,rgba(95,208,255,.34),rgba(37,99,235,.42));border-color:rgba(160,230,255,.85)}
+.pg-fbar .fs.on h5{color:#fff}
+.pg-fbar .fs.done{border-color:rgba(77,255,184,.5)}
+.pg-fbar .fs.done .n{background:linear-gradient(135deg,#7dffcf,#22c98a)}
+.pg-fbar .fs::after{content:"";position:absolute;top:50%;right:-14px;width:12px;height:12px;transform:translateY(-50%) rotate(45deg);
+  border-top:1px solid rgba(76,201,255,.45);border-right:1px solid rgba(76,201,255,.45)}
+.pg-fbar .fs:last-child::after{display:none}
+
+/* 状态横幅 */
+.pg-note{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:.7rem;color:#d8ecff;margin-bottom:12px;
+  background:rgba(20,62,120,.45);border-left:3px solid #2f8fff}
+.pg-note.ok{background:rgba(20,90,70,.35);border-left-color:#4dffb8;color:#c9ffe8}
+.pg-note.warn{background:rgba(96,78,20,.32);border-left-color:#ffd85e;color:#fff0c2}
+.pg-note.bad{background:rgba(110,28,48,.35);border-left-color:#ff7d95;color:#ffd8de}
+.pg-note b{letter-spacing:1px}
+
+/* 进度条 */
+.pg-prog{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-top:6px}
+.pg-prog i{display:block;height:100%;background:linear-gradient(90deg,#2f8fff,#7fe6ff);border-radius:4px;transition:width .3s}
+
+/* 迷你柱图 */
+.pg-bars{display:flex;align-items:flex-end;gap:8px;height:112px;padding:8px 4px 0}
+.pg-bars .b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}
+.pg-bars .b i{width:100%;background:linear-gradient(180deg,#7fe6ff,#2f8fff);border-radius:2px 2px 0 0}
+.pg-bars .b i.r{background:linear-gradient(180deg,#ff9db0,#e0415f)}
+.pg-bars .b i.g{background:linear-gradient(180deg,#8dffd0,#1fae7c)}
+.pg-bars .b span{font-size:.56rem;color:rgba(175,215,255,.75)}
+
 /* 安全管理 11 模块卡片 */
 .pg-mods{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
 .pg-mod{position:relative;cursor:pointer;padding:16px 15px 14px;
@@ -2029,7 +2145,36 @@
       </div>
     </div>
 
-  </div>
+<div class="pg-panel"><div class="pg-title">危险作业流程操作台<span class="sub">申请 → 审批 → 过程监督 → 归档（可交互）</span></div><div class="pg-fbar" id="dwBar"><div class="fs on" data-s="1" onclick="DW_goto(1)"><span class="n">1</span><h5>作业申请</h5><p>填写作业信息 · JSA 风险辨识</p></div><div class="fs" data-s="2" onclick="DW_goto(2)"><span class="n">2</span><h5>分级审批</h5><p>三级审批链 · 逐级签批</p></div><div class="fs" data-s="3" onclick="DW_goto(3)"><span class="n">3</span><h5>过程监督</h5><p>现场监护 · 检测记录 · 违章纠正</p></div><div class="fs" data-s="4" onclick="DW_goto(4)"><span class="n">4</span><h5>资料归档</h5><p>票证 · 记录 · 影像 一键归档</p></div></div><div class="pg-note" id="dwNote"><b>当前环节：作业申请</b>　请填写作业许可申请单并提交，提交后进入分级审批。</div><div class="pg-step-body" id="dwStep1" style="display:none"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">本班申请</span><span class="v c">4<small>起</small></span></div><div class="pg-kpi"><span class="k">待审批</span><span class="v a">2<small>起</small></span></div><div class="pg-kpi"><span class="k">作业中</span><span class="v g">3<small>起</small></span></div><div class="pg-kpi"><span class="k">今日归档</span><span class="v ">6<small>起</small></span></div></div><div class="pg-panel"><div class="pg-title">作业许可申请单<span class="sub">票号 DH-1018-07 · 动火作业</span></div><div class="pg-panel-in">
+      <div class="pg-form">
+        <div class="f"><label>作业类型</label><select><option>动火作业</option><option>高处作业</option><option>受限空间作业</option><option>吊装作业</option><option>临时用电作业</option><option>动土作业</option><option>断路作业</option><option>盲板抽堵作业</option></select></div>
+        <div class="f"><label>作业地点</label><input value="东侧配电室 2 号进线柜"></div>
+        <div class="f"><label>作业班组</label><input value="动力保障部 · 电气检修班"></div>
+        <div class="f"><label>计划开始</label><input value="2026-10-19 09:00"></div>
+        <div class="f"><label>计划结束</label><input value="2026-10-19 12:00"></div>
+        <div class="f"><label>作业负责人</label><input value="王 强"></div>
+        <div class="f"><label>现场监护人</label><input value="李 敏"></div>
+        <div class="f"><label>气体检测</label><input value="O₂ 20.9%  LEL 0%  CO 0 ppm"></div>
+        <div class="f wide"><label>作业内容与安全措施</label><textarea rows="2">2 号进线柜接线端子更换动火焊接；作业前断电挂牌、灭火器 2 具、接火盆 1 个、铺设防火毯，作业中设专人监护。</textarea></div>
+      </div></div><div class="pg-btns"><div class="pg-btn primary" onclick="DW_submit()">提交申请</div><div class="pg-btn" onclick="SP_toast('申请单已保存草稿')">保存草稿</div><div class="pg-btn danger" onclick="SP_toast('已撤回该申请')">撤回申请</div></div></div></div><div class="pg-step-body" id="dwStep2" style="display:none"><div class="pg-panel"><div class="pg-title">审批链路<span class="sub">票号 DH-1018-07</span></div><div class="pg-panel-in">
+      <div class="pg-chain">
+        <div class="nd" id="dwN1"><h5>① 班组 / 车间审核</h5><p>王 强 · 电气检修班</p><div class="sg wait">待审批</div></div>
+        <div class="nd" id="dwN2"><h5>② 安全部门复核</h5><p>安环部 · 张工</p><div class="sg wait">待审批</div></div>
+        <div class="nd" id="dwN3"><h5>③ 分管领导批准</h5><p>园区分管副总</p><div class="sg wait">待审批</div></div>
+        <div class="nd" id="dwN4"><h5>签发作业许可证</h5><p>安环部签发</p><div class="sg wait">未签发</div></div>
+      </div></div><div class="pg-btns"><div class="pg-btn ok" onclick="DW_approve()">审批通过（下一级）</div><div class="pg-btn danger" onclick="DW_reject()">驳回申请</div><div class="pg-btn" onclick="SP_toast('审批意见已填写并留痕')">填写审批意见</div></div></div><div class="pg-panel"><div class="pg-title">待审批队列<span class="sub">本厂 · 按提交时间</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>票号</th><th>作业类型</th><th>作业地点</th><th>负责人</th><th>提交时间</th><th>风险等级</th></tr><tr><td>DH-1018-07</td><td>动火作业</td><td>东侧配电室</td><td>王 强</td><td>10-18 09:12</td><td><span class="pg-tag sup">较高</span></td></tr><tr><td>SX-1018-02</td><td>受限空间</td><td>污水处理井</td><td>刘 洋</td><td>10-18 08:40</td><td><span class="pg-tag run">一般</span></td></tr><tr><td>DL-1018-04</td><td>吊装作业</td><td>货运站</td><td>吴 斌</td><td>10-17 16:20</td><td><span class="pg-tag sup">较高</span></td></tr><tr><td>GC-1018-11</td><td>高处作业</td><td>3 号楼外立面</td><td>赵 磊</td><td>10-17 15:05</td><td><span class="pg-tag ap">低</span></td></tr></table></div><div class="pg-btns"><div class="pg-btn" onclick="SP_toast('已转交安环部复核')">批量转办</div></div></div></div><div class="pg-step-body" id="dwStep3" style="display:none"><div class="pg-panel"><div class="pg-title">现场监督检查项<span class="sub">逐项核销 · 未完成不可完工</span></div><div class="pg-panel-in"><div class="pg-chk" id="dwChk">
+             <label><input type="checkbox" checked onchange="DW_chk(this)">气体检测合格并记录</label>
+             <label><input type="checkbox" checked onchange="DW_chk(this)">现场监护人到位</label>
+             <label><input type="checkbox" onchange="DW_chk(this)">灭火器 / 灭火毯到位</label>
+             <label><input type="checkbox" onchange="DW_chk(this)">作业人员防护用品穿戴</label>
+             <label><input type="checkbox" onchange="DW_chk(this)">断电挂牌与能量隔离</label>
+             <label><input type="checkbox" onchange="DW_chk(this)">应急器材与通道畅通</label>
+             <label><input type="checkbox" onchange="DW_chk(this)">作业票据现场张挂</label>
+             <label><input type="checkbox" onchange="DW_chk(this)">视频监控在线、AI 抓拍无违章</label>
+           </div>
+           <div class="pg-prog"><i id="dwProg" style="width:25%"></i></div></div><div class="pg-btns"><div class="pg-btn primary" onclick="DW_record()">记录一次气体检测</div><div class="pg-btn warn" onclick="DW_violation()">登记违章</div><div class="pg-btn ok" onclick="DW_finish()">完成作业并验收</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">检测记录<span class="sub">本票 · 自动追加</span></div><div class="pg-panel-in"><ul class="pg-list" id="dwLog"><li>09:05 首次检测 O₂ 20.9% LEL 0%<span class="st ok">合格</span></li><li>09:48 复测 O₂ 20.8% LEL 0%<span class="st ok">合格</span></li><li>10:30 复测 O₂ 20.9% LEL 0%<span class="st ok">合格</span></li></ul></div></div><div class="pg-panel"><div class="pg-title">现场影像与违章<span class="sub">AI 抓拍联动</span></div><div class="pg-panel-in"><ul class="pg-list"><li>10:22 未戴安全帽<span class="st bad">1 起 · 已现场制止</span></li><li>视频在线 6/6 路<span class="st ok">正常</span></li><li>作业面照明<span class="st ok">正常</span></li></ul></div></div></div></div><div class="pg-step-body" id="dwStep4" style="display:none"><div class="pg-panel"><div class="pg-title">归档材料清单<span class="sub">票号 DH-1018-07</span></div><div class="pg-panel-in"><ul class="pg-list" id="dwArc"><li>作业许可证正本<span class="st ok">已收集</span></li><li>气体检测记录<span class="st ok">3 次 · 已收集</span></li><li>安全措施核销确认单<span class="st ok">已收集</span></li><li>现场作业照片 / 视频<span class="st ok">6 张 · 已收集</span></li><li>完工验收签字单<span class="st wait">待提交</span></li><li>违章处置记录<span class="st ok">1 份 · 已收集</span></li></ul></div></div><div class="pg-btns"><div class="pg-btn primary" onclick="DW_archive()">一键归档</div><div class="pg-btn" onclick="SP_toast('归档包已生成 PDF（模拟）')">下载归档包</div><div class="pg-btn" onclick="SP_toast('已同步更新危险作业台账')">同步台账</div></div><div class="pg-panel"><div class="pg-title">归档结果<span class="sub">归档后自动更新台账</span></div><div class="pg-panel-in"><div class="pg-note ok" id="dwDone" style="display:none"><b>归档完成</b>　票证、检测记录、影像与验收单已入库，可在危险作业台账中追溯（保存期限 3 年）。</div><ul class="pg-list"><li>台账更新<span class="st ok">已同步</span></li><li>安全绩效统计<span class="st ok">已计入</span></li><li>到期票证提醒<span class="st ok">无</span></li></ul></div></div></div></div>
+
+    </div>
 </div>
 
 <!-- ================= 模块页：安全管理 ================= -->
@@ -2099,7 +2244,9 @@
       </div>
     </div>
 
-  </div>
+<div class="pg-sub" id="sub-01" data-mod="安全统计看板"><div class="pg-sub-head"><span class="no">01</span><h3>安全统计看板</h3><span class="desc">安全态势总览 · 台账查询 · 分布可视化</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">累计隐患</span><span class="v c">186<small>条</small></span></div><div class="pg-kpi"><span class="k">整改完成率</span><span class="v g">96.8<small>%</small></span></div><div class="pg-kpi"><span class="k">监督检查</span><span class="v ">342<small>次</small></span></div><div class="pg-kpi"><span class="k">事故事件</span><span class="v g">0<small>起</small></span></div></div><div class="pg-panel"><div class="pg-title">隐患整改趋势<span class="sub">近 6 个月</span></div><div class="pg-panel-in"><div class="pg-bars"><div class="b"><i style="height:52%"></i><span>3月</span></div><div class="b"><i style="height:64%"></i><span>4月</span></div><div class="b"><i style="height:48%"></i><span>5月</span></div><div class="b"><i style="height:72%"></i><span>6月</span></div><div class="b"><i style="height:40%"></i><span>7月</span></div><div class="b"><i style="height:56%"></i><span>8月</span></div></div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">区域隐患分布<span class="sub">按部门</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>部门</th><th>隐患数</th><th>已整改</th><th>整改率</th></tr><tr><td>动力保障部</td><td>38</td><td>37</td><td><span class="pg-tag run">97.4%</span></td></tr><tr><td>结构制造部</td><td>52</td><td>50</td><td><span class="pg-tag run">96.2%</span></td></tr><tr><td>电子装配部</td><td>29</td><td>28</td><td><span class="pg-tag run">96.6%</span></td></tr><tr><td>总装测试部</td><td>41</td><td>39</td><td><span class="pg-tag ap">95.1%</span></td></tr><tr><td>园区物业部</td><td>26</td><td>24</td><td><span class="pg-tag ap">92.3%</span></td></tr></table></div></div><div class="pg-panel"><div class="pg-title">隐患类型 TOP5<span class="sub">按问题类别</span></div><div class="pg-panel-in"><ul class="pg-list"><li>电气线路<span class="st warn">32 条</span></li><li>特种设备<span class="st warn">26 条</span></li><li>消防设施<span class="st bad">21 条</span></li><li>危化品管理<span class="st warn">18 条</span></li><li>作业行为<span class="st ok">14 条</span></li></ul></div></div></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('安全月度报表已生成，正在下载…')">导出月度安全报表</div><div class="pg-btn" onclick="SP_toast('统计口径：全厂 8 个部门，已核对台账')">统计口径说明</div><div class="pg-btn" onclick="SP_toast('已推送至安全例会看板')">推送例会看板</div></div></div></div><div class="pg-sub" id="sub-02" data-mod="监督检查管理"><div class="pg-sub-head"><span class="no">02</span><h3>监督检查管理</h3><span class="desc">隐患排查 · 危险作业 · 相关方作业</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">年度检查计划</span><span class="v c">96<small>项</small></span></div><div class="pg-kpi"><span class="k">已完成</span><span class="v g">78<small>项</small></span></div><div class="pg-kpi"><span class="k">发现问题</span><span class="v a">342<small>项</small></span></div><div class="pg-kpi"><span class="k">整改期限逾期</span><span class="v r">3<small>项</small></span></div></div><div class="pg-panel"><div class="pg-title">监督检查计划<span class="sub">2026 年度 · 按季度</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>计划编号</th><th>检查类型</th><th>受检部门</th><th>计划时间</th><th>状态</th></tr><tr><td>JH-2026-Q3-01</td><td>综合性检查</td><td>全厂</td><td>2026-08-12</td><td><span class="pg-tag arc">已完成</span></td></tr><tr><td>JH-2026-Q3-02</td><td>专项检查 · 消防</td><td>结构制造部</td><td>2026-08-18</td><td><span class="pg-tag arc">已完成</span></td></tr><tr><td>JH-2026-Q4-01</td><td>综合性检查</td><td>全厂</td><td>2026-10-15</td><td><span class="pg-tag ap">进行中</span></td></tr><tr><td>JH-2026-Q4-02</td><td>专项检查 · 危化品</td><td>电子装配部</td><td>2026-11-06</td><td><span class="pg-tag sup">待开展</span></td></tr><tr><td>JH-2026-Q4-03</td><td>相关方作业检查</td><td>园区物业部</td><td>2026-11-20</td><td><span class="pg-tag sup">待开展</span></td></tr></table></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('新建检查任务：已生成空白检查单')">新建检查任务</div><div class="pg-btn" onclick="SP_toast('检查记录已导出（42 条）')">导出检查记录</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">隐患整改跟踪<span class="sub">超期预警</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>隐患编号</th><th>问题描述</th><th>责任部门</th><th>期限</th><th>状态</th></tr><tr><td>YH-260815-03</td><td>配电柜接地线锈蚀</td><td>动力保障部</td><td>08-28</td><td><span class="pg-tag run">已整改</span></td></tr><tr><td>YH-260902-01</td><td>消防通道堆物</td><td>结构制造部</td><td>09-12</td><td><span class="pg-tag run">已整改</span></td></tr><tr><td>YH-260918-04</td><td>气瓶未固定存放</td><td>电子装配部</td><td>09-30</td><td><span class="pg-tag ap">整改中</span></td></tr><tr><td>YH-260925-02</td><td>行车限位失效</td><td>总装测试部</td><td>10-10</td><td><span class="pg-tag ap">整改中</span></td></tr></table></div></div><div class="pg-panel"><div class="pg-title">相关方作业管理<span class="sub">承包商</span></div><div class="pg-panel-in"><ul class="pg-list"><li>上海帜鸿信息科技<span class="st ok">作业票 12 张 · 均在期</span></li><li>中航物业服务<span class="st warn">安全协议待续签</span></li><li>恒信机电安装<span class="st ok">人员证件全部有效</span></li><li>第三方检测机构<span class="st ok">作业票 3 张</span></li></ul></div></div></div></div></div><div class="pg-sub" id="sub-03" data-mod="职业安全环境体系"><div class="pg-sub-head"><span class="no">03</span><h3>职业安全环境体系</h3><span class="desc">部门目标 · 策划 · 规章制度管理</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">体系文件</span><span class="v c">128<small>份</small></span></div><div class="pg-kpi"><span class="k">年度目标完成</span><span class="v g">92<small>%</small></span></div><div class="pg-kpi"><span class="k">内部审核</span><span class="v ">6<small>次</small></span></div><div class="pg-kpi"><span class="k">管理评审</span><span class="v ">2<small>次</small></span></div></div><div class="pg-panel"><div class="pg-title">年度安全生产目标<span class="sub">完成情况</span></div><div class="pg-panel-in"><ul class="pg-list"><li>千人负伤率 ≤ 0.5‰<span class="st ok">当前 0.12‰</span></li><li>隐患整改率 ≥ 95%<span class="st ok">当前 96.8%</span></li><li>安全培训覆盖率 100%<span class="st ok">当前 100%</span></li><li>特种设备年检合格率 100%<span class="st ok">当前 100%</span></li><li>应急演练场次 ≥ 24<span class="st warn">已完成 18 场</span></li></ul></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('目标分解已下发至各部门')">目标分解下发</div><div class="pg-btn" onclick="SP_toast('已发起 2026 年度体系复审')">发起体系复审</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">规章制度清单<span class="sub">现行有效 128 份</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>文件编号</th><th>名称</th><th>版本</th><th>状态</th></tr><tr><td>ZD-001</td><td>安全生产责任制</td><td>V4.2</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>ZD-002</td><td>动火作业安全管理规定</td><td>V3.1</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>ZD-003</td><td>危险作业票证管理办法</td><td>V2.6</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>ZD-004</td><td>职业健康监护制度</td><td>V2.0</td><td><span class="pg-tag sup">修订中</span></td></tr></table></div></div><div class="pg-panel"><div class="pg-title">策划与实施<span class="sub">体系运行</span></div><div class="pg-panel-in"><ul class="pg-list"><li>管理体系文件评审<span class="st ok">已完成 · 128 份</span></li><li>岗位安全职责编制<span class="st ok">已完成 · 86 岗位</span></li><li>应急预案体系优化<span class="st ok">已完成 · 25 份</span></li><li>安全培训计划执行<span class="st warn">进行中 · 92%</span></li><li>体系文件换版发放<span class="st ok">已完成</span></li></ul></div></div></div></div></div><div class="pg-sub" id="sub-04" data-mod="应急管理模块"><div class="pg-sub-head"><span class="no">04</span><h3>应急管理模块</h3><span class="desc">组织机构 · 资源 · 响应流程</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">应急预案</span><span class="v c">25<small>份</small></span></div><div class="pg-kpi"><span class="k">应急队伍</span><span class="v g">62<small>人</small></span></div><div class="pg-kpi"><span class="k">物资储备</span><span class="v g">100<small>%</small></span></div><div class="pg-kpi"><span class="k">本年演练</span><span class="v a">18<small>场</small></span></div></div><div class="pg-panel"><div class="pg-title">应急组织机构<span class="sub">一键调度</span></div><div class="pg-panel-in"><div class="pg-chain"><div class="nd"><h5>总指挥部</h5><p>主任：园区主要负责人</p><div class="sg ok">值班在岗</div></div><div class="nd"><h5>现场指挥组</h5><p>协调 · 灭火 · 疏散</p><div class="sg ok">在岗 12 人</div></div><div class="nd"><h5>专业处置组</h5><p>抢险 · 医疗 · 保障</p><div class="sg wait">待命</div></div><div class="nd"><h5>善后处理组</h5><p>调查 · 善后 · 恢复</p><div class="sg wait">待命</div></div></div></div><div class="pg-btns"><div class="pg-btn danger" onclick="SP_toast('应急响应流程已推送至值班人员')">启动应急响应演练</div><div class="pg-btn" onclick="SP_toast('已呼叫值班带班领导（模拟）')">呼叫值班带班</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">应急响应流程<span class="sub">分级响应</span></div><div class="pg-panel-in"><ul class="pg-list"><li>Ⅳ 级响应 · 现场处置<span class="st ok">流程已发布</span></li><li>Ⅲ 级响应 · 部门支援<span class="st ok">流程已发布</span></li><li>Ⅱ 级响应 · 厂级指挥<span class="st ok">流程已发布</span></li><li>Ⅰ 级响应 · 园区联动<span class="st warn">待与属地对接</span></li></ul></div></div><div class="pg-panel"><div class="pg-title">应急资源<span class="sub">物资与装备</span></div><div class="pg-panel-in"><ul class="pg-list"><li>微型消防站<span class="st ok">6 个 · 完好</span></li><li>应急照明与疏散指示<span class="st ok">342 套 · 完好</span></li><li>应急物资库<span class="st ok">4 个 · 在库 100%</span></li><li>应急救援器材<span class="st warn">2 台待检</span></li><li>应急通信设备<span class="st ok">18 台 · 在线</span></li></ul></div></div></div></div></div><div class="pg-sub" id="sub-05" data-mod="法规规则制度"><div class="pg-sub-head"><span class="no">05</span><h3>法规规则制度</h3><span class="desc">法律法规与规章制度文件</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">现行法规</span><span class="v c">86<small>部</small></span></div><div class="pg-kpi"><span class="k">内部制度</span><span class="v ">128<small>份</small></span></div><div class="pg-kpi"><span class="k">待更新</span><span class="v a">6<small>项</small></span></div><div class="pg-kpi"><span class="k">废止</span><span class="v ">14<small>份</small></span></div></div><div class="pg-panel"><div class="pg-title">适用法律法规<span class="sub">现行有效</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>法规名称</th><th>文号</th><th>施行日期</th><th>状态</th></tr><tr><td>中华人民共和国安全生产法</td><td>主席令第 88 号</td><td>2021-09-01</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>中华人民共和国消防法</td><td>主席令第 81 号</td><td>2021-04-29</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>危险化学品安全管理条例</td><td>国务院令 591</td><td>2013-12-07</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>特种设备安全法</td><td>主席令第 4 号</td><td>2014-01-01</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>职业病防治法</td><td>主席令第 60 号</td><td>2019-12-29</td><td><span class="pg-tag sup">修订跟踪</span></td></tr></table></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('已打开法规全文库（可检索 86 部）')">打开法规库</div><div class="pg-btn" onclick="SP_toast('合规性对照检查已完成')">合规性对照检查</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">制度修订动态<span class="sub">近 30 天</span></div><div class="pg-panel-in"><ul class="pg-list"><li>动火作业安全管理规定<span class="st warn">修订中 · V3.2</span></li><li>高处作业管理细则<span class="st ok">已发布 · V2.1</span></li><li>有限空间作业规程<span class="st ok">已发布 · V3.0</span></li><li>危险作业票证样式<span class="st warn">待会签</span></li></ul></div></div><div class="pg-panel"><div class="pg-title">废止文件<span class="sub">仅供追溯</span></div><div class="pg-panel-in"><ul class="pg-list"><li>旧版安全生产责任制<span class="st">已废止 · V3.8</span></li><li>旧版消防管理制度<span class="st">已废止 · V1.5</span></li><li>旧版应急管理办法<span class="st">已废止 · V2.0</span></li></ul></div></div></div></div></div><div class="pg-sub" id="sub-06" data-mod="证书管理"><div class="pg-sub-head"><span class="no">06</span><h3>证书管理</h3><span class="desc">人员证书全生命周期管理</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">在册证书</span><span class="v c">213<small>人</small></span></div><div class="pg-kpi"><span class="k">特种作业证</span><span class="v ">96<small>本</small></span></div><div class="pg-kpi"><span class="k">30 天内到期</span><span class="v a">11<small>本</small></span></div><div class="pg-kpi"><span class="k">已过期</span><span class="v r">2<small>本</small></span></div></div><div class="pg-panel"><div class="pg-title">证书到期提醒<span class="sub">按到期时间升序</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>姓名</th><th>工种</th><th>证书编号</th><th>有效期至</th><th>状态</th></tr><tr><td>张建军</td><td>电工作业</td><td>T-3301-88214</td><td>2026-10-28</td><td><span class="pg-tag ap">30 天内到期</span></td></tr><tr><td>李国平</td><td>焊接与热切割</td><td>T-3301-87903</td><td>2026-11-05</td><td><span class="pg-tag ap">30 天内到期</span></td></tr><tr><td>王海涛</td><td>高处作业</td><td>T-3301-86552</td><td>2026-11-19</td><td><span class="pg-tag sup">60 天内到期</span></td></tr><tr><td>赵志刚</td><td>压力容器操作</td><td>T-3301-84907</td><td>2026-09-30</td><td><span class="pg-tag run">已换证</span></td></tr><tr><td>孙明远</td><td>叉车作业</td><td>T-3301-83311</td><td>2026-09-12</td><td><span class="pg-tag ap">已过期</span></td></tr></table></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('已向 11 人推送复训/换证提醒')">批量推送提醒</div><div class="pg-btn warn" onclick="SP_toast('过期证书已同步冻结上岗权限（2 人）')">冻结过期人员上岗</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">持证分布<span class="sub">按工种</span></div><div class="pg-panel-in"><div class="pg-bars"><div class="b"><i style="height:82%"></i><span>电工</span></div><div class="b"><i style="height:64%"></i><span>焊工</span></div><div class="b"><i class="g" style="height:48%"></i><span>高处</span></div><div class="b"><i style="height:36%"></i><span>起重</span></div><div class="b"><i class="g" style="height:26%"></i><span>叉车</span></div><div class="b"><i class="r" style="height:14%"></i><span>压力</span></div></div></div></div><div class="pg-panel"><div class="pg-title">证书台账<span class="sub">最近变更</span></div><div class="pg-panel-in"><ul class="pg-list"><li>赵志刚 · 压力容器操作<span class="st ok">2026-09-26 新证入库</span></li><li>刘建华 · 起重机械作业<span class="st ok">2026-09-18 复审通过</span></li><li>周 涛 · 电工作业<span class="st bad">2026-09-10 证书过期</span></li><li>陈晓峰 · 焊接与热切割<span class="st ok">2026-09-02 新证入库</span></li></ul></div></div></div></div></div><div class="pg-sub" id="sub-07" data-mod="危险源受控"><div class="pg-sub-head"><span class="no">07</span><h3>危险源受控</h3><span class="desc">危险源辨识 · 评价 · 分级管控</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">受控危险源</span><span class="v c">61<small>处</small></span></div><div class="pg-kpi"><span class="k">重大危险源</span><span class="v r">6<small>处</small></span></div><div class="pg-kpi"><span class="k">分级管控</span><span class="v g">100<small>%</small></span></div><div class="pg-kpi"><span class="k">本月检查</span><span class="v ">18<small>次</small></span></div></div><div class="pg-panel"><div class="pg-title">危险源分级管控<span class="sub">辨识 · 评价 · 分级</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>编号</th><th>危险源</th><th>部位</th><th>等级</th><th>控制措施</th><th>责任人</th></tr><tr><td>WX-001</td><td>液氨储罐</td><td>制冷站</td><td><span class="pg-tag sup">重大</span></td><td>液位联锁+视频监控+喷淋</td><td>动力部</td></tr><tr><td>WX-002</td><td>配电柜</td><td>动力保障部</td><td><span class="pg-tag ap">较大</span></td><td>红外测温+定期检测</td><td>动力部</td></tr><tr><td>WX-003</td><td>行车吊钩</td><td>总装车间</td><td><span class="pg-tag ap">较大</span></td><td>限位+日检+挂牌</td><td>总装部</td></tr><tr><td>WX-004</td><td>气瓶间</td><td>电子装配部</td><td><span class="pg-tag sup">重大</span></td><td>固定+防爆灯+通风</td><td>电子部</td></tr></table></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('新增危险源辨识任务已创建')">新增辨识任务</div><div class="pg-btn" onclick="SP_toast('JSA 辨识表已生成（61 处）')">导出 JSA 辨识表</div></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">风险评价方法<span class="sub">矩阵法</span></div><div class="pg-panel-in"><ul class="pg-list"><li>LS 可能性评分<span class="st ok">1—5 级</span></li><li>FS 后果严重程度<span class="st ok">1—5 级</span></li><li>风险等级 D = LS × FS<span class="st warn">≥12 重大 / 6—11 较大</span></li><li>分级管控责任到岗<span class="st ok">61 处已落实</span></li></ul></div></div><div class="pg-panel"><div class="pg-title">现场检查记录<span class="sub">本月</span></div><div class="pg-panel-in"><ul class="pg-list"><li>液氨罐区液位联锁测试<span class="st ok">合格 · 10-12</span></li><li>行车限位有效性检查<span class="st warn">1 台待整改 · 10-14</span></li><li>气瓶间通风检测<span class="st ok">合格 · 10-16</span></li><li>配电柜红外测温<span class="st ok">合格 · 10-18</span></li></ul></div></div></div></div></div><div class="pg-sub" id="sub-08" data-mod="危险点管理"><div class="pg-sub-head"><span class="no">08</span><h3>危险点管理</h3><span class="desc">全员危险点分布统计与管控</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">危险点总数</span><span class="v c">128<small>处</small></span></div><div class="pg-kpi"><span class="k">已挂牌</span><span class="v g">128<small>处</small></span></div><div class="pg-kpi"><span class="k">本月新增</span><span class="v a">4<small>处</small></span></div><div class="pg-kpi"><span class="k">超期未整改</span><span class="v r">2<small>处</small></span></div></div><div class="pg-panel"><div class="pg-title">危险点分布<span class="sub">按区域</span></div><div class="pg-panel-in"><div class="pg-bars"><div class="b"><i class="r" style="height:88%"></i><span>动力区</span></div><div class="b"><i style="height:66%"></i><span>结构区</span></div><div class="b"><i style="height:54%"></i><span>装配区</span></div><div class="b"><i class="g" style="height:38%"></i><span>公区</span></div><div class="b"><i style="height:22%"></i><span>仓储区</span></div></div></div></div><div class="pg-panel"><div class="pg-title">重点危险点台账<span class="sub">现场挂牌</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>编号</th><th>位置</th><th>危险类型</th><th>管控责任</th><th>状态</th></tr><tr><td>WXDP-021</td><td>联合车间 B2</td><td>机械伤害</td><td>孙 浩</td><td><span class="pg-tag run">受控</span></td></tr><tr><td>WXDP-045</td><td>东侧配电室</td><td>触电</td><td>王 强</td><td><span class="pg-tag run">受控</span></td></tr><tr><td>WXDP-067</td><td>3 号楼外立面</td><td>高处坠落</td><td>赵 磊</td><td><span class="pg-tag ap">整改中</span></td></tr><tr><td>WXDP-088</td><td>污水处理井</td><td>有限空间</td><td>刘 洋</td><td><span class="pg-tag run">受控</span></td></tr><tr><td>WXDP-103</td><td>货运站吊装区</td><td>起重伤害</td><td>吴 斌</td><td><span class="pg-tag ap">整改中</span></td></tr></table></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('危险点标牌批量打印任务已下发（12 块）')">批量打印标牌</div><div class="pg-btn" onclick="SP_toast('已向 128 处危险点责任人推送告知')">推送告知</div></div></div></div></div><div class="pg-sub" id="sub-09" data-mod="危化品管理"><div class="pg-sub-head"><span class="no">09</span><h3>危化品管理</h3><span class="desc">出入库 · 库存 · 流向追溯</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">在库品种</span><span class="v c">32<small>种</small></span></div><div class="pg-kpi"><span class="k">库存总量</span><span class="v ">18.6<small>t</small></span></div><div class="pg-kpi"><span class="k">本月出入库</span><span class="v ">46<small>次</small></span></div><div class="pg-kpi"><span class="k">流向追溯率</span><span class="v g">100<small>%</small></span></div></div><div class="pg-panel"><div class="pg-title">重点危化品库存<span class="sub">实时</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>品名</th><th>CAS 号</th><th>库存量</th><th>存储位置</th><th>状态</th></tr><tr><td>液氨</td><td>7664-41-7</td><td>4.2 t</td><td>制冷站储罐</td><td><span class="pg-tag run">正常</span></td></tr><tr><td>工业氧</td><td>7782-44-7</td><td>2.8 t</td><td>气化站</td><td><span class="pg-tag run">正常</span></td></tr><tr><td>乙炔</td><td>74-86-2</td><td>186 瓶</td><td>气瓶间 A</td><td><span class="pg-tag ap">接近上限</span></td></tr><tr><td>稀盐酸</td><td>7647-01-0</td><td>1.2 t</td><td>危化品库</td><td><span class="pg-tag run">正常</span></td></tr><tr><td>油漆稀料</td><td>1330-20-7</td><td>420 kg</td><td>危化品库</td><td><span class="pg-tag run">正常</span></td></tr></table></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">出入库记录<span class="sub">近 7 日</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>日期</th><th>品名</th><th>类型</th><th>数量</th><th>经办</th></tr><tr><td>10-17</td><td>工业氧</td><td><span class="pg-tag sup">入库</span></td><td>1.2 t</td><td>刘 洋</td></tr><tr><td>10-17</td><td>乙炔</td><td><span class="pg-tag ap">出库</span></td><td>24 瓶</td><td>李 敏</td></tr><tr><td>10-16</td><td>液氨</td><td><span class="pg-tag sup">入库</span></td><td>0.6 t</td><td>王 强</td></tr><tr><td>10-15</td><td>稀盐酸</td><td><span class="pg-tag ap">出库</span></td><td>0.2 t</td><td>郑 阳</td></tr></table></div></div><div class="pg-panel"><div class="pg-title">流向追溯<span class="sub">一物一码</span></div><div class="pg-panel-in"><ul class="pg-list"><li>扫码出库核销<span class="st ok">本月 46 次 · 全部匹配</span></li><li>空桶回收登记<span class="st ok">38 只 · 已入库</span></li><li>领用审批留痕<span class="st ok">100% 留痕</span></li><li>超期未领用预警<span class="st warn">3 条待处理</span></li></ul></div></div></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('出入库登记单已创建（模拟提交流程）')">登记出入库</div><div class="pg-btn danger" onclick="SP_toast('超期未领用 3 条已推送责任人')">超期预警推送</div></div></div></div><div class="pg-sub" id="sub-10" data-mod="特种设备管理"><div class="pg-sub-head"><span class="no">10</span><h3>特种设备管理</h3><span class="desc">设备台账 · 年检提醒 · 维修记录</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">在册设备</span><span class="v c">46<small>台</small></span></div><div class="pg-kpi"><span class="k">检验有效</span><span class="v g">44<small>台</small></span></div><div class="pg-kpi"><span class="k">30 天内到期</span><span class="v a">2<small>台</small></span></div><div class="pg-kpi"><span class="k">维修中</span><span class="v ">1<small>台</small></span></div></div><div class="pg-panel"><div class="pg-title">特种设备台账<span class="sub">在册 46 台</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>设备编号</th><th>名称</th><th>使用登记证</th><th>下次检验</th><th>状态</th></tr><tr><td>TZ-BQ-001</td><td>桥式起重机 20t</td><td>沪特设 2019-0132</td><td>2026-11-02</td><td><span class="pg-tag ap">临近到期</span></td></tr><tr><td>TZ-BQ-004</td><td>桥式起重机 10t</td><td>沪特设 2019-0135</td><td>2027-03-18</td><td><span class="pg-tag run">有效</span></td></tr><tr><td>TZ-YL-012</td><td>压力容器 2t</td><td>沪特设 2021-0088</td><td>2027-01-22</td><td><span class="pg-tag run">有效</span></td></tr><tr><td>TZ-GD-021</td><td>固定式压力容器</td><td>沪特设 2022-0141</td><td>2026-10-26</td><td><span class="pg-tag ap">临近到期</span></td></tr><tr><td>TZ-CC-033</td><td>厂内叉车 3t</td><td>沪特设 2020-0206</td><td>2027-05-09</td><td><span class="pg-tag run">有效</span></td></tr></table></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">年检提醒计划<span class="sub">未来 60 天</span></div><div class="pg-panel-in"><ul class="pg-list"><li>桥式起重机 20t 年检<span class="st warn">2026-11-02 · 已预约</span></li><li>固定式压力容器年检<span class="st warn">2026-10-26 · 待联系</span></li><li>厂内叉车定期检验<span class="st ok">2027-05-09 · 计划中</span></li></ul></div></div><div class="pg-panel"><div class="pg-title">维修与保养记录<span class="sub">近 3 月</span></div><div class="pg-panel-in"><ul class="pg-list"><li>20t 行车限位更换<span class="st ok">完成 · 09-18</span></li><li>叉车液压油更换<span class="st ok">完成 · 09-05</span></li><li>压力容器安全阀校验<span class="st ok">完成 · 08-22</span></li><li>行车轨道探伤<span class="st bad">进行中 · 发现裂纹待处置</span></li></ul></div></div></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('已向 2 台临近到期设备推送年检预约')">推送年检提醒</div><div class="pg-btn" onclick="SP_toast('维修记录已登记（模拟）')">登记维修记录</div></div></div></div><div class="pg-sub" id="sub-11" data-mod="应急预案管理"><div class="pg-sub-head"><span class="no">11</span><h3>应急预案管理</h3><span class="desc">演练计划 · 演练实施 · 设施管理</span><div class="pg-sub-back" onclick="SP_subClose()">← 返回功能模块</div></div><div class="pg-sub-body"><div class="pg-kpis" style="grid-template-columns:repeat(4,1fr)"><div class="pg-kpi"><span class="k">现行预案</span><span class="v c">25<small>份</small></span></div><div class="pg-kpi"><span class="k">本年演练</span><span class="v g">18<small>次</small></span></div><div class="pg-kpi"><span class="k">预案评审</span><span class="v ">25<small>次</small></span></div><div class="pg-kpi"><span class="k">待修订</span><span class="v a">3<small>份</small></span></div></div><div class="pg-panel"><div class="pg-title">应急预案清单<span class="sub">按类别</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>预案编号</th><th>名称</th><th>类别</th><th>版本</th><th>状态</th></tr><tr><td>YA-01</td><td>综合应急预案</td><td>综合</td><td>V3.2</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>YA-FZ-02</td><td>火灾爆炸专项预案</td><td>专项</td><td>V2.8</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>YA-LK-03</td><td>泄漏中毒专项预案</td><td>专项</td><td>V2.1</td><td><span class="pg-tag sup">修订中</span></td></tr><tr><td>YA-DK-05</td><td>停电停水处置预案</td><td>现场处置</td><td>V1.9</td><td><span class="pg-tag run">现行</span></td></tr><tr><td>YA-YJ-07</td><td>雨汛防涝应急预案</td><td>专项</td><td>V2.3</td><td><span class="pg-tag run">现行</span></td></tr></table></div></div><div class="pg-2col"><div class="pg-panel"><div class="pg-title">演练计划与实施<span class="sub">2026 年度</span></div><div class="pg-panel-in"><table class="pg-table"><tr><th>演练名称</th><th>计划时间</th><th>场景</th><th>状态</th></tr><tr><td>液氨泄漏处置演练</td><td>2026-11-08</td><td>专项 · 泄漏</td><td><span class="pg-tag sup">待开展</span></td></tr><tr><td>消防综合疏散演练</td><td>2026-09-26</td><td>综合 · 火灾</td><td><span class="pg-tag arc">已完成</span></td></tr><tr><td>停电应急演练</td><td>2026-08-14</td><td>现场处置</td><td><span class="pg-tag arc">已完成</span></td></tr><tr><td>防汛抢险演练</td><td>2026-06-20</td><td>专项 · 汛情</td><td><span class="pg-tag arc">已完成</span></td></tr></table></div><div class="pg-btns"><div class="pg-btn primary" onclick="SP_toast('已创建液氨泄漏处置演练计划（2026-11-08）')">发起演练</div><div class="pg-btn" onclick="SP_toast('演练评估表已生成')">生成评估表</div></div></div><div class="pg-panel"><div class="pg-title">应急设施管理<span class="sub">预案配套</span></div><div class="pg-panel-in"><ul class="pg-list"><li>应急照明与指示<span class="st ok">342 套 · 完好</span></li><li>集合点与疏散路线<span class="st ok">6 处 · 已标识</span></li><li>应急广播系统<span class="st ok">在线</span></li><li>应急物资储备<span class="st ok">在库 100%</span></li></ul></div></div></div></div></div>
+
+    </div>
 </div>
 
 <div class="pg-toast" id="pgToast"></div>
@@ -8457,6 +8604,140 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') window.SP_closePage();
   });
+
+  /* ===== 第42轮：功能子面板（安全管理 11 模块）+ 危险作业流程操作台 ===== */
+  window.SP_subOpen = function (mod) {
+    var subs = document.querySelectorAll('#pgSafety .pg-sub');
+    var hit = null;
+    for (var i = 0; i < subs.length; i++) {
+      if (subs[i].getAttribute('data-mod') === mod) { hit = subs[i]; subs[i].classList.add('on'); }
+      else { subs[i].classList.remove('on'); }
+    }
+    return !!hit;
+  };
+  window.SP_subClose = function () {
+    var subs = document.querySelectorAll('#pgSafety .pg-sub');
+    for (var i = 0; i < subs.length; i++) subs[i].classList.remove('on');
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.querySelector('#pgSafety .pg-sub.on')) window.SP_subClose();
+  });
+  document.querySelectorAll('#pgSafety .pg-mod').forEach(function (m) {
+    m.addEventListener('click', function () {
+      window.SP_subOpen(m.getAttribute('data-mod'));
+    });
+  });
+
+  /* ---- 危险作业全流程：申请 → 审批 → 过程监督 → 归档 ---- */
+  var DW = { step: 1, approve: 0, checks: 2, records: 3, finished: false, archived: false };
+  var DW_NOTE = {
+    1: '<b>当前环节：作业申请</b>　请填写作业许可申请单并提交，提交后进入分级审批。',
+    2: '<b>当前环节：分级审批</b>　按班组/车间 → 安全部门 → 分管领导逐级签批，通过后签发作业许可证。',
+    3: '<b>当前环节：过程监督</b>　逐项核销安全措施，按时记录气体检测，全部完成方可完工验收。',
+    4: '<b>当前环节：资料归档</b>　核对票证、检测记录、影像与验收单，一键归档并同步台账。'
+  };
+  window.DW_goto = function (n) {
+    DW.step = n;
+    var bars = document.querySelectorAll('#dwBar .fs');
+    for (var i = 0; i < bars.length; i++) {
+      var s = parseInt(bars[i].getAttribute('data-s'), 10);
+      bars[i].classList.toggle('on', s === n);
+      if (s < n || (n === 4 && DW.finished)) bars[i].classList.add('done');
+    }
+    for (var k = 1; k <= 4; k++) {
+      var b = document.getElementById('dwStep' + k);
+      if (b) b.style.display = (k === n) ? '' : 'none';
+    }
+    var note = document.getElementById('dwNote');
+    if (note) note.innerHTML = DW_NOTE[n];
+  };
+  function dwTag(id, text, cls) {
+    var n = document.getElementById(id);
+    if (!n) return;
+    var g = n.querySelector('.sg');
+    if (g) { g.className = 'sg ' + cls; g.textContent = text; }
+  }
+  window.DW_submit = function () {
+    DW.approve = 0; DW.finished = false; DW.archived = false;
+    for (var i = 1; i <= 4; i++) dwTag('dwN' + i, i === 1 ? '待审批' : (i === 4 ? '未签发' : '待审批'), 'wait');
+    var d = document.getElementById('dwDone'); if (d) d.style.display = 'none';
+    SP_toast('作业许可申请已提交（DH-1018-07），进入分级审批');
+    DW_goto(2);
+  };
+  window.DW_approve = function () {
+    if (DW.approve >= 4) { SP_toast('作业许可证已签发，请进入过程监督'); DW_goto(3); return; }
+    DW.approve += 1;
+    var t1 = ['班组 / 车间审核', '安全部门复核', '分管领导批准', '签发作业许可证'];
+    for (var i = 1; i <= DW.approve; i++) dwTag('dwN' + i, i === 4 ? '已签发' : '已通过', 'ok');
+    if (DW.approve < 4) dwTag('dwN' + (DW.approve + 1), t1[DW.approve], 'wait');
+    if (DW.approve >= 4) {
+      SP_toast('三级审批全部通过，作业许可证已签发');
+      DW_goto(3);
+    } else {
+      SP_toast(t1[DW.approve - 1] + ' 已通过，流转至' + t1[DW.approve]);
+    }
+  };
+  window.DW_reject = function () {
+    DW.approve = 0; DW.finished = false; DW.archived = false;
+    for (var i = 1; i <= 4; i++) dwTag('dwN' + i, i === 1 ? '已驳回' : (i === 4 ? '未签发' : '待审批'), i === 1 ? 'no' : 'wait');
+    var d = document.getElementById('dwDone'); if (d) d.style.display = 'none';
+    SP_toast('申请已驳回，退回作业负责人补充措施');
+    DW_goto(1);
+  };
+  window.DW_chk = function (el) {
+    var box = document.getElementById('dwChk');
+    if (!box) return;
+    var inputs = box.querySelectorAll('input');
+    var ok = 0;
+    for (var i = 0; i < inputs.length; i++) {
+      if (inputs[i].checked) ok++;
+      inputs[i].parentNode.classList.toggle('done', inputs[i].checked);
+    }
+    DW.checks = ok;
+    var bar = document.getElementById('dwProg');
+    if (bar) bar.style.width = Math.round(ok / inputs.length * 100) + '%';
+  };
+  window.DW_record = function () {
+    DW.records += 1;
+    var log = document.getElementById('dwLog');
+    if (log) {
+      var li = document.createElement('li');
+      var h = (9 + Math.floor(DW.records / 3)).toString().padStart(2, '0');
+      var m = ((DW.records * 37) % 60).toString().padStart(2, '0');
+      li.innerHTML = h + ':' + m + ' 定时检测 O₂ 20.9% LEL 0%<span class="st ok">合格</span>';
+      log.appendChild(li);
+    }
+    SP_toast('已记录一次气体检测（累计 ' + DW.records + ' 次，全部合格）');
+  };
+  window.DW_violation = function () {
+    SP_toast('违章已登记：未戴安全帽 1 起 · 现场已纠正并教育');
+  };
+  window.DW_finish = function () {
+    if (DW.checks < 8) { SP_toast('还有 ' + (8 - DW.checks) + ' 项安全措施未核销，不可完工'); return; }
+    DW.finished = true;
+    SP_toast('作业完成，各方验收签字确认，许可证闭合注销');
+    DW_goto(4);
+    var bars = document.querySelectorAll('#dwBar .fs');
+    for (var i = 0; i < bars.length; i++) bars[i].classList.add('done');
+  };
+  window.DW_archive = function () {
+    if (!DW.finished) { SP_toast('请先完成过程监督与完工验收'); return; }
+    DW.archived = true;
+    var d = document.getElementById('dwDone');
+    if (d) d.style.display = '';
+    var li = document.getElementById('dwArc');
+    if (li) {
+      var spans = li.querySelectorAll('li');
+      for (var i = 0; i < spans.length; i++) {
+        if (spans[i].textContent.indexOf('完工验收签字单') === 0) {
+          spans[i].innerHTML = '完工验收签字单<span class="st ok">已提交</span>';
+          break;
+        }
+      }
+    }
+    SP_toast('归档完成：票证、检测记录、影像与验收单已入库，台账已同步');
+  };
+  window.DW_goto(1);
 
   /* 模块卡片点击：演示占位提示 */
   var toastEl = document.getElementById('pgToast'), toastTimer = null;
