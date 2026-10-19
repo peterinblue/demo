@@ -1188,9 +1188,13 @@ function stTag(s){
   if(s==='doing') return '<span class="tag t-blue">处理中</span>';
   return '<span class="tag t-red">待处理</span>';
 }
+function siteParkId(s){
+  var i=BILL_SITES.indexOf(s);
+  return i<0?'all':'p'+(i%PARKS.length+1);
+}
 function filtered(){
   return ALARMS.filter(function(a){
-    if(alarmState.park!=='all' && a.park!==alarmState.park) return false;
+    if(alarmState.park!=='all' && a.park!==siteParkId(alarmState.park)) return false;
     if(alarmState.st!=='all' && a.status!==alarmState.st) return false;
     if(alarmState.lv!=='all' && String(a.lv)!==alarmState.lv) return false;
     if(alarmState.kw){
@@ -1207,8 +1211,8 @@ function renderAlarm(){
   var cDone=all.filter(function(a){return a.status==='done';}).length;
   var list=filtered();
 
-  var parkOpts='<option value="all">全部园区</option>'+PARKS.map(function(p){
-    return '<option value="'+p.id+'"'+(alarmState.park===p.id?' selected':'')+'>'+p.name+'</option>';}).join('');
+  var parkOpts='<option value="all">全部电站</option>'+BILL_SITES.map(function(s){
+    return '<option value="'+s+'"'+(alarmState.park===s?' selected':'')+'>'+s+'</option>';}).join('');
   function segList(key,items){
     return items.map(function(x){
       return '<button type="button" class="'+(alarmState[key]===x[0]?'on':'')+'" onclick="setAlarm(\''+key+'\',\''+x[0]+'\')">'+x[1]
