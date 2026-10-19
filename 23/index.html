@@ -451,7 +451,7 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
 @media (min-width:1360px){
   .content{padding:24px 34px 40px}
 }
-/* ---------- 电费结算单（深蓝结算风） ---------- */
+/* ---------- 电费结算单（白底淡绿风） ---------- */
 .bl-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .bl-lb{font-size:13px;color:#243b53;font-weight:600;white-space:nowrap}
 .bl-sel,.bl-in{height:34px;border:1px solid #1e6fff;border-radius:6px;background:#fff;color:#1f2d3d;padding:0 10px;font-size:13px;outline:none;min-width:170px}
@@ -462,25 +462,16 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
 .bl-btn-d{background:#4d9bff}
 .bl-btn-d:hover{background:#3a8af2}
 .bl-dl{margin-bottom:12px}
+/* ---------- 电费结算单结算面板（白底淡绿风） ---------- */
 .bl-board{position:relative;border-radius:10px;padding:26px 30px;overflow-x:auto;
-  background:linear-gradient(155deg,#050f38 0%,#081c52 45%,#0a2a6e 100%)}
-.bl-board::before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:
-   radial-gradient(3px 3px at 6% 18%,rgba(120,190,255,.95),transparent 60%),
-   radial-gradient(2px 2px at 14% 44%,rgba(90,160,255,.8),transparent 60%),
-   radial-gradient(4px 4px at 5% 72%,rgba(120,190,255,.75),transparent 60%),
-   radial-gradient(2px 2px at 30% 86%,rgba(90,160,255,.7),transparent 60%),
-   radial-gradient(3px 3px at 55% 92%,rgba(120,190,255,.7),transparent 60%),
-   radial-gradient(2px 2px at 74% 88%,rgba(140,200,255,.65),transparent 60%),
-   radial-gradient(3px 3px at 92% 78%,rgba(120,190,255,.8),transparent 60%),
-   radial-gradient(2px 2px at 96% 30%,rgba(90,160,255,.6),transparent 60%),
-   radial-gradient(2px 2px at 47% 8%,rgba(120,190,255,.55),transparent 60%)}
+  background:#fff;border:1px solid #c9e9d6;box-shadow:0 2px 10px rgba(34,139,87,.08)}
 .bl-tbl{position:relative;width:100%;min-width:640px;border-collapse:collapse;table-layout:fixed}
-.bl-tbl td{border:1px solid rgba(64,110,220,.75);color:#eaf1ff;text-align:center;padding:13px 8px;font-size:13.5px}
-.bl-cat{font-weight:700;font-size:14px;letter-spacing:1px;background:rgba(20,50,130,.35)}
-.bl-th{font-weight:600;background:rgba(30,70,170,.38)}
-.bl-sum,.bl-lb2{font-weight:600;background:rgba(20,50,130,.30)}
-.bl-sumv,.bl-val{font-weight:600}
+.bl-tbl td{border:1px solid #cfe8d8;color:#1f2d3d;text-align:center;padding:13px 8px;font-size:13.5px}
+.bl-cat{font-weight:700;font-size:14px;letter-spacing:1px;background:#e3f5ea;color:#166534}
+.bl-th{font-weight:600;background:#d4efde;color:#14532d}
+.bl-sum,.bl-lb2{font-weight:600;background:#f0faf4}
+.bl-sumv,.bl-val{font-weight:600;color:#15803d}
+.bl-sum{color:#14532d}
 </style>
 </head>
 <body>
