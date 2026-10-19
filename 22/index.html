@@ -1824,11 +1824,10 @@
     body.sp-single .sp-side.left .sp-cell .v { font-size: .74rem; }
     body.sp-single .sp-side.left .sp-chart { height: 56px; }
     body.sp-single .sp-side.left .sp-flex-fill { min-height: 40px; }
-    /* 第48轮：总览页左列铺满 —— 应急资源按内容自适应（不再拉伸留白），
-       剩余高度交给列内可伸缩区（.sp-flex-fill）吸收，消除底部空白。
-       单列模式（sp-single）下两侧看板合并进左列，sp-grow 面板若继续 flex:1
-       会与内容抢高度导致整列溢出，故一并改为内容自适应，由 fitLeft 统一分配。 */
-    .sp-side.left .sp-panel[data-tab="fire"] .sp-scroll { transition: height .2s; }
+    body.sp-single .sp-side.left .sp-alarm .it { padding: 1px 7px; }
+    /* 第48轮：隐患分布滚动区不再无限拉高 —— 8 个院所固定 16 行（双份）内容约 100px，
+       超过后行距会被拉散显得稀疏，故设上限；多余高度交回给同列其他面板。*/
+    .sp-side.left .sp-panel[data-tab="fire"] .sp-scroll { transition: height .2s; max-height: 132px; }
     .sp-side.left .sp-panel[sp-grow] { flex: 0 0 auto; }
     .sp-side.left .sp-panel[sp-grow] .sp-body { flex: 0 0 auto; }
     body.sp-single .sp-side.left .sp-panel[sp-grow] { flex: 0 0 auto; }
@@ -1837,8 +1836,28 @@
     /* 矮屏下后台管理按钮收紧，避免与收起看板重叠 */
     @media (max-width: 1280px) { .sp-mgr { right: 104px; padding: 4px 8px 5px; } }
 
-    /* ---- 第48轮：图例文字居中 ---- */
+    /* 第48轮：图例文字居中 ---- */
     .sp-lgd.lgd-center { justify-content: center; }
+
+    /* ---- 第49轮：右列四面板按权重分配剩余高度 ----
+       原方案「实时安全告警」用 sp-grow 无限制抢占剩余空间，导致它过高、
+       而「安防设备态势」「告警分布」被挤矮。改为权重 flex-grow：
+       告警 5 : 安防 2 : 告警分布 2，四个面板共同铺满右列。 */
+    .sp-side.right .sp-panel { display: flex; flex-direction: column; min-height: 0; }
+    .sp-side.right .sp-panel > .sp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .sp-side.right .sp-weight-5 { flex: 5 1 0; }
+    .sp-side.right .sp-weight-2 { flex: 2 1 0; }
+    /* 权重面板内的可伸缩元素：撑满父容器 */
+    .sp-side.right .sp-weight-5 .sp-alarm { flex: 1; min-height: 0; justify-content: space-between; }
+    /* 图表不能只靠 flex 撑高：echarts 在 height:0 的容器里初始化会得到 0 尺寸画布，
+       故给图表一个最小高度兜底，再由 flex 拉伸到剩余空间。 */
+    .sp-side.right .sp-chart-fill { flex: 1 1 auto; min-height: 72px; height: 72px; }
+    .sp-side.right .sp-weight-2 > .sp-body > * { flex: 0 0 auto; }
+    /* 单列模式下右列内容并入左列，权重失效，改为内容自适应避免溢出 */
+    body.sp-single .sp-side.right .sp-weight-5,
+    body.sp-single .sp-side.right .sp-weight-2 { flex: 0 0 auto; }
+    body.sp-single .sp-side.right .sp-weight-5 .sp-alarm { flex: 0 0 auto; height: auto; }
+    body.sp-single .sp-side.right .sp-chart-fill { flex: 0 0 auto; height: 56px; }
 
     /* ---- 第48轮：面板标题右侧的 年/月 切换按钮 ---- */
     .sp-title { padding-right: 12px; }
@@ -2102,7 +2121,10 @@
 </div>
 
 <!-- ============ 右侧看板 ============
-     第48轮顺序：能源运行数据 → 安防设备态势 → 告警分布 → 实时安全告警 -->
+     第48轮顺序：能源运行数据 → 安防设备态势 → 告警分布 → 实时安全告警
+     第49轮：高度配比 —— 原「实时安全告警」带 sp-grow 抢占剩余高度，导致它过高、
+     而「安防设备态势」「告警分布」过矮。此处改为按权重分配剩余空间：
+     告警列表 5 : 安防态势 2 : 告警分布 2（约 56% / 22% / 22%）。 -->
 <div class="sp-side right" id="spRight">
 
   <!-- 1. 能源运行数据 -->
@@ -2120,7 +2142,7 @@
   </div>
 
   <!-- 2. 安防设备态势 -->
-  <div class="sp-panel" data-tab="monitor">
+  <div class="sp-panel sp-weight-2" data-tab="monitor">
     <div class="sp-title">安防设备态势<span class="sp-sub">在线情况</span></div>
     <div class="sp-body">
       <div class="sp-grid c2">
@@ -2131,19 +2153,21 @@
       </div>
       <div class="sp-bar-row"><span class="bk">视频在线率</span><span class="bt"><i style="width:96%"></i></span><span class="bv">96.4%</span></div>
       <div class="sp-bar-row"><span class="bk">AI 抓拍事件</span><span class="bt"><i style="width:24%"></i></span><span class="bv">12</span></div>
+      <div class="sp-bar-row"><span class="bk">周界联防状态</span><span class="bt"><i style="width:92%"></i></span><span class="bv">正常</span></div>
+      <div class="sp-bar-row"><span class="bk">门禁应急解锁</span><span class="bt"><i style="width:8%"></i></span><span class="bv">1 次</span></div>
     </div>
   </div>
 
   <!-- 3. 告警分布（按院所柱状图） -->
-  <div class="sp-panel" data-tab="monitor">
+  <div class="sp-panel sp-weight-2" data-tab="monitor">
     <div class="sp-title">告警分布<span class="sp-sub">按院所</span></div>
     <div class="sp-body">
-      <div class="sp-chart sp-flex-fill" id="spAlarmDist"></div>
+      <div class="sp-chart sp-chart-fill" id="spAlarmDist"></div>
     </div>
   </div>
 
-  <!-- 4. 实时安全告警（主线 · 加高撑满右列） -->
-  <div class="sp-panel" data-tab="monitor" sp-grow>
+  <!-- 4. 实时安全告警（主线 · 按权重吸收剩余高度） -->
+  <div class="sp-panel sp-weight-5" data-tab="monitor">
     <div class="sp-title">实时安全告警<span class="sp-sub">待处置</span></div>
     <div class="sp-body">
       <div class="sp-alarm" id="spAlarmList"></div>
@@ -8532,7 +8556,7 @@
     var el = document.getElementById('spEnergyChart');
     if (!el || typeof echarts === 'undefined') return;
     var t = axisTheme();
-    var c = echarts.init(el);
+    var c = echarts.getInstanceByDom(el) || echarts.init(el);
     c.setOption({
       grid: { top: 16, right: 6, bottom: 18, left: 30 },
       tooltip: { trigger: 'axis', backgroundColor: t.tipBg, borderColor: t.tipBd, textStyle: { color: '#fff', fontSize: 10 } },
@@ -8600,6 +8624,19 @@
     drawEnergy(); drawAlarmDist(); drawSafeTrend();
   }
 
+  /* 第49轮：fitLeft() 拉伸了图表容器高度后，必须让 echarts 同步重设 canvas 尺寸，
+     否则 canvas 仍按拉伸前的高度绘制，容器下半段留出大片空白（安全综合看板曾出现）。
+     这里统一对所有图表实例调用 resize()，setOption 只在尺寸为 0 时才需要。 */
+  function resizeCharts() {
+    if (typeof echarts === 'undefined') return;
+    ['spSafeTrend', 'spEnergyChart', 'spAlarmDist'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var inst = echarts.getInstanceByDom(el);
+      if (inst) { try { inst.resize(); } catch (e) { /* 实例失效则跳过 */ } }
+    });
+  }
+
   /* ---- tab 切换：按 data-tab 过滤两侧面板 ---- */
 
   function applyTab(key) {
@@ -8645,7 +8682,8 @@
     });
     /* 尺寸变化后重绘图表；先同步做一次高度自适应，避免首帧出现留白/溢出 */
     fitLeft();
-    setTimeout(function () { fitLeft(); drawAll(); }, 30);
+    resizeCharts();
+    setTimeout(function () { fitLeft(); resizeCharts(); drawAll(); }, 30);
   }
 
   /* 第48轮：左列高度自适应 —— 各页左列面板总高与容器不匹配时会溢出或留白
@@ -8757,7 +8795,7 @@
   }
   window.addEventListener('resize', function () {
     clearTimeout(window.__fitT);
-    window.__fitT = setTimeout(fitLeft, 120);
+    window.__fitT = setTimeout(function () { fitLeft(); resizeCharts(); }, 120);
   });
 
   function initSP() {
