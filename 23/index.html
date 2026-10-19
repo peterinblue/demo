@@ -1220,7 +1220,6 @@ function renderAlarm(){
     }).join('');
   }
   var segSt=segList('st',[['all','全部',all.length],['wait','待处理',cWait],['doing','处理中',cDoing],['done','已处理',cDone]]);
-  var segLv=segList('lv',[['all','不限级别'],['2','紧急'],['1','重要'],['0','一般']]);
 
   var cards=list.length? list.map(alarmCard).join('') :
     '<div class="card"><div class="empty"><div class="e">✅</div><b>没有符合条件的告警</b>换个筛选条件试试，或切换到「全部」查看</div></div>';
@@ -1233,7 +1232,6 @@ function renderAlarm(){
       +'<div class="fld" style="flex:2 1 220px"><label>搜索告警</label><input placeholder="告警编号 / 类型 / 设备编号" value="'+alarmState.kw.replace(/"/g,'&quot;')+'" oninput="onKw(this.value)"></div>'
       +'</div>'
       +'<div class="seg" style="margin-bottom:9px">'+segSt+'</div>'
-      +'<div class="seg">'+segLv+'</div>'
     +'</div></div>'
     + cards;
 }
