@@ -1243,14 +1243,14 @@
 
     /* ---- 条形榜 ---- */
     .sp-bar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; font-size: .66rem; }
-    .sp-bar-row .bk { width: 74px; color: rgba(214,236,255,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-bar-row .bk { width: 82px; flex: 0 0 82px; color: rgba(214,236,255,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sp-bar-row .bt { flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
     .sp-bar-row .bt i {
       display: block; height: 100%; border-radius: 4px;
       background: linear-gradient(90deg, #2f8fff, #6fd6ff);
       box-shadow: 0 0 8px rgba(76,201,255,.5);
     }
-    .sp-bar-row .bv { width: 40px; text-align: right; color: #ffd85e; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .sp-bar-row .bv { width: 46px; flex: 0 0 46px; white-space: nowrap; text-align: right; color: #ffd85e; font-weight: 700; font-variant-numeric: tabular-nums; }
 
     /* ---- 图例点列表 ---- */
     .sp-lgd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 7px; font-size: .63rem; color: rgba(206,230,252,.78); }
@@ -1826,8 +1826,19 @@
     body.sp-single .sp-side.left .sp-flex-fill { min-height: 40px; }
     body.sp-single .sp-side.left .sp-alarm .it { padding: 1px 7px; }
     /* 第48轮：隐患分布滚动区不再无限拉高 —— 8 个院所固定 16 行（双份）内容约 100px，
-       超过后行距会被拉散显得稀疏，故设上限；多余高度交回给同列其他面板。*/
+       超过后行距会被拉散显得稀疏，故设上限；多余高度交回给同列其他面板。
+       第51轮：隐患分布改为消防页最后一块。
+       隐患分布是「总览 + 消防」共享面板：总览页 5 块面板较挤，保持 132px；
+       消防页作为末块且页面高度有富余，按 data-last 放开到 260px 让 16 行完整显示。 */
     .sp-side.left .sp-panel[data-tab="fire"] .sp-scroll { transition: height .2s; max-height: 132px; }
+    /* 消防页末块：8 个院所必须一屏完整，高度锁死（fitLeft 会写 inline height，故需 !important）。
+       消防页只有 5 块面板，末块吃掉剩余高度，约 210px，可完整展示 8 所 + 无缝滚动。 */
+    .sp-side.left .sp-panel[data-tab="fire"][data-last] .sp-scroll {
+      max-height: none; height: 212px !important;
+    }
+    .sp-side.left .sp-panel[data-tab="fire"][data-last] .sp-scroll .hr { padding: 0 1px; font-size: .6rem; line-height: 1.15; }
+    .sp-side.left .sp-panel[data-tab="fire"][data-last] .sp-scroll .hn { flex: 0 0 54px; }
+    .sp-side.left .sp-panel[data-tab="fire"][data-last] .sp-scroll .hb { height: 7px; }
     .sp-side.left .sp-panel[sp-grow] { flex: 0 0 auto; }
     .sp-side.left .sp-panel[sp-grow] .sp-body { flex: 0 0 auto; }
     body.sp-single .sp-side.left .sp-panel[sp-grow] { flex: 0 0 auto; }
@@ -1839,16 +1850,38 @@
     /* 第48轮：图例文字居中 ---- */
     .sp-lgd.lgd-center { justify-content: center; }
 
-    /* ---- 第49轮：右列四面板按权重分配剩余高度 ----
+    /* ---- 第51轮：饼图（隐患类型构成） ---- */
+    .sp-pie-wrap { display: flex; align-items: center; gap: 8px; min-height: 0; flex: 0 0 84px; }
+    .sp-pie { flex: 0 0 84px; height: 84px; }
+    .sp-pie-lgd { flex: 1; margin: 0; padding: 0; list-style: none; }
+    .sp-pie-lgd li {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .6rem; color: rgba(214,238,255,.82);
+      padding: 2px 0; line-height: 1.2;
+    }
+    .sp-pie-lgd li i { width: 7px; height: 7px; border-radius: 2px; flex: 0 0 7px; }
+    .sp-pie-lgd li b {
+      margin-left: auto; font-family: 'DIN Alternate', monospace;
+      font-size: .64rem; color: #ffd85e;
+    }
+    /* 单列模式压缩时饼图同步收窄 */
+    body.sp-single .sp-pie { flex: 0 0 84px; height: 84px; }
+
+    /* ---- 第50轮：右列四面板按权重分配剩余高度 ----
        原方案「实时安全告警」用 sp-grow 无限制抢占剩余空间，导致它过高、
-       而「安防设备态势」「告警分布」被挤矮。改为权重 flex-grow：
-       告警 5 : 安防 2 : 告警分布 2，四个面板共同铺满右列。 */
+       而「安防设备态势」「告警分布」被挤矮。改为权重 flex-grow。
+       第51轮再调：实时安全告警降到 2/3，另两块等量加高，右列总高不变。
+         权重 3.3 : 3 : 3  → 告警 ≈ 220px，安防 ≈ 200px，分布 ≈ 200px */
     .sp-side.right .sp-panel { display: flex; flex-direction: column; min-height: 0; }
     .sp-side.right .sp-panel > .sp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-    .sp-side.right .sp-weight-5 { flex: 5 1 0; }
-    .sp-side.right .sp-weight-2 { flex: 2 1 0; }
+    .sp-side.right .sp-weight-5 { flex: 3.5 1 0; }
+    .sp-side.right .sp-weight-2 { flex: 3 1 0; }
     /* 权重面板内的可伸缩元素：撑满父容器 */
-    .sp-side.right .sp-weight-5 .sp-alarm { flex: 1; min-height: 0; justify-content: space-between; }
+    .sp-side.right .sp-weight-5 .sp-alarm { flex: 1; min-height: 0; justify-content: space-between; gap: 1px; }
+    /* 告警面板压低后，条目需更紧凑才能容纳 12 条（否则末条会被裁切） */
+    .sp-side.right .sp-weight-5 .sp-alarm .it { padding: 1px 6px; font-size: .58rem; line-height: 1.2; }
+    .sp-side.right .sp-weight-5 .sp-alarm .it .dot { width: 4px; height: 4px; flex: 0 0 4px; }
+    .sp-side.right .sp-weight-5 .sp-alarm .it .tm { font-size: .54rem; }
     /* 图表不能只靠 flex 撑高：echarts 在 height:0 的容器里初始化会得到 0 尺寸画布，
        故给图表一个最小高度兜底，再由 flex 拉伸到剩余空间。 */
     .sp-side.right .sp-chart-fill { flex: 1 1 auto; min-height: 72px; height: 72px; }
@@ -1901,8 +1934,8 @@
 <!-- ============ 左侧看板 ============ -->
 <div class="sp-side left" id="spLeft">
 
-  <!-- 安全总览 -->
-  <div class="sp-panel" data-tab="overview">
+  <!-- 安全总览（第51轮：data-only，消防页已有专属看板，不再混入此通用块） -->
+  <div class="sp-panel" data-tab="overview" data-only="1">
     <div class="sp-title">安全总览<span class="sp-sub">今日</span></div>
     <div class="sp-body">
       <div class="sp-grid c2">
@@ -1921,8 +1954,8 @@
     </div>
   </div>
 
-  <!-- 危险点分布（等级构成：I / II / III 级） -->
-  <div class="sp-panel" data-tab="overview">
+  <!-- 危险点分布（等级构成：I / II / III 级）（第51轮：data-only） -->
+  <div class="sp-panel" data-tab="overview" data-only="1">
     <div class="sp-title">危险点分布<span class="sp-sub">等级构成</span></div>
     <div class="sp-body">
       <div style="display:flex;justify-content:space-around;margin:2px 0 6px">
@@ -1951,18 +1984,6 @@
       <div class="sp-bar-row"><span class="bk">消防水压</span><span class="bt"><i style="width:78%"></i></span><span class="bv">0.62MPa</span></div>
       <div class="sp-bar-row"><span class="bk">水泵状态</span><span class="bt"><i style="width:92%"></i></span><span class="bv">稳压</span></div>
       <div class="sp-bar-row"><span class="bk">通道占用</span><span class="bt"><i style="width:12%"></i></span><span class="bv">2 处</span></div>
-    </div>
-  </div>
-
-  <!-- 隐患分布（各单位隐患数量 · 自动滚动） -->
-  <div class="sp-panel" data-tab="fire">
-    <div class="sp-title">隐患分布<span class="sp-sub">按单位</span></div>
-    <div class="sp-switch">
-      <button type="button" class="on" data-hz="month" onclick="SP_hazardScope('month', this)">月</button>
-      <button type="button" data-hz="year" onclick="SP_hazardScope('year', this)">年</button>
-    </div>
-    <div class="sp-body">
-      <div class="sp-scroll sp-flex-fill" id="spHazardList"></div>
     </div>
   </div>
 
@@ -1996,6 +2017,110 @@
     </div>
   </div>
 
+  <!-- 第51轮：消防页补一块「消防通道与预案」，填充原「安全总览/危险点分布」移除后的空白。
+       data-last 保证了后面的隐患分布仍是本页最后一块。 -->
+  <div class="sp-panel" data-tab="fire" data-only="1">
+    <div class="sp-title">消防通道与预案<span class="sp-sub">畅通 · 演练</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-fire"><span class="k">疏散通道</span><span class="v g">48<small>畅通</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">安全出口</span><span class="v g">36<small>正常</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">占用通道</span><span class="v a">2<small>处</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">预案完备率</span><span class="v g">100<small>%</small></span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">1# 预案演练</span><span class="bt"><i style="width:100%"></i></span><span class="bv">已完成</span></div>
+      <div class="sp-bar-row"><span class="bk">2# 预案演练</span><span class="bt"><i style="width:100%"></i></span><span class="bv">已完成</span></div>
+      <div class="sp-bar-row"><span class="bk">微型消防站</span><span class="bt"><i style="width:100%"></i></span><span class="bv">6 个</span></div>
+    </div>
+  </div>
+
+  <div class="sp-panel" data-tab="fire" data-only="1">
+    <div class="sp-title">消防设施巡检<span class="sp-sub">本月完成率</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-fire"><span class="k">报警主机</span><span class="v g">正常<small>1 台</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">烟感探测器</span><span class="v g">196<small>/在线</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">灭火器压力</span><span class="v g">312<small>/合格</small></span></div>
+        <div class="sp-cell k-fire"><span class="k">栓泵月检</span><span class="v c">96.2<small>%</small></span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">1# 区域巡检</span><span class="bt"><i style="width:100%"></i></span><span class="bv">100%</span></div>
+      <div class="sp-bar-row"><span class="bk">2# 区域巡检</span><span class="bt"><i style="width:96%"></i></span><span class="bv">96%</span></div>
+      <div class="sp-bar-row"><span class="bk">3# 区域巡检</span><span class="bt"><i style="width:92%"></i></span><span class="bv">92%</span></div>
+      <div class="sp-bar-row"><span class="bk">4# 区域巡检</span><span class="bt"><i style="width:88%"></i></span><span class="bv">88%</span></div>
+    </div>
+  </div>
+
+  <!-- 第51轮：隐患分布移到消防页最后一块（data-last：applyTab 排序时恒定置于末尾） -->
+  <div class="sp-panel" data-tab="fire" data-last="1">
+    <div class="sp-title">隐患分布<span class="sp-sub">按单位</span></div>
+    <div class="sp-switch">
+      <button type="button" class="on" data-hz="month" onclick="SP_hazardScope('month', this)">月</button>
+      <button type="button" data-hz="year" onclick="SP_hazardScope('year', this)">年</button>
+    </div>
+    <div class="sp-body">
+      <div class="sp-scroll sp-flex-fill" id="spHazardList"></div>
+    </div>
+  </div>
+
+  <!-- ================= 第51轮：能源专属板块（配电站系列） =================
+       园区设有多个配电站，按「总览 / 各站负载 / 电能质量」三个维度补充，
+       使能源管理页不再混入安全类通用看板。 -->
+  <div class="sp-panel" data-tab="energy" data-only="1">
+    <div class="sp-title">配电站总览<span class="sp-sub">6 座</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-energy"><span class="k">在运电站</span><span class="v g">6<small>座</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">总变压器容量</span><span class="v c">18,600<small>kVA</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">平均负载率</span><span class="v a">63.5<small>%</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">功率因数</span><span class="v g">0.94</span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">高压柜运行</span><span class="bt"><i style="width:100%"></i></span><span class="bv">128 面</span></div>
+      <div class="sp-bar-row"><span class="bk">低压柜运行</span><span class="bt"><i style="width:98%"></i></span><span class="bv">342 面</span></div>
+      <div class="sp-bar-row"><span class="bk">功率因数达标率</span><span class="bt"><i style="width:96%"></i></span><span class="bv">96.2%</span></div>
+      <div class="sp-bar-row"><span class="bk">巡检到位率</span><span class="bt"><i style="width:99%"></i></span><span class="bv">99.1%</span></div>
+    </div>
+  </div>
+
+  <div class="sp-panel" data-tab="energy" data-only="1">
+    <div class="sp-title">各配电站负载<span class="sp-sub">实时 kW</span></div>
+    <div class="sp-body">
+      <div class="sp-chart sp-chart-fill" id="spSubstationLoad"></div>
+    </div>
+  </div>
+
+  <div class="sp-panel" data-tab="energy" data-only="1">
+    <div class="sp-title">配电站电能质量<span class="sp-sub">谐波 · 回路负载</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-energy"><span class="k">电压合格率</span><span class="v g">99.4<small>%</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">THD 谐波</span><span class="v a">2.8<small>%</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">三相不平衡</span><span class="v g">1.6<small>%</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">无功补偿</span><span class="v c">680<small>kvar</small></span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">1# 配电站谐波</span><span class="bt"><i style="width:32%"></i></span><span class="bv">2.4%</span></div>
+      <div class="sp-bar-row"><span class="bk">2# 配电站谐波</span><span class="bt"><i style="width:44%"></i></span><span class="bv">3.1%</span></div>
+      <div class="sp-bar-row"><span class="bk">3# 配电站谐波</span><span class="bt"><i style="width:26%"></i></span><span class="bv">1.9%</span></div>
+      <div class="sp-bar-row"><span class="bk">4# 配电站谐波</span><span class="bt"><i style="width:52%"></i></span><span class="bv">3.6%</span></div>
+      <div class="sp-bar-row"><span class="bk">1# 进线回路</span><span class="bt"><i style="width:78%"></i></span><span class="bv">78%</span></div>
+      <div class="sp-bar-row"><span class="bk">3# 进线回路</span><span class="bt"><i style="width:86%"></i></span><span class="bv">86%</span></div>
+    </div>
+  </div>
+
+  <div class="sp-panel" data-tab="energy" data-only="1">
+    <div class="sp-title">新能源与碳排<span class="sp-sub">光伏 · 储能</span></div>
+    <div class="sp-body">
+      <div class="sp-grid c2">
+        <div class="sp-cell k-energy"><span class="k">光伏发电</span><span class="v g">3,260<small>kWh</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">储能SOC</span><span class="v c">78<small>%</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">绿电占比</span><span class="v g">18.4<small>%</small></span></div>
+        <div class="sp-cell k-energy"><span class="k">今日碳排</span><span class="v">6.2<small>t</small></span></div>
+      </div>
+      <div class="sp-bar-row"><span class="bk">屋顶光伏</span><span class="bt"><i style="width:82%"></i></span><span class="bv">1,420kW</span></div>
+      <div class="sp-bar-row"><span class="bk">地面光伏</span><span class="bt"><i style="width:48%"></i></span><span class="bv">700kW</span></div>
+      <div class="sp-bar-row"><span class="bk">储能充放差</span><span class="bt"><i style="width:36%"></i></span><span class="bv">±680kW</span></div>
+    </div>
+  </div>
+
   <!-- 第41轮：安防专属板块（data-only：仅「安全预警」主题显示） -->
   <div class="sp-panel" data-tab="monitor" data-only="1">
     <div class="sp-title">视频巡查点位<span class="sp-sub">在线情况</span></div>
@@ -2022,6 +2147,16 @@
         <div class="sp-cell k-secu"><span class="k">事故事件</span><span class="v g">0<small>起</small></span></div>
       </div>
       <div class="sp-chart sp-flex-fill" id="spSafeTrend"></div>
+      <div class="sp-pie-wrap">
+        <div class="sp-pie" id="spSafePie"></div>
+        <ul class="sp-pie-lgd">
+          <li><i style="background:#ff8fa3"></i>电气线路<b>32</b></li>
+          <li><i style="background:#ffb547"></i>特种设备<b>26</b></li>
+          <li><i style="background:#5fd0ff"></i>消防设施<b>21</b></li>
+          <li><i style="background:#8dffd0"></i>危化品<b>18</b></li>
+          <li><i style="background:#b9a6ff"></i>作业行为<b>14</b></li>
+        </ul>
+      </div>
       <div class="sp-bar-row"><span class="bk">隐患整改闭环</span><span class="bt"><i style="width:97%"></i></span><span class="bv">97%</span></div>
       <div class="sp-bar-row"><span class="bk">复查验收通过</span><span class="bt"><i style="width:94%"></i></span><span class="bv">94%</span></div>
     </div>
@@ -8621,7 +8756,108 @@
   }
 
   function drawAll() {
-    drawEnergy(); drawAlarmDist(); drawSafeTrend();
+    drawEnergy(); drawAlarmDist(); drawSafeTrend(); drawSafePie(); drawSubstationLoad();
+  }
+
+  /* 第51轮：各配电站实时负载（横向柱状图，6 座配电站） */
+  function drawSubstationLoad() {
+    var el = document.getElementById('spSubstationLoad');
+    if (!el || typeof echarts === 'undefined') return;
+    var t = axisTheme();
+    var c = echarts.getInstanceByDom(el) || echarts.init(el);
+    var names = ['1# 配电站', '2# 配电站', '3# 配电站', '4# 配电站', '5# 配电站', '6# 配电站'];
+    var vals  = [1860, 1420, 1180, 960, 720, 540];
+    c.setOption({
+      grid: { top: 10, right: 34, bottom: 6, left: 52 },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: t.tipBg, borderColor: t.tipBd,
+        textStyle: { color: '#fff', fontSize: 10 }
+      },
+      xAxis: {
+        type: 'value',
+        splitNumber: 3,
+        splitLine: { lineStyle: { color: t.split } },
+        axisLabel: { color: t.label, fontSize: 9, showMinLabel: false }
+      },
+      yAxis: {
+        type: 'category',
+        data: names,
+        axisLine: { lineStyle: { color: t.axis } },
+        axisTick: { show: false },
+        axisLabel: { color: t.label, fontSize: 9 }
+      },
+      series: [{
+        type: 'bar',
+        data: vals,
+        barMaxWidth: 13,
+        itemStyle: {
+          borderRadius: [0, 2, 2, 0],
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+            colorStops: [
+              { offset: 0, color: '#1f6fd0' },
+              { offset: 1, color: '#7fe6ff' }
+            ]
+          }
+        },
+        label: { show: true, position: 'right', color: t.label, fontSize: 9, formatter: '{c} kW' }
+      }]
+    });
+  }
+
+  /* 第51轮：隐患类型构成饼图（安全综合看板）。换行文本用数组 join 拼接，避免转义序列被还原成真实换行。 */
+  var PIE_TXT_L = ['{a|隐患}', '{b|111}', '{c|总项}'].join('\n');
+  var PIE_TXT_E = ['{b|{b}}', '{c|{c} 项}'].join('\n');
+  function drawSafePie() {
+    var el = document.getElementById('spSafePie');
+    if (!el || typeof echarts === 'undefined') return;
+    var t = axisTheme();
+    var c = echarts.getInstanceByDom(el) || echarts.init(el);
+    c.setOption({
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: t.tipBg, borderColor: t.tipBd,
+        textStyle: { color: '#fff', fontSize: 10 },
+        formatter: '{b}: {c} 项 ({d}%)'
+      },
+      legend: { show: false },
+      series: [{
+        type: 'pie',
+        radius: ['52%', '78%'],
+        center: ['50%', '50%'],
+        avoidLabelOverlap: true,
+        label: {
+          show: true, position: 'center',
+          formatter: PIE_TXT_L,
+          rich: {
+            a: { fontSize: 9, color: 'rgba(190,220,248,.62)', lineHeight: 13 },
+            b: { fontSize: 17, fontWeight: 700, color: '#eaf6ff', lineHeight: 17 },
+            c: { fontSize: 9, color: 'rgba(190,220,248,.62)', lineHeight: 13 }
+          }
+        },
+        emphasis: {
+          label: {
+            show: true,
+            formatter: PIE_TXT_E,
+            rich: {
+              b: { fontSize: 10, fontWeight: 700, color: '#eaf6ff', lineHeight: 14 },
+              c: { fontSize: 10, color: '#ffd85e', lineHeight: 13 }
+            }
+          },
+          itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,.45)' }
+        },
+        labelLine: { show: false },
+        itemStyle: { borderColor: 'rgba(6,20,42,.9)', borderWidth: 2 },
+        data: [
+          { value: 32, name: '电气线路', itemStyle: { color: '#ff8fa3' } },
+          { value: 26, name: '特种设备', itemStyle: { color: '#ffb547' } },
+          { value: 21, name: '消防设施', itemStyle: { color: '#5fd0ff' } },
+          { value: 18, name: '危化品管理', itemStyle: { color: '#8dffd0' } },
+          { value: 14, name: '作业行为', itemStyle: { color: '#b9a6ff' } }
+        ]
+      }]
+    });
   }
 
   /* 第49轮：fitLeft() 拉伸了图表容器高度后，必须让 echarts 同步重设 canvas 尺寸，
@@ -8629,7 +8865,7 @@
      这里统一对所有图表实例调用 resize()，setOption 只在尺寸为 0 时才需要。 */
   function resizeCharts() {
     if (typeof echarts === 'undefined') return;
-    ['spSafeTrend', 'spEnergyChart', 'spAlarmDist'].forEach(function (id) {
+    ['spSafeTrend', 'spSafePie', 'spEnergyChart', 'spAlarmDist', 'spSubstationLoad'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
       var inst = echarts.getInstanceByDom(el);
@@ -8658,6 +8894,9 @@
     panels.forEach(function (p) { if (!p.__home) p.__home = p.parentNode; });
     panels.sort(function (a, b) {
       var ta = a.getAttribute('data-tab'), tb = b.getAttribute('data-tab');
+      /* 第51轮：data-last="1" 的面板（如消防页隐患分布）恒定排到本页最后 */
+      var la = a.getAttribute('data-last') === '1', lb = b.getAttribute('data-last') === '1';
+      if (la !== lb) return la ? 1 : -1;
       var pa = (ta === key ? 0 : (CORE[ta] ? 2 : 1));
       var pb = (tb === key ? 0 : (CORE[tb] ? 2 : 1));
       return pa - pb;
@@ -8666,10 +8905,11 @@
       (single ? leftBox : el.__home).appendChild(el);   // 重排：当前主题置顶
       var t = el.getAttribute('data-tab');
       /* 第47轮：安全管理 / 监控中心 只显示各自专属看板（各 5 个，撑满左列）；
-         消防管理 / 能源管理 显示专属 + 通用看板（安全总览、危险点分布）；
+         第51轮：能源管理同样只显示能源专属看板（含新增配电站系列），
+         消防管理 显示专属 + 通用看板（安全总览、危险点分布）；
          data-only="1" 的专属板块只在对应主题显示，不进园区总览 */
       var on;
-      if (key === 'safety' || key === 'monitor') {
+      if (key === 'safety' || key === 'monitor' || key === 'energy') {
         on = (t === key);
       } else {
         var only = el.getAttribute('data-only') === '1';
@@ -8769,7 +9009,7 @@
         padsAll.push({ el: el, pb: parseFloat(cs.paddingBottom) || 0 });
       });
       var totalPad = padsAll.reduce(function (a, b) { return a + b.pb; }, 0);
-      var take = Math.min(need2, Math.max(0, totalPad - kids.length * 3));
+      var take = Math.min(-spare, Math.max(0, totalPad - kids.length * 3));
       if (totalPad > 0 && take > 0) {
         padsAll.forEach(function (p) {
           p.el.style.paddingBottom = Math.max(3, p.pb - take / padsAll.length) + 'px';
