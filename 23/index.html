@@ -1145,8 +1145,6 @@ function renderBill(){
       +'<select class="bl-sel" onchange="billState.site=this.value||billState.site;renderBill()">'+siteOpts+'</select>'
       +'<span class="bl-lb">结算时间段</span>'
       +'<input type="month" class="bl-in bl-month" value="'+billState.ym+'" onchange="billState.ym=this.value;renderBill()">'
-      +'<span class="bl-lb">上网电量</span>'
-      +'<input type="number" min="0" class="bl-in bl-grid" placeholder="请输入上网电量" value="'+billState.grid+'" onchange="billState.grid=this.value;renderBill()">'
       +'<button class="bl-btn bl-btn-p" onclick="billSearch()">'
         +'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>搜索</button>'
     +'</div>'
@@ -1169,8 +1167,6 @@ function billSearch(){
   if(sel&&sel.value) billState.site=sel.value;
   var m=document.querySelector('.bl-month');
   if(m&&m.value) billState.ym=m.value;
-  var g=document.querySelector('.bl-grid');
-  billState.grid=g?g.value:'';
   renderBill();
 }
 function exportBill(){
