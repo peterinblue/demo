@@ -477,7 +477,7 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
       </div>
     </div>
     <div class="lb-mid">
-      <h1>分布式光伏电站<br>全流程运维管理平台</h1>
+      <h1>光伏电站运维管理平台</h1>
       <p>覆盖多园区光伏资产、电费结算、告警处置与运维留痕的云端管理系统，让每一张电费单、每一条告警都有据可查。</p>
       <div class="lb-feats">
         <div class="lb-feat"><i>¥</i>多园区电费结算单在线查询与明细核对</div>
@@ -485,11 +485,6 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
         <div class="lb-feat"><i>▤</i>组件 / 逆变器 / 电站资产全生命周期台账</div>
         <div class="lb-feat"><i>☁</i>PC 与手机双端自适应，随时随地处理</div>
       </div>
-    </div>
-    <div class="lb-stats">
-      <div class="lb-stat"><b id="lbA">5</b><span>接入园区</span></div>
-      <div class="lb-stat"><b id="lbB">28.6</b><span>装机容量 MW</span></div>
-      <div class="lb-stat"><b id="lbC">99.2%</b><span>设备在线率</span></div>
     </div>
   </div>
 
@@ -503,7 +498,7 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
           </svg>
         </div>
         <div>
-          <b>光伏运维平台</b>
+          <b>光伏电站运维管理平台</b>
           <span>PV O&amp;M PLATFORM</span>
         </div>
       </div>
@@ -1579,11 +1574,6 @@ function boot(){
   go(CUR);
 }
 (function init(){
-  // 登录页品牌数据
-  var totalCap=PARKS.reduce(function(s,p){return s+p.cap;},0);
-  var la=$('#lbA'), lb=$('#lbB');
-  if(la) la.textContent=PARKS.length;
-  if(lb) lb.textContent=totalCap.toFixed(1);
   // 图片遮罩点击关闭
   $('#imgMask').addEventListener('click',function(){ $('#imgMask').classList.remove('show'); });
   // 弹层遮罩点击关闭（处理弹层需二次确认）
