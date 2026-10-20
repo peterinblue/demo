@@ -46,6 +46,12 @@ background:
 .clock span{display:block;font-size:10px;color:#6d9ec4;margin-top:2px;letter-spacing:1px}
 .fsbtn{width:30px;height:30px;border:1px solid rgba(0,170,255,.4);background:rgba(0,90,180,.22);color:#8ccdf0;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
 .fsbtn:hover{background:rgba(0,170,255,.32);color:#fff;box-shadow:0 0 12px rgba(0,190,255,.5)}
+.topbtn{height:30px;padding:0 12px;border:1px solid rgba(0,170,255,.4);background:rgba(0,90,180,.22);color:#8ccdf0;border-radius:3px;cursor:pointer;font-size:13px;letter-spacing:1px;display:flex;align-items:center;justify-content:center;transition:.2s}
+.topbtn:hover{background:rgba(0,170,255,.32);color:#fff;box-shadow:0 0 12px rgba(0,190,255,.5)}
+/* 展开/收缩：点击后所有看板收起为标题栏 */
+#stage.collapsed .panel{flex:0 0 auto !important}
+#stage.collapsed .pbody{display:none}
+#stage.collapsed .ph .tools{display:none}
 
 /* ============ 主体布局 ============ */
 .main{position:relative;height:1002px;display:flex;gap:14px;padding:8px 18px 14px;z-index:3}
@@ -293,7 +299,6 @@ background:
           </linearGradient>
         </defs>
       </svg>
-      <div class="co"><b>上海航天智慧能源技术有限公司</b><span>SHANGHAI AEROSPACE SMART ENERGY TECH</span></div>
     </div>
 
     <div class="hd-c">
@@ -304,7 +309,6 @@ background:
           <stop stop-color="#0a7bff" stop-opacity="0"/><stop offset="1" stop-color="#7feaff"/></linearGradient></defs>
       </svg>
       <h1>树脂基功能材料智能车间平台</h1>
-      <div class="hd-sub">RESIN MATRIX FUNCTIONAL MATERIALS INTELLIGENT WORKSHOP PLATFORM</div>
       <svg class="wing r" viewBox="0 0 130 8" fill="none" preserveAspectRatio="none">
         <path d="M0 7 H104 L130 1" stroke="url(#wg2)" stroke-width="1.6"/>
         <circle cx="4" cy="7" r="2" fill="#5ceaff"/>
@@ -315,6 +319,8 @@ background:
 
     <div class="hd-r">
       <div class="clock"><b id="clkTime">--:--:--</b><span id="clkDate">----年--月--日</span></div>
+      <button class="topbtn" id="adminBtn" title="进入后台管理端">管理端</button>
+      <button class="topbtn" id="toggleBtn" title="展开/收缩所有看板"><span id="toggleLbl">收缩</span></button>
       <button class="fsbtn" id="fsBtn" title="全屏">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M1.5 5.5V1.5h4M10.5 1.5h4v4M14.5 10.5v4h-4M5.5 14.5h-4v-4"/></svg>
@@ -784,6 +790,20 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
     if (!document.fullscreenElement) {
       if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
     } else if (document.exitFullscreen) document.exitFullscreen();
+  });
+
+  // 管理端：点击进入后台管理
+  var BACKEND_URL = 'https://shanghaiaeroenergy.zhongzheng-ai.com/aiiotv2/login2ry'; // 后台管理端地址，可按需修改
+  $('adminBtn').addEventListener('click', function () { window.open(BACKEND_URL, '_blank'); });
+
+  // 展开/收缩所有看板
+  var stageEl = $('stage');
+  $('toggleBtn').addEventListener('click', function () {
+    var collapsed = stageEl.classList.toggle('collapsed');
+    $('toggleLbl').textContent = collapsed ? '展开' : '收缩';
+    if (!collapsed) { // 重新展开后图表需重新计算尺寸
+      for (var k in charts) { if (charts[k] && charts[k].resize) charts[k].resize(); }
+    }
   });
 
   function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
