@@ -472,6 +472,52 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
 .bl-sum,.bl-lb2{font-weight:600;background:#f0faf4}
 .bl-sumv,.bl-val{font-weight:600;color:#15803d}
 .bl-sum{color:#14532d}
+
+/* ============ 换肤：深色主题 ============ */
+.theme-dark{
+  --bg:#0f141b; --card:#1a212b; --line:#2a323d; --line2:#222a34;
+  --txt:#e6ebf2; --txt2:#aab4c2; --txt3:#7d8895;
+  --pri-l:#13302a; --blue-l:#16263f; --amber-l:#33240d; --red-l:#37110f;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
+  --shadow-s:0 1px 2px rgba(0,0,0,.45);
+}
+.theme-dark .topbar{background:rgba(15,20,27,.93);border-bottom-color:var(--line)}
+.theme-dark .tb-logo span,.theme-dark .tb-clock,.theme-dark .tb-clock b{color:var(--txt2)}
+.theme-dark .fld select,.theme-dark .fld input{background:#161c24;color:var(--txt)}
+.theme-dark .seg button{background:#161c24;color:var(--txt2)}
+.theme-dark th{background:#1e2530}
+.theme-dark tbody tr:hover{background:#1e2530}
+.theme-dark .alarm{background:var(--card);border-color:var(--line)}
+.theme-dark .alarm:hover{border-color:#3a4654}
+.theme-dark .al-detail{background:#161c24}
+.theme-dark .modal{background:var(--card)}
+.theme-dark .m-h,.theme-dark .m-f{background:var(--card)}
+.theme-dark textarea{background:#161c24;color:var(--txt)}
+.theme-dark select.full,.theme-dark input.full{background:#161c24;color:var(--txt)}
+.theme-dark .opt{background:#161c24;color:var(--txt)}
+.theme-dark .uploader{background:#161c24;border-color:#2a323d}
+.theme-dark .tabs button.on{background:var(--card)}
+.theme-dark .btn.ghost{background:var(--card);color:var(--txt2);border-color:var(--line)}
+.theme-dark .ibox input{background:#161c24;color:var(--txt)}
+.theme-dark .hint{background:#161c24}
+.theme-dark .tabbar{background:rgba(15,20,27,.96);border-top-color:var(--line)}
+.theme-dark .login-card{background:var(--card)}
+.theme-dark .bl-board{background:#161c24;border-color:#2a3b33;box-shadow:none}
+.theme-dark .bl-tbl td{color:var(--txt);border-color:#243a30}
+.theme-dark .bl-cat{background:#1c3329;color:#7fe0b4}
+.theme-dark .bl-th{background:#173027;color:#a9e6c9}
+.theme-dark .bl-sum,.theme-dark .bl-lb2{background:#15211b}
+.theme-dark .bl-lb{color:var(--txt2)}
+.theme-dark .bl-sel,.theme-dark .bl-in{background:#161c24;color:var(--txt);border-color:#2f6f4f}
+body,.card,.kpi,.topbar,.side,.alarm,.modal,.bl-board,.fld select,.fld input,th,td,
+textarea,.opt,.uploader,.seg button,.tabbar,.me,.bill-hero,.login-card,.m-h,.m-f{
+  transition:background-color .25s ease,color .25s ease,border-color .25s ease;
+}
+/* 主题切换按钮 */
+.theme-btn{width:34px;height:34px;border-radius:9px;background:var(--line2);display:flex;
+  align-items:center;justify-content:center;color:var(--txt2);transition:.15s;flex:none}
+.theme-btn:hover{background:var(--line)}
+.theme-btn svg{width:17px;height:17px}
 </style>
 </head>
 <body>
@@ -627,6 +673,9 @@ select.full:focus,input.full:focus{border-color:var(--pri);background:#fff;box-s
         <div class="tb-title"><b>光伏运维平台</b><span id="tbPark">全部园区</span></div>
       </div>
       <div class="tb-right">
+        <button class="theme-btn" onclick="toggleTheme()" title="切换浅色 / 深色" aria-label="切换主题">
+          <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
         <div class="tb-clock"><b id="tbTime">--:--:--</b><span id="tbDate">加载中</span></div>
         <button class="iconbtn" onclick="doRefresh()" title="刷新数据" aria-label="刷新数据">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
@@ -1459,7 +1508,22 @@ function boot(){
   startClock();
   go(CUR);
 }
+function applyTheme(t){
+  var dark=(t==='dark');
+  document.documentElement.classList.toggle('theme-dark',dark);
+  var ico=document.getElementById('themeIco');
+  if(ico) ico.innerHTML = dark
+    ? '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.6a9.4 9.4 0 0 0 0 18.8 7.4 7.4 0 0 1 0-18.8Z"/>'
+    : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+}
+function toggleTheme(){
+  var dark=!document.documentElement.classList.contains('theme-dark');
+  try{ localStorage.setItem('pv_theme',dark?'dark':'light'); }catch(e){}
+  applyTheme(dark?'dark':'light');
+}
 (function init(){
+  // 换肤：恢复上次主题
+  applyTheme(localStorage.getItem('pv_theme')||'light');
   // 图片遮罩点击关闭
   $('#imgMask').addEventListener('click',function(){ $('#imgMask').classList.remove('show'); });
   // 弹层遮罩点击关闭（处理弹层需二次确认）
