@@ -1066,7 +1066,7 @@ function startClock(){
   var f=function(){
     var d=beijing(), wk='日一二三四五六'[d.getDay()];
     $('#tbTime').textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
-    $('#tbDate').textContent=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' 周'+wk+'（北京时间）';
+    $('#tbDate').textContent=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' 周'+wk;
   };
   f(); TIMER=setInterval(f,1000);
 }
@@ -1470,7 +1470,7 @@ function renderMe(){
       + infoRow('本次登录时间', fmtTime(new Date(s.t||Date.now()).toISOString()))
       + infoRow('登录方式', s.m==='sms'?'手机号 + 短信验证码':'用户名 + 密码')
       + infoRow('免登录时长', s.p?'7 天':'本次有效')
-      + infoRow('数据同步时间', fmtTime(new Date().toISOString())+'（北京时间）')
+      + infoRow('数据同步时间', fmtTime(new Date().toISOString()))]
     +'</div></div>'
     +'<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>平台概况</h3></div><div class="card-b" style="padding-top:4px">'
       + infoRow('接入园区', PARKS.length+' 个')
