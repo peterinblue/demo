@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>智慧车间数字孪生平台大屏</title>
+<title>树脂基功能材料智能车间大屏</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#03060f;font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
@@ -303,7 +303,7 @@ background:
         <defs><linearGradient id="wg1" x1="0" y1="4" x2="130" y2="4" gradientUnits="userSpaceOnUse">
           <stop stop-color="#0a7bff" stop-opacity="0"/><stop offset="1" stop-color="#7feaff"/></linearGradient></defs>
       </svg>
-      <h1>智慧车间数字孪生平台</h1>
+      <h1>树脂基功能材料智能车间</h1>
       <svg class="wing r" viewBox="0 0 130 8" fill="none" preserveAspectRatio="none">
         <path d="M0 7 H104 L130 1" stroke="url(#wg2)" stroke-width="1.6"/>
         <circle cx="4" cy="7" r="2" fill="#5ceaff"/>
@@ -348,13 +348,13 @@ background:
               <div class="chart" id="staffChart"></div>
               <div class="staff-center">
                 <div class="rate" id="staffRate">0<em>%</em></div>
-                <div class="rl">识别率</div>
+                <div class="rl">出勤率</div>
               </div>
             </div>
             <div class="staff-info">
               <div class="si"><div class="lb">总人数</div><div class="vl"><b id="staffTotal">0</b><em>人</em></div></div>
-              <div class="si"><div class="lb">识别人数</div><div class="vl"><b id="staffIn">0</b><em>人</em></div></div>
-              <div class="si dim"><div class="lb">未识别人数</div><div class="vl"><b id="staffOut">0</b><em>人</em></div></div>
+              <div class="si"><div class="lb">出勤人数</div><div class="vl"><b id="staffIn">0</b><em>人</em></div></div>
+              <div class="si dim"><div class="lb">未出勤人数</div><div class="vl"><b id="staffOut">0</b><em>人</em></div></div>
             </div>
           </div>
         </div>
@@ -613,7 +613,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
 </script>
 <script>
 /* =========================================================
-   智慧车间数字孪生平台 · 大屏看板
+   树脂基功能材料智能车间 · 大屏看板
    ========================================================= */
 (function () {
   'use strict';
@@ -628,8 +628,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
   ];
   var STAFF_ALL = { t: 128, i: 116 };
 
-  var EQ_TOTAL = [32, 28, 30, 26, 29, 27, 31, 25];
-  var EQ_RUN = [28, 24, 27, 21, 26, 22, 29, 20];
+  var PROC = ['布带浸胶', '缠绕', '固化', '纤维模压', 'RTM', '铺层组'];
+  var EQ_TOTAL = [18, 24, 16, 14, 12, 10];
+  var EQ_RUN = [16, 21, 14, 12, 10, 8];
 
   var MATERIALS = [
     { n: '1K碳布', y: 18600, m: 1550, u: 'kg' },
@@ -964,8 +965,8 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
           itemStyle: { borderColor: 'rgba(4,16,40,.9)', borderWidth: 3 },
           label: { show: false }, labelLine: { show: false },
           data: [
-            { value: d.i, name: '识别人数', itemStyle: { color: grad('#7feaff', '#0d6fe8', false), shadowBlur: 16, shadowColor: 'rgba(40,190,255,.9)' } },
-            { value: out, name: '未识别人数', itemStyle: { color: 'rgba(70,120,190,.4)' } }
+            { value: d.i, name: '出勤人数', itemStyle: { color: grad('#7feaff', '#0d6fe8', false), shadowBlur: 16, shadowColor: 'rgba(40,190,255,.9)' } },
+            { value: out, name: '未出勤人数', itemStyle: { color: 'rgba(70,120,190,.4)' } }
           ]
         },
         {
@@ -984,18 +985,18 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       tooltip: Object.assign({}, TIP, {
         formatter: function (ps) {
           var i = ps[0].dataIndex;
-          return TEAMS[i] + '<br/>运行数量：<b style="color:#5ceaff">' + EQ_RUN[i] + '</b><br/>设备总数：<b>' + EQ_TOTAL[i] + '</b><br/>运行率：' + (EQ_RUN[i] / EQ_TOTAL[i] * 100).toFixed(1) + '%';
+          return PROC[i] + '<br/>运行数量：<b style="color:#5ceaff">' + EQ_RUN[i] + '</b><br/>设备总数：<b>' + EQ_TOTAL[i] + '</b><br/>运行率：' + (EQ_RUN[i] / EQ_TOTAL[i] * 100).toFixed(1) + '%';
         }
       }),
       grid: { left: 30, right: 8, top: 24, bottom: 20 },
       xAxis: {
-        type: 'category', data: TEAMS.map(function (t) { return t.replace('班组', ''); }),
+        type: 'category', data: PROC,
         axisLine: { lineStyle: { color: 'rgba(0,150,255,.35)' } },
         axisTick: { show: false },
-        axisLabel: { color: '#8fbde0', fontSize: 10.5, interval: 0 }
+        axisLabel: { color: '#8fbde0', fontSize: 10, interval: 0 }
       },
       yAxis: {
-        type: 'value', max: 40,
+        type: 'value', max: 30,
         axisLine: { show: false }, axisTick: { show: false },
         axisLabel: { color: '#6f9fc6', fontSize: 10 },
         splitLine: { lineStyle: { color: 'rgba(0,150,255,.10)', type: 'dashed' } }
