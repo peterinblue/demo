@@ -34,7 +34,8 @@ html, body {
 
 #app { position: fixed; inset: 0; }
 
-#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+#scene.grabbing { cursor: grabbing; }
 
 .grid-bg {
   position: absolute; inset: 0; pointer-events: none;
@@ -117,6 +118,15 @@ html, body {
 .panel::before { top: -1px; left: -1px; border-top: 1.5px solid var(--line-s); border-left: 1.5px solid var(--line-s); }
 .panel::after { bottom: -1px; right: -1px; border-bottom: 1.5px solid var(--line-s); border-right: 1.5px solid var(--line-s); }
 .panel.grow { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* 这两块原来撑满整列、高度过高，压到约原来的一半 */
+#p-rate, #p-green { flex: 0 0 auto; }
+#p-rate { height: clamp(162px, 18.9vh, 214px); }
+#p-green { height: clamp(164px, 18.2vh, 210px); }
+#p-green h2 > span { font-family: inherit; font-size: 9.5px; letter-spacing: .6px; }
+#p-green .kpi3 > div { padding: 3px 6px; }
+#p-green .kpi3 label { line-height: 1.25; }
+#p-green .kpi3 b { font-size: 14px; line-height: 1.25; }
 
 .panel h2 {
   display: flex; align-items: center; gap: 7px;
@@ -239,10 +249,9 @@ html, body {
 .energy-rows .er .b i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #b8720d, #ffc247); }
 .energy-rows .er b { font-family: var(--num); font-size: 9.5px; color: #ffe6b0; width: 34px; text-align: right; }
 
-/* 面积占比 */
-.area-chart { margin-top: 8px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.ac-title { font-size: 9.5px; color: var(--dim); margin-bottom: 5px; letter-spacing: .5px; }
-.ac-bars { flex: 1; display: flex; align-items: flex-end; gap: 7px; padding-bottom: 14px; position: relative; min-height: 56px; }
+/* 面积占比（紧凑版） */
+.area-chart { position: relative; margin-top: 6px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ac-bars { flex: 1; display: flex; align-items: flex-end; gap: 7px; padding: 12px 0 13px; position: relative; min-height: 46px; }
 .ac-bars .ac { flex: 1; position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
 .ac-bars .ac i {
   width: 100%; max-width: 26px; background: linear-gradient(180deg, #58e6ff, rgba(24, 120, 190, .35));
@@ -276,7 +285,7 @@ html, body {
 
 /* ---------- 右下角浮动监控卡 ---------- */
 .dash {
-  position: absolute; right: 352px; bottom: 14px; width: 620px; z-index: 16;
+  position: absolute; right: 352px; bottom: 74px; width: 620px; z-index: 16;
   background: linear-gradient(165deg, rgba(10, 30, 52, .94), rgba(4, 14, 26, .92));
   border: 1px solid rgba(64, 170, 235, .42);
   box-shadow: 0 18px 46px rgba(0, 0, 0, .55), inset 0 0 32px rgba(20, 90, 150, .18);
@@ -614,14 +623,13 @@ html, body {
     </section>
 
     <section class="panel grow" id="p-green">
-      <h2><i></i>绿色环保<span>GREEN &amp; ENVIRONMENT</span></h2>
+      <h2><i></i>绿色环保<span>各工序区域面积占比</span></h2>
       <div class="kpi3">
         <div><label>今日处理水量</label><b id="g-water">6678.63</b><i>m³</i></div>
         <div><label>空气质量指数</label><b id="g-air">98.33</b><i>AQI</i></div>
         <div><label>单位产品能耗</label><b id="g-unit">0.281</b><i>tce/t</i></div>
       </div>
       <div class="area-chart">
-        <div class="ac-title">各工序区域面积占比</div>
         <div class="ac-bars" id="area-bars"></div>
       </div>
     </section>
@@ -653,7 +661,7 @@ html, body {
     <div class="ld-bar"><i id="ld-bar"></i></div>
   </div>
 
-  <div class="loading-hint" id="hint">拖拽旋转 · 滚轮缩放 · 点击厂区标签聚焦</div>
+  <div class="loading-hint" id="hint">中键拖拽旋转 · 滚轮缩放 · 点击厂区标签聚焦</div>
 </div>
 <script>
 0,
@@ -1727,7 +1735,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function bindPointer() {
     var dragging = false, lastX = 0, lastY = 0, moved = 0;
 
-    function down(x, y) { dragging = true; lastX = x; lastY = y; moved = 0; idle = 0; }
+    function down(x, y) { dragging = true; lastX = x; lastY = y; moved = 0; idle = 0; canvas.classList.add('grabbing'); }
     function move(x, y) {
       if (!dragging) return;
       var dx = x - lastX, dy = y - lastY;
@@ -1737,9 +1745,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       goal.phi = Math.max(0.16, Math.min(1.44, goal.phi - dy * 0.0042));
       idle = 0;
     }
-    function up() { dragging = false; }
+    function up() { dragging = false; canvas.classList.remove('grabbing'); }
 
-    canvas.addEventListener('mousedown', function (e) { down(e.clientX, e.clientY); });
+    // 中键拖拽旋转（阻止浏览器自动滚动），左键拖拽同样可用
+    canvas.addEventListener('mousedown', function (e) {
+      if (e.button !== 0 && e.button !== 1) return;
+      if (e.button === 1) e.preventDefault();
+      down(e.clientX, e.clientY);
+    });
+    canvas.addEventListener('auxclick', function (e) {
+      if (e.button === 1) e.preventDefault();
+    });
     window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
     window.addEventListener('mouseup', up);
 
