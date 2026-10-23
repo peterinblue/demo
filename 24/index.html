@@ -362,9 +362,12 @@ background:
 }
 .nv-grp-h:hover{background:rgba(47,216,255,.07);color:#d8efff}
 .nv-grp-h .idx{
-  width:18px;height:18px;flex:0 0 18px;border-radius:3px;display:grid;place-items:center;
-  font-size:11px;font-weight:700;color:#04101f;background:linear-gradient(135deg,#5ceaff,#1f8bff);
+  width:20px;height:20px;flex:0 0 20px;border-radius:4px;display:grid;place-items:center;
+  color:#5ceaff;background:rgba(47,216,255,.10);border:1px solid rgba(47,216,255,.24);
+  transition:.15s;
 }
+.nv-grp-h .idx svg{width:13px;height:13px;display:block}
+.nv-grp-h:hover .idx{background:rgba(47,216,255,.18);border-color:rgba(47,216,255,.5)}
 .nv-grp-h .cnt{margin-left:auto;font-size:11px;color:#4f7ea6}
 .nv-grp-h .arw{transition:.2s;opacity:.6}
 .nv-grp.close .arw{transform:rotate(-90deg)}
@@ -550,8 +553,7 @@ table.tbl td.num{font-family:"DIN Alternate",Consolas,monospace;color:#eaf8ff}
   background:linear-gradient(135deg,#5ceaff,#1f8bff);border-radius:8px;padding:1px 7px;
 }
 .ov-grid{
-  flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);
-  grid-template-rows:repeat(3,1fr);gap:12px;
+  flex:1;min-height:0;display:grid;gap:12px;
 }
 .ov-card{
   display:flex;flex-direction:column;min-height:0;padding:12px 14px;border-radius:4px;
@@ -565,11 +567,12 @@ table.tbl td.num{font-family:"DIN Alternate",Consolas,monospace;color:#eaf8ff}
 .ov-h{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600;color:#e6f5ff;letter-spacing:.5px;padding-bottom:10px;
   border-bottom:1px solid rgba(47,216,255,.12);margin-bottom:10px}
 .ov-h .idx{
-  width:20px;height:20px;flex:0 0 20px;border-radius:3px;display:grid;place-items:center;
-  font-size:11.5px;font-weight:700;color:#04101f;background:linear-gradient(135deg,#5ceaff,#1f8bff);
+  width:25px;height:25px;flex:0 0 25px;border-radius:5px;display:grid;place-items:center;
+  color:#5ceaff;background:rgba(47,216,255,.10);border:1px solid rgba(47,216,255,.26);
 }
+.ov-h .idx svg{width:15px;height:15px;display:block}
 .ov-h .ct{margin-left:auto;font-size:11.5px;color:#5f8cae;font-weight:400}
-.ov-items{display:flex;flex-direction:column;gap:9px;min-height:0;overflow:hidden}
+.ov-items{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0;overflow:hidden}
 .ov-item{
   padding:9px 11px;border-radius:3px;cursor:pointer;transition:.15s;
   background:rgba(8,30,62,.55);border:1px solid rgba(47,216,255,.14);
@@ -2265,7 +2268,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
 </script>
 <script>
 /* ============================================================
-   管理端（后台）—— 按《功能清单》组织：9 个一级模块 / 17 项功能
+   管理端（后台）—— 按《功能清单》组织：8 个一级模块 / 15 项功能
    ============================================================ */
 (function () {
   var stage = document.getElementById('stage');
@@ -2298,23 +2301,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
      功能清单数据（与 xlsx《功能清单》一一对应）
      ============================================================ */
   var DATA = [
-    /* ---------------- 一、大屏首页 ---------------- */
+    /* ---------------- 实时监测 ---------------- */
     {
-      id: 'f01', g: '一、大屏首页', n: '3D数字孪生', kind: 'twin',
-      d: '通过3D建模展示园区/车间整体布局与设备实时状态的数字孪生视图',
-      kpi: [['建模车间', '1', '个', '1# 缠绕车间（已上线）'], ['已建模型设备', '42', '台', '覆盖 7 类工艺设备'],
-            ['实时数据点位', '1,286', '个', '采集周期 2s'], ['模型刷新延迟', '1.2', 's', '正常']]
-    },
-    {
-      id: 'f02', g: '一、大屏首页', n: '统计看板', kind: 'board',
-      d: '以图表形式集中展示关键运营指标与统计概览',
-      kpi: [['本月完成', '1,286', '件', '较上月 +6.8%'], ['计划达成率', '92.6', '%', '目标 95%'],
-            ['设备综合效率', '85.4', '%', '较上月 +2.1%'], ['质量合格率', '99.2', '%', '目标 99%']]
-    },
-
-    /* ---------------- 二、实时监测 ---------------- */
-    {
-      id: 'f03', g: '二、实时监测', n: '按区域位置', kind: 'table',
+      id: 'f03', g: '实时监测', n: '按区域位置', kind: 'table',
       d: '按楼层/车间/区域维度实时查看现场监测数据',
       kpi: [['监测区域', '8', '个', '覆盖 1F-3F'], ['在线传感器', '126', '/130', '在线率 96.9%'],
             ['超限区域', '1', '处', '2F 固化区温度偏高']],
@@ -2332,7 +2321,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
     {
-      id: 'f04', g: '二、实时监测', n: '按设备类型', kind: 'table',
+      id: 'f04', g: '实时监测', n: '按设备类型', kind: 'table',
       d: '按设备类别维度实时查看各设备运行状态与参数',
       kpi: [['设备总数', '94', '台', '7 类工艺设备'], ['运行中', '81', '台', '开机率 86.2%'],
             ['停机/故障', '13', '台', '待处理 3 台']],
@@ -2350,9 +2339,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 三、历史数据 ---------------- */
+    /* ---------------- 历史数据 ---------------- */
     {
-      id: 'f05', g: '三、历史数据', n: '设备实时数据查询', kind: 'query',
+      id: 'f05', g: '历史数据', n: '设备实时数据查询', kind: 'query',
       d: '按设备与时间查询历史采集的实时数据曲线与明细',
       kpi: [['可查询设备', '94', '台', '保留 24 个月'], ['数据点总量', '3.6', '亿', '日增 620 万'],
             ['平均查询耗时', '0.8', 's', '近 7 日']],
@@ -2371,9 +2360,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 四、库存管理 ---------------- */
+    /* ---------------- 库存管理 ---------------- */
     {
-      id: 'f06', g: '四、库存管理', n: '胶带具体库存', kind: 'table',
+      id: 'f06', g: '库存管理', n: '胶带具体库存', kind: 'table',
       d: '管理胶带编号、名称与剩余库存量（编号、名称、剩余量）',
       kpi: [['胶带品种', '6', '种', '在库'], ['库存总量', '94,260', 'm', '较昨日 -1,860'],
             ['低于安全库存', '1', '种', 'T-3304']],
@@ -2389,7 +2378,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
     {
-      id: 'f07', g: '四、库存管理', n: '产品库存/进度', kind: 'table',
+      id: 'f07', g: '库存管理', n: '产品库存/进度', kind: 'table',
       d: '跟踪产品库存及生产进度与当前所在工序位置（名称、规格、编号、目前生产位置）',
       kpi: [['在制产品', '18', '项', '跨 6 道工序'], ['本月入库', '1,286', '件', '较上月 +6.8%'],
             ['平均在制周期', '11.6', '天', '较上月 -0.9 天']],
@@ -2406,9 +2395,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 五、告警管理 ---------------- */
+    /* ---------------- 告警管理 ---------------- */
     {
-      id: 'f08', g: '五、告警管理', n: '操作告警信息', kind: 'table',
+      id: 'f08', g: '告警管理', n: '操作告警信息', kind: 'table',
       d: '展示人员操作类告警记录',
       kpi: [['今日操作告警', '12', '条', '较昨日 +3'], ['待处理', '4', '条', '需班组长确认'],
             ['7 日处理及时率', '96.4', '%', '目标 98%']],
@@ -2425,7 +2414,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
     {
-      id: 'f09', g: '五、告警管理', n: '参数告警信息', kind: 'table',
+      id: 'f09', g: '告警管理', n: '参数告警信息', kind: 'table',
       d: '展示设备/工艺参数超限类告警记录',
       kpi: [['今日参数告警', '27', '条', '较昨日 -5'], ['严重告警', '3', '条', '已联动停机'],
             ['平均响应时长', '2.4', 'min', '目标 3 min']],
@@ -2442,9 +2431,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 六、原材料管理 ---------------- */
+    /* ---------------- 原材料管理 ---------------- */
     {
-      id: 'f10', g: '六、原材料管理', n: '原材料使用情况', kind: 'table',
+      id: 'f10', g: '原材料管理', n: '原材料使用情况', kind: 'table',
       d: '记录原材料名称、批号、领用日期、使用日期等使用信息',
       kpi: [['在库原材料', '32', '种', '含树脂/纤维/辅料'], ['本月领用', '4,286', 'kg', '较上月 +4.2%'],
             ['批次可追溯率', '100', '%', '全流程记录']],
@@ -2462,9 +2451,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 七、台账管理 ---------------- */
+    /* ---------------- 台账管理 ---------------- */
     {
-      id: 'f11', g: '七、台账管理', n: '人员管理', kind: 'table',
+      id: 'f11', g: '台账管理', n: '人员管理', kind: 'table',
       d: '维护人员基础信息与岗位台账',
       kpi: [['在册人员', '128', '人', '8 个班组'], ['今日出勤', '116', '人', '出勤率 90.6%'],
             ['持证上岗率', '100', '%', '特种作业 24 人']],
@@ -2482,7 +2471,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
     {
-      id: 'f12', g: '七、台账管理', n: '设备管理', kind: 'table',
+      id: 'f12', g: '台账管理', n: '设备管理', kind: 'table',
       d: '维护设备台账档案与全生命周期信息',
       kpi: [['设备总数', '94', '台', '7 类'], ['在用', '81', '台', '开机率 86.2%'],
             ['本月到期保养', '6', '台', '请及时安排']],
@@ -2502,9 +2491,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 八、报表管理 ---------------- */
+    /* ---------------- 报表管理 ---------------- */
     {
-      id: 'f13', g: '八、报表管理', n: '工艺数据统计分析', kind: 'report',
+      id: 'f13', g: '报表管理', n: '工艺数据统计分析', kind: 'report',
       d: '按产品或设备维度统计与分析工艺数据',
       kpi: [['统计工序', '6', '道', '本月全量'], ['工艺达标率', '97.8', '%', '目标 98%'],
             ['异常批次', '7', '批', '已全部闭环']],
@@ -2520,7 +2509,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
     {
-      id: 'f14', g: '八、报表管理', n: '胶带数据统计分析', kind: 'report',
+      id: 'f14', g: '报表管理', n: '胶带数据统计分析', kind: 'report',
       d: '对胶带用量与库存等数据进行统计分析',
       kpi: [['本月领用', '18,640', 'm', '较上月 +3.4%'], ['期末结存', '94,260', 'm', '周转 42 天'],
             ['综合损耗率', '1.8', '%', '目标 ≤2%']],
@@ -2536,7 +2525,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
     {
-      id: 'f15', g: '八、报表管理', n: '性能数据统计分析', kind: 'report',
+      id: 'f15', g: '报表管理', n: '性能数据统计分析', kind: 'report',
       d: '基于检测分析平台对性能数据进行统计分析',
       kpi: [['本月检测', '386', '批次', '覆盖 5 类项目'], ['性能合格率', '98.7', '%', '目标 98%'],
             ['不合格批次', '5', '批', '已判定处置']],
@@ -2552,9 +2541,9 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       ]
     },
 
-    /* ---------------- 九、配置管理 ---------------- */
+    /* ---------------- 配置管理 ---------------- */
     {
-      id: 'f16', g: '九、配置管理', n: '用户/角色/权限管理', kind: 'table',
+      id: 'f16', g: '配置管理', n: '用户/角色/权限管理', kind: 'table',
       d: '管理系统用户、角色及访问权限',
       kpi: [['系统用户', '46', '个', '在用 43'], ['角色', '6', '类', '按岗位划分'],
             ['本月新增', '3', '个', '待审批 1']],
@@ -2562,16 +2551,16 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
              ['最近登录', 160, 'center'], ['状态', 100, 'center']],
       rows: [
         ['admin', '系统管理员', '超级管理员', '全部模块（含配置管理）', '2026-10-23 13:40', '在用'],
-        ['zjg01', '张建国', '车间班组长', '大屏首页 / 实时监测 / 告警管理', '2026-10-23 13:12', '在用'],
+        ['zjg01', '张建国', '车间班组长', '实时监测 / 告警管理 / 台账管理', '2026-10-23 13:12', '在用'],
         ['lw02', '李伟', '设备操作员', '实时监测（只读）/ 历史数据', '2026-10-23 12:58', '在用'],
         ['cj03', '陈静', '工艺工程师', '工艺数据 / 报表管理', '2026-10-23 11:26', '在用'],
         ['sl04', '孙磊', '质量检验员', '台账管理 / 报表管理（只读）', '2026-10-23 10:04', '在用'],
         ['zm05', '周敏', '库房管理员', '库存管理 / 原材料管理', '2026-10-22 17:38', '在用'],
-        ['tmp06', '临时访客', '只读访客', '大屏首页（只读）', '2026-10-18 09:12', '停用']
+        ['tmp06', '临时访客', '只读访客', '实时监测（只读）', '2026-10-18 09:12', '停用']
       ]
     },
     {
-      id: 'f17', g: '九、配置管理', n: '参数管理', kind: 'table',
+      id: 'f17', g: '配置管理', n: '参数管理', kind: 'table',
       d: '维护系统运行所需的各类参数配置',
       kpi: [['参数项', '128', '项', '8 个分组'], ['本月变更', '14', '次', '全部留痕'],
             ['待生效', '2', '项', '审核通过后生效']],
@@ -2614,7 +2603,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
          '<span>功能总览</span><em>' + DATA.length + '</em></div>';
     gs.forEach(function (grp, gi) {
       h += '<div class="nv-grp" data-grp="' + gi + '">';
-      h += '<div class="nv-grp-h"><span class="idx">' + (gi + 1) + '</span>' + grp.g +
+      h += '<div class="nv-grp-h"><span class="idx">' + iconOf(grp.g) + '</span>' + grp.g +
            '<span class="cnt">' + grp.items.length + ' 项</span>' +
            '<svg class="arw" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#7fb4d8" stroke-width="1.4"><path d="M2 3.5 5 6.5 8 3.5"/></svg></div>';
       h += '<div class="nv-grp-items">';
@@ -2624,6 +2613,23 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       h += '</div></div>';
     });
     return h;
+  }
+
+  /* ---------- 一级模块图标 ---------- */
+  var ICON = {
+    '实时监测': '<path d="M1.6 8h2.4l1.7-4.4 2.5 8.8 1.7-4.4h2.5"/>',
+    '历史数据': '<circle cx="8" cy="8" r="5.5"/><path d="M8 4.7V8l2.3 1.5"/>',
+    '库存管理': '<path d="M8 1.9 14 5v6l-6 3.1L2 11V5z"/><path d="M2 5l6 3 6-3M8 8v6.1"/>',
+    '告警管理': '<path d="M4.2 11.2V7.1a3.8 3.8 0 0 1 7.6 0v4.1l1.2 1.5H3z"/><path d="M6.4 14.3a1.75 1.75 0 0 0 3.2 0"/>',
+    '原材料管理': '<path d="M8 1.9 13.8 4.8 8 7.7 2.2 4.8z"/><path d="M2.2 8 8 10.9 13.8 8M2.2 11.2 8 14.1l5.8-2.9"/>',
+    '台账管理': '<rect x="2.6" y="2" width="10.8" height="12" rx="1.2"/><path d="M5.5 5.6h5M5.5 8h5M5.5 10.4h3.2"/>',
+    '报表管理': '<rect x="2.4" y="2" width="11.2" height="12" rx="1.2"/><path d="M5.3 10.8V8.6M8 10.8V5.6M10.7 10.8V7.2"/>',
+    '配置管理': '<circle cx="8" cy="8" r="2.3"/><path d="M8 1.9v1.7M8 12.4v1.7M1.9 8h1.7M12.4 8h1.7M3.7 3.7l1.2 1.2M11.1 11.1l1.2 1.2M12.3 3.7l-1.2 1.2M4.9 11.1l-1.2 1.2"/>'
+  };
+  function iconOf(g) {
+    var d = ICON[g] || '<circle cx="8" cy="8" r="5.4"/><path d="M8 5.4v3.4h2"/>';
+    return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" ' +
+           'stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
   }
 
   function kpiHTML(f) {
@@ -2672,36 +2678,6 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
   }
 
   /* ---------- 各类页面 ---------- */
-  function pageTwin(f) {
-    var h = '';
-    h += '<div class="twin">';
-    h += '<div class="stage-box"><div class="grid-bg"></div><div class="mid">' +
-         '<div class="big">1# 缠绕车间</div>' +
-         '<div class="sub">纤维缠绕 · 浸胶成型 · 实时数字孪生</div>' +
-         '<div class="btn"><button class="adm-btn pri" id="toBig">进入数字孪生大屏</button></div>' +
-         '</div></div>';
-    h += '<div class="assets">';
-    h += '<div class="a"><div class="n">车间级模型<em>已上线</em></div>' +
-         '<div class="m">覆盖面积 <b>216 ㎡</b>　设备 <b>42 台</b><br>建模精度 <b>LOD-3</b>　更新频率 <b>实时</b></div></div>';
-    h += '<div class="a"><div class="n">核心工艺设备模型<em>42/42</em></div>' +
-         '<div class="m">数控缠绕机 <b>3</b>　纤维纱架 <b>12</b>　树脂胶槽 <b>2</b><br>芯模/成品架 <b>4</b>　控制柜 <b>3</b></div></div>';
-    h += '<div class="a"><div class="n">实时数据点位<em>1,286 个</em></div>' +
-         '<div class="m">采集周期 <b>2 s</b>　在线率 <b>96.9%</b><br>最近同步 <b>13:52:16</b></div></div>';
-    h += '<div class="a"><div class="n">孪生驱动<em>正常</em></div>' +
-         '<div class="m">主轴转速 / 纱线张力 / 胶槽液位 / 炉温<br>与现场 PLC 数据 <b>双向映射</b></div></div>';
-    h += '</div></div>';
-    return h;
-  }
-
-  function pageBoard(f) {
-    var h = '';
-    h += '<div class="chartrow">';
-    h += '<div class="cbox"><div class="ch">近 12 个月产量与计划达成</div><div class="cv" id="adCh1"></div></div>';
-    h += '<div class="cbox" style="flex:0 0 420px"><div class="ch">设备状态分布</div><div class="cv" id="adCh2"></div></div>';
-    h += '</div>';
-    return h;
-  }
-
   function pageQuery(f) {
     var h = '';
     h += '<div class="qbar">' +
@@ -2728,14 +2704,15 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
     var h = '<div class="pg-kpi">' +
       '<div class="k"><div class="lb">一级模块</div><div class="vl">' + gs.length + '<em>个</em></div><div class="sb">按业务域划分</div></div>' +
       '<div class="k"><div class="lb">功能项</div><div class="vl">' + DATA.length + '<em>项</em></div><div class="sb">与《功能清单》一一对应</div></div>' +
-      '<div class="k"><div class="lb">已上线</div><div class="vl">' + DATA.length + '<em>项</em></div><div class="sb">大屏 + 管理端 双端覆盖</div></div>' +
+      '<div class="k"><div class="lb">已上线</div><div class="vl">' + DATA.length + '<em>项</em></div><div class="sb">功能全部交付上线</div></div>' +
       '<div class="k"><div class="lb">当前用户</div><div class="vl">admin</div><div class="sb">超级管理员 · 全部权限</div></div>' +
       '</div>';
-    h += '<div class="ov-grid">';
-    gs.forEach(function (grp, gi) {
-      var nm = grp.g.replace(/^[一二三四五六七八九十]+、/, '');
+    var cols = 4, rows = Math.ceil(gs.length / cols) || 1;
+    h += '<div class="ov-grid" style="grid-template-columns:repeat(' + cols + ',1fr);' +
+         'grid-template-rows:repeat(' + rows + ',1fr)">';
+    gs.forEach(function (grp) {
       h += '<div class="ov-card">' +
-           '<div class="ov-h"><span class="idx">' + (gi + 1) + '</span>' + nm +
+           '<div class="ov-h"><span class="idx">' + iconOf(grp.g) + '</span>' + grp.g +
            '<span class="ct">' + grp.items.length + ' 项</span></div><div class="ov-items">';
       grp.items.forEach(function (f) {
         h += '<div class="ov-item" data-go="' + f.id + '">' +
@@ -2754,42 +2731,6 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
     axisLabel: { color: '#7ba6c8', fontSize: 11 },
     splitLine: { lineStyle: { color: 'rgba(47,216,255,.08)' } }
   };
-  function barLine() {
-    var m = ['11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月'];
-    var v = [980, 1040, 1120, 900, 1180, 1260, 1195, 1320, 1240, 1180, 1204, 1286];
-    var p = [88, 90, 91, 84, 92, 93, 90, 94, 92, 91, 92, 92.6];
-    return {
-      grid: { left: 46, right: 46, top: 34, bottom: 28 },
-      tooltip: { trigger: 'axis' },
-      legend: { right: 8, top: 4, textStyle: { color: '#7ba6c8', fontSize: 11 }, itemWidth: 10, itemHeight: 8 },
-      xAxis: { type: 'category', data: m, axisLine: AX.axisLine, axisLabel: AX.axisLabel, axisTick: { show: false } },
-      yAxis: [
-        { type: 'value', name: '件', nameTextStyle: { color: '#5f8cae', fontSize: 11 }, axisLabel: AX.axisLabel, splitLine: AX.splitLine, axisLine: { show: false } },
-        { type: 'value', name: '%', min: 70, max: 100, nameTextStyle: { color: '#5f8cae', fontSize: 11 }, axisLabel: AX.axisLabel, splitLine: { show: false }, axisLine: { show: false } }
-      ],
-      series: [
-        { name: '完成量', type: 'bar', data: v, barWidth: 12, itemStyle: { borderRadius: [3, 3, 0, 0], color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#5ceaff' }, { offset: 1, color: 'rgba(31,139,255,.25)' }] } } },
-        { name: '计划达成率', type: 'line', yAxisIndex: 1, data: p, smooth: true, symbolSize: 5, lineStyle: { color: '#ffc94d', width: 2 }, itemStyle: { color: '#ffc94d' } }
-      ]
-    };
-  }
-  function pieDev() {
-    return {
-      tooltip: { trigger: 'item' },
-      legend: { bottom: 6, textStyle: { color: '#7ba6c8', fontSize: 11 }, itemWidth: 9, itemHeight: 9 },
-      series: [{
-        type: 'pie', radius: ['48%', '70%'], center: ['50%', '46%'],
-        label: { color: '#9dc6e4', fontSize: 11, formatter: function (p) { return p.percent > 5 ? p.name + '\n' + p.percent + '%' : ''; } },
-        labelLine: { lineStyle: { color: 'rgba(47,216,255,.4)' } },
-        data: [
-          { name: '运行中', value: 81, itemStyle: { color: '#3ff0b0' } },
-          { name: '待机', value: 8, itemStyle: { color: '#5ceaff' } },
-          { name: '维修中', value: 2, itemStyle: { color: '#ffc94d' } },
-          { name: '故障', value: 3, itemStyle: { color: '#ff7a7a' } }
-        ]
-      }]
-    };
-  }
   function curve() {
     var x = [], a = [], lim = [];
     for (var i = 0; i <= 48; i++) {
@@ -2824,11 +2765,6 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
   }
 
   function mountCharts(f) {
-    if (f.kind === 'board') {
-      mkChart(document.getElementById('adCh1'), barLine());
-      mkChart(document.getElementById('adCh2'), pieDev());
-      return;
-    }
     if (f.kind === 'query') {
       mkChart(document.getElementById('adCh3'), curve());
       return;
@@ -2876,7 +2812,8 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
       CUR = { id: 'overview' };
       host.querySelector('.adm-main').innerHTML =
         '<div class="pg-hd"><div><div class="tt">功能总览</div>' +
-        '<div class="desc">平台管理端功能清单：9 个一级模块、17 项二级功能，点击卡片可直接进入对应功能页</div></div>' +
+        '<div class="desc">平台管理端功能清单：' + groupOf().length + ' 个一级模块、' + DATA.length +
+        ' 项二级功能，点击卡片可直接进入对应功能页</div></div>' +
         '<div class="acts"><button class="adm-btn">导出功能清单</button></div></div>' +
         pageOverview();
       Array.prototype.forEach.call(host.querySelectorAll('.ov-item'), function (b) {
@@ -2888,9 +2825,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
     CUR = f;
 
     var body;
-    if (f.kind === 'twin') body = pageTwin(f);
-    else if (f.kind === 'board') body = pageBoard(f);
-    else if (f.kind === 'query') body = pageQuery(f);
+    if (f.kind === 'query') body = pageQuery(f);
     else if (f.kind === 'report') body = pageReport(f);
     else body = tableHTML(f);
 
