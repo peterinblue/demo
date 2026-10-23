@@ -606,8 +606,7 @@ textarea,.opt,.uploader,.seg button,.tabbar,.me,.bill-hero,.login-card,.m-h,.m-f
           登 录
         </button>
         <div class="hint">
-          <b>演示账号</b>：用户名 <code>peterinblue</code> ／ 密码 <code>123456</code><br>
-          也可使用运维工号登录，如 <code>ops001</code> + <code>123456</code>
+          点击登录直接进入后台
         </div>
       </div>
 
@@ -823,11 +822,7 @@ function doLogin(mode){
   if(logging) return;
   var user='', ok=false;
   if(mode==='pwd'){
-    user=$('#lgUser').value.trim();
-    var pwd=$('#lgPwd').value;
-    if(!user){ toast('请输入用户名','err'); $('#lgUser').focus(); return; }
-    if(!pwd){ toast('请输入密码','err'); $('#lgPwd').focus(); return; }
-    if(pwd!=='123456'){ toast('密码错误，演示密码为 123456','err'); $('#lgPwd').focus(); return; }
+    user=$('#lgUser').value.trim()||'admin';
     ok=true;
   }else{
     user=$('#lgPhone').value.trim();
