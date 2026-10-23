@@ -573,9 +573,14 @@ background:
 </script>
 <script>
 /* ============================================================
-   智慧车间 3D 数字孪生场景（Three.js）
-   参考背景图：白机身 CNC 加工中心两排、中间输送线、AGV 小车、
-   机械臂、蓝色发光地面网格
+   1# 缠绕车间 3D 数字孪生场景（Three.js）
+   缠绕工艺典型元素：
+   缠绕机（主轴箱 / 尾座 / 旋转芯模 / 往复小车 + 导丝头）
+   纤维纱架（纱团阵列 + 走丝）
+   树脂胶槽（浸胶辊）
+   芯模存放架 / 成品架
+   操作控制柜 / 操作台 / 安全围栏与地面标线
+   （缠绕车间无 AGV）
    ============================================================ */
 (function () {
   if (typeof THREE === 'undefined') return;
@@ -596,33 +601,33 @@ background:
   if (renderer.outputEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
 
   var scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x050f22, 34, 96);
+  scene.fog = new THREE.Fog(0x04102a, 30, 78);
 
-  var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+  var camera = new THREE.PerspectiveCamera(40, 1, 0.1, 300);
 
   /* ---------------- 灯光 ---------------- */
   scene.add(new THREE.HemisphereLight(0x8fc0ff, 0x050c1c, 0.55));
 
   var key = new THREE.DirectionalLight(0xdcefff, 1.45);
-  key.position.set(16, 30, 18);
+  key.position.set(12, 24, 14);
   key.castShadow = true;
   key.shadow.mapSize.width = 1024;
   key.shadow.mapSize.height = 1024;
   key.shadow.camera.near = 1;
-  key.shadow.camera.far = 90;
-  key.shadow.camera.left = -30;
-  key.shadow.camera.right = 30;
-  key.shadow.camera.top = 30;
-  key.shadow.camera.bottom = -30;
-  key.shadow.bias = -0.0009;
+  key.shadow.camera.far = 80;
+  key.shadow.camera.left = -22;
+  key.shadow.camera.right = 22;
+  key.shadow.camera.top = 22;
+  key.shadow.camera.bottom = -22;
+  key.shadow.bias = -0.0008;
   scene.add(key);
 
-  var fill = new THREE.DirectionalLight(0x3f9bff, 0.42);
-  fill.position.set(-22, 14, -16);
+  var fill = new THREE.DirectionalLight(0x3f9bff, 0.45);
+  fill.position.set(-16, 10, -12);
   scene.add(fill);
 
-  var p1 = new THREE.PointLight(0x2fd8ff, 0.75, 40, 2); p1.position.set(-12, 6, 8); scene.add(p1);
-  var p2 = new THREE.PointLight(0x2fd8ff, 0.75, 40, 2); p2.position.set(12, 6, -8); scene.add(p2);
+  var p1 = new THREE.PointLight(0x2fd8ff, 0.8, 30, 2); p1.position.set(-4, 5, 4); scene.add(p1);
+  var p2 = new THREE.PointLight(0x2fd8ff, 0.7, 30, 2); p2.position.set(6, 5, -4); scene.add(p2);
 
   /* ---------------- 材质 ---------------- */
   function mat(color, opt) {
@@ -639,18 +644,38 @@ background:
   }
 
   var M = {
-    floor: mat(0x071529, { metalness: 0.25, roughness: 0.85 }),
     slab: mat(0x0a1c33, { metalness: 0.45, roughness: 0.68 }),
     body: mat(0xe4ebf4, { metalness: 0.22, roughness: 0.38 }),
-    bodyDark: mat(0x8fa4b8, { metalness: 0.5, roughness: 0.45 }),
+    bodyDark: mat(0x9fb2c6, { metalness: 0.5, roughness: 0.45 }),
+    dark: mat(0x152740, { metalness: 0.6, roughness: 0.5 }),
+    steel: mat(0xa8b7c6, { metalness: 0.85, roughness: 0.3 }),
     glass: mat(0x08203a, { metalness: 0.9, roughness: 0.16, emissive: 0x0a4f86, ei: 0.45 }),
-    dark: mat(0x14243c, { metalness: 0.6, roughness: 0.5 }),
-    steel: mat(0x9aa9b8, { metalness: 0.85, roughness: 0.32 }),
     cyan: mat(0x2fd8ff, { metalness: 0.2, roughness: 0.3, emissive: 0x2fd8ff, ei: 1.5 }),
-    amber: mat(0xffb648, { emissive: 0xffa32e, ei: 1.2 }),
+    amber: mat(0xffc94d, { emissive: 0xffb02e, ei: 0.9 }),
     green: mat(0x38e8a0, { emissive: 0x2ee6a8, ei: 1.2 }),
-    belt: mat(0x1b2b42, { metalness: 0.4, roughness: 0.7 })
+    fiber: mat(0xdfdcd2, { metalness: 0.05, roughness: 0.95 }),
+    fiberWarm: mat(0xcfc3a8, { metalness: 0.05, roughness: 0.95 }),
+    mandrel: mat(0xc9d4e2, { metalness: 0.75, roughness: 0.28 }),
+    product: mat(0xdfe6ee, { metalness: 0.25, roughness: 0.55 }),
+    resin: mat(0x1c7d99, { metalness: 0.15, roughness: 0.12, emissive: 0x0a4f63, ei: 0.75 })
   };
+
+  // 已缠绕纤维层的螺旋铺丝纹理（转动时可见）
+  M.wound = (function () {
+    var cv = document.createElement('canvas');
+    cv.width = 512; cv.height = 64;
+    var g = cv.getContext('2d');
+    g.fillStyle = '#e9e4d6'; g.fillRect(0, 0, 512, 64);
+    g.strokeStyle = 'rgba(146,132,104,.95)'; g.lineWidth = 3;
+    for (var i = -80; i < 600; i += 9) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 46, 64); g.stroke();
+    }
+    var t = new THREE.CanvasTexture(cv);
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(5, 1);
+    return new THREE.MeshStandardMaterial({ map: t, metalness: 0.06, roughness: 0.9 });
+  })();
 
   function box(w, h, d, material, x, y, z) {
     var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -664,122 +689,274 @@ background:
     m.castShadow = true; m.receiveShadow = true;
     return m;
   }
+  function cylX(r, len, seg, material, x, y, z) {
+    var m = cyl(r, r, len, seg, material, x, y, z);
+    m.rotation.z = Math.PI / 2;
+    return m;
+  }
+  function cylZ(r, len, seg, material, x, y, z) {
+    var m = cyl(r, r, len, seg, material, x, y, z);
+    m.rotation.x = Math.PI / 2;
+    return m;
+  }
 
   var root = new THREE.Group();
   scene.add(root);
 
   /* ---------------- 地面 ---------------- */
-  var HW = 23, HD = 15.5; // 半个车间尺寸
+  var HW = 12, HD = 9;
 
-  // 大地面（不透光，铺满视口，避免与背景照片叠出色差）
-  var bigFloor = new THREE.Mesh(new THREE.PlaneGeometry(140, 110), mat(0x07132a, { metalness: 0.15, roughness: 0.9 }));
+  var bigFloor = new THREE.Mesh(new THREE.PlaneGeometry(120, 90), mat(0x061127, { metalness: 0.15, roughness: 0.9 }));
   bigFloor.rotation.x = -Math.PI / 2;
   bigFloor.position.y = -0.52;
   bigFloor.receiveShadow = true;
   root.add(bigFloor);
 
-  var slab = box(HW * 2, 0.5, HD * 2, M.slab, 0, -0.25, 0);
-  root.add(slab);
+  root.add(box(HW * 2, 0.5, HD * 2, M.slab, 0, -0.25, 0));
 
-  // 地面网格（发光淡青）
-  var grid = new THREE.GridHelper(HW * 2 - 1, 26, 0x2fd8ff, 0x2fd8ff);
+  var grid = new THREE.GridHelper(HW * 2 - 1, 20, 0x2fd8ff, 0x2fd8ff);
   grid.material.transparent = true;
   grid.material.opacity = 0.2;
   grid.position.y = 0.012;
   root.add(grid);
 
-  // 地面内嵌亮线框（边框）
-  function edgeStrip(w, d) {
-    var g = new THREE.Group();
-    var t = 0.14, y = 0.02;
-    g.add(box(w, 0.03, t, M.cyan, 0, y, -d / 2));
-    g.add(box(w, 0.03, t, M.cyan, 0, y, d / 2));
-    g.add(box(t, 0.03, d, M.cyan, -w / 2, y, 0));
-    g.add(box(t, 0.03, d, M.cyan, w / 2, y, 0));
-    return g;
-  }
-  root.add(edgeStrip(HW * 2 - 2, HD * 2 - 2));
+  (function () {
+    var t = 0.14, w = HW * 2 - 1.6, d = HD * 2 - 1.6;
+    root.add(box(w, 0.03, t, M.cyan, 0, 0.02, -d / 2));
+    root.add(box(w, 0.03, t, M.cyan, 0, 0.02, d / 2));
+    root.add(box(t, 0.03, d, M.cyan, -w / 2, 0.02, 0));
+    root.add(box(t, 0.03, d, M.cyan, w / 2, 0.02, 0));
+  })();
 
-  // 中央过道引导线
-  var laneMat = mat(0x2fd8ff, { emissive: 0x2fd8ff, ei: 1.0, transparent: true, opacity: 0.55 });
-  for (var lx = -20; lx < 20; lx += 3.2) {
-    root.add(box(1.8, 0.02, 0.1, laneMat, lx, 0.02, -1.9));
-    root.add(box(1.8, 0.02, 0.1, laneMat, lx, 0.02, 1.9));
-  }
+  // 工作区黄色安全标线
+  (function () {
+    var laneMat = mat(0xffd257, { emissive: 0xffb02e, ei: 0.35, transparent: true, opacity: 0.75 });
+    [-3.6, 3.6].forEach(function (z) {
+      root.add(box(15.5, 0.02, 0.09, laneMat, 0, 0.02, z));
+    });
+    [-7.8, 7.8].forEach(function (x) {
+      root.add(box(0.09, 0.02, 7.2, laneMat, x, 0.02, 0));
+    });
+  })();
 
-  /* ---------------- CNC 加工中心 ---------------- */
-  function makeMachine() {
-    var g = new THREE.Group();
+  /* ============================================================
+     缠绕机
+     ============================================================ */
+  var WX = 0, WZ = 0;
+  var mandrelLen = 5.6, mandrelR = 0.62, mandrelY = 1.55;
 
-    // 底座
-    g.add(box(3.0, 0.45, 2.6, M.bodyDark, 0, 0.22, 0));
+  // 床身 + 导轨
+  root.add(box(7.6, 0.55, 1.55, M.bodyDark, WX, 0.28, WZ));
+  root.add(box(7.6, 0.1, 1.62, mat(0x134b78, { metalness: 0.6, roughness: 0.42, emissive: 0x0a2f52, ei: 0.35 }), WX, 0.58, WZ));
+  root.add(box(7.6, 0.09, 0.16, M.steel, WX, 0.67, WZ + 0.56));
+  root.add(box(7.6, 0.09, 0.16, M.steel, WX, 0.67, WZ - 0.56));
 
-    // 主机身
-    var bodyH = 2.5;
-    g.add(box(2.9, bodyH, 2.4, M.body, 0, 0.45 + bodyH / 2, 0));
+  // 导丝小车副床身（芯模后侧）
+  root.add(box(7.6, 0.42, 0.42, M.bodyDark, WX, 0.21, WZ - 1.35));
+  root.add(box(7.6, 0.08, 0.14, M.steel, WX, 0.46, WZ - 1.35));
 
-    // 前面板凹陷（深色衬底）
-    g.add(box(2.3, 2.0, 0.06, M.dark, 0, 1.52, 1.235));
-    // 观察窗（玻璃 + 内部微光）
-    g.add(box(1.75, 1.35, 0.07, M.glass, 0, 1.66, 1.27));
-    // 门下方拉手
-    g.add(box(1.1, 0.07, 0.09, M.steel, 0, 0.78, 1.29));
-    // 面板上的操作小屏
-    g.add(box(0.42, 0.3, 0.06, mat(0x0d3a5c, { emissive: 0x1a7fc4, ei: 0.9 }), 0.86, 1.02, 1.29));
+  // 主轴箱
+  root.add(box(1.34, 1.6, 1.5, M.body, -3.45, 1.1, WZ));
+  root.add(box(1.38, 0.14, 1.54, M.bodyDark, -3.45, 1.95, WZ));
+  root.add(box(0.46, 0.14, 0.46, M.dark, -3.45, 2.06, WZ));
+  root.add(box(0.05, 0.56, 0.9, M.glass, -2.79, 1.2, WZ + 0.16));       // 侧面观察窗
+  root.add(box(0.78, 0.46, 0.04, mat(0x0d3a5c, { emissive: 0x1a7fc4, ei: 0.85 }), -3.45, 1.55, WZ + 0.76)); // 正面触控屏
+  root.add(box(0.9, 0.06, 0.03, M.green, -3.45, 1.22, WZ + 0.76));       // 状态灯带
+  root.add(box(0.62, 0.14, 0.03, mat(0x11324f, { emissive: 0x2fd8ff, ei: 0.5 }), -3.45, 1.04, WZ + 0.76)); // 铭牌
+  root.add(cylX(0.62, 0.44, 28, M.steel, -2.62, mandrelY, WZ));          // 卡盘
+  root.add(cylX(0.67, 0.06, 28, M.bodyDark, -2.4, mandrelY, WZ));        // 卡爪盘
 
-    // 顶部机箱 + 散热格栅
-    g.add(box(2.2, 0.55, 1.9, M.bodyDark, 0, 0.45 + bodyH + 0.27, 0));
-    for (var t = 0; t < 5; t++) {
-      g.add(box(1.9, 0.03, 0.05, M.dark, 0, 0.45 + bodyH + 0.12 + t * 0.1, 0.96));
+  // 尾座
+  root.add(box(0.82, 1.1, 1.0, M.bodyDark, 3.25, 0.85, WZ));
+  root.add(box(0.52, 0.34, 0.62, M.body, 3.25, 1.52, WZ));
+  root.add(cylX(0.3, 0.5, 18, M.steel, 2.9, mandrelY, WZ));              // 顶尖套筒
+  root.add(cylX(0.36, 0.1, 18, M.bodyDark, 2.66, mandrelY, WZ));
+
+  // 芯模 + 已缠绕纤维层（带纤维纹理，转动可见）
+  var mandrel = cylX(mandrelR, mandrelLen, 36, M.mandrel, -0.2, mandrelY, WZ);
+  root.add(mandrel);
+  root.add(cylX(mandrelR * 1.01, 0.07, 36, mat(0x9fb0c2, { metalness: 0.75, roughness: 0.3 }), -0.2 + mandrelLen / 2, mandrelY, WZ));
+
+  var wound = cylX(mandrelR + 0.07, 3.5, 40, M.wound, -0.05, mandrelY, WZ);
+  root.add(wound);
+
+  // 主轴电机
+  root.add(box(0.72, 0.72, 0.72, M.dark, -3.9, 0.75, WZ - 1.05));
+  root.add(cylX(0.26, 0.55, 16, M.steel, -3.4, 0.75, WZ - 1.05));
+
+  // 往复小车 + 悬臂导丝头（纱线自上而下铺到芯模表面）
+  var carriage = new THREE.Group();
+  carriage.position.set(0.6, 0, WZ - 1.35);
+  root.add(carriage);
+  carriage.add(box(0.95, 0.4, 0.72, M.bodyDark, 0, 0.68, 0));
+  carriage.add(box(0.74, 0.1, 0.74, M.steel, 0, 0.93, 0));
+  carriage.add(box(0.34, 1.9, 0.34, M.body, 0, 1.93, 0.42));
+  carriage.add(box(0.3, 0.24, 1.1, M.body, 0, 2.98, 0.89));       // 悬臂
+  carriage.add(box(0.16, 0.42, 0.16, M.bodyDark, 0, 2.62, 1.36)); // 导丝杆
+  var eyeRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.032, 8, 16), M.cyan);
+  eyeRing.position.set(0, 2.38, 1.36);
+  eyeRing.rotation.y = Math.PI / 2;
+  carriage.add(eyeRing);
+  carriage.add(box(0.52, 0.05, 0.52, M.cyan, 0, 0.44, 0));
+
+  // 台面蓝色饰条
+  root.add(box(7.6, 0.06, 0.1, mat(0x1f6fa8, { emissive: 0x1a7fc4, ei: 0.55 }), WX, 0.62, WZ + 0.8));
+
+  /* ============================================================
+     纤维纱架
+     ============================================================ */
+  var creel = new THREE.Group();
+  creel.position.set(0.4, 0, -4.2);
+  root.add(creel);
+
+  [-2.6, 2.6].forEach(function (x) {
+    creel.add(box(0.14, 3.0, 0.14, M.steel, x, 1.5, -0.42));
+    creel.add(box(0.14, 3.0, 0.14, M.steel, x, 1.5, 0.42));
+  });
+  [0.75, 1.75, 2.75].forEach(function (y) {
+    creel.add(box(5.3, 0.1, 0.1, M.steel, 0, y, -0.42));
+    creel.add(box(5.3, 0.1, 0.1, M.steel, 0, y, 0.42));
+  });
+
+  var spools = [];
+  [0.92, 1.86, 2.80].forEach(function (y) {
+    for (var i = 0; i < 7; i++) {
+      var x = -2.34 + i * 0.78;
+      spools.push(cylZ(0.255, 0.44, 16, i % 2 ? M.fiber : M.fiberWarm, x, y, -0.42));
+      spools.push(cylZ(0.255, 0.44, 16, i % 2 ? M.fiberWarm : M.fiber, x, y, 0.42));
     }
+  });
+  spools.forEach(function (s) { creel.add(s); });
 
-    // 侧面控制箱
-    var panel = box(0.5, 0.85, 0.42, M.dark, 1.6, 1.55, 0.55);
-    g.add(panel);
-    g.add(box(0.06, 0.5, 0.2, M.cyan, 1.86, 1.62, 0.55));
+  // 纱架前的张力辊 / 分纱梳
+  creel.add(cylX(0.07, 5.2, 12, M.steel, 0, 1.32, 0.95));
+  creel.add(box(5.2, 0.05, 0.05, M.cyan, 0, 0.72, 0.95));
+  [-2.2, 2.2].forEach(function (x) {
+    creel.add(box(0.09, 0.9, 0.09, M.steel, x, 0.55, 0.95));
+  });
 
-    // 机身腰部蓝色饰条
-    g.add(box(2.92, 0.1, 2.42, mat(0x1a5f9e, { metalness: 0.6, roughness: 0.4, emissive: 0x0d3f6e, ei: 0.5 }), 0, 0.62, 0));
+  /* ============================================================
+     树脂胶槽
+     ============================================================ */
+  var bath = new THREE.Group();
+  bath.position.set(-4.9, 0, -2.6);
+  root.add(bath);
+  bath.add(box(2.0, 0.62, 1.1, M.bodyDark, 0, 0.31, 0));
+  bath.add(box(1.84, 0.06, 0.92, M.resin, 0, 0.6, 0));
+  bath.add(cylX(0.17, 0.86, 14, M.steel, 0, 0.7, 0));
+  bath.add(box(1.86, 0.06, 0.06, mat(0x1a5f9e, { emissive: 0x0d3f6e, ei: 0.6 }), 0, 0.62, 0.56));
+  bath.add(box(1.86, 0.06, 0.06, mat(0x1a5f9e, { emissive: 0x0d3f6e, ei: 0.6 }), 0, 0.62, -0.56));
 
-    // 状态灯
-    var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), M.green.clone());
-    lamp.position.set(-1.0, 3.15, 0.9);
-    g.add(lamp);
-    g.userData.lamp = lamp;
+  // 树脂桶
+  [[-6.55, -2.6], [-6.55, -1.45], [-6.55, -0.3]].forEach(function (p, i) {
+    var d = cyl(0.32, 0.32, 0.92, 18, i % 2 ? M.resin : mat(0x23607b, { metalness: 0.4, roughness: 0.3 }), p[0], 0.46, p[1]);
+    root.add(d);
+    root.add(cyl(0.33, 0.33, 0.05, 18, M.steel, p[0], 0.94, p[1]));
+  });
 
-    // 底部发光条
-    g.add(box(2.9, 0.06, 0.06, M.cyan, 0, 0.46, -1.21));
-    g.add(box(0.06, 0.06, 2.4, M.cyan, 1.46, 0.46, 0));
+  /* ============================================================
+     芯模存放架 / 成品架
+     ============================================================ */
+  var rack = new THREE.Group();
+  rack.position.set(-7.0, 0, -4.0);
+  root.add(rack);
+  [-1.5, 1.5].forEach(function (x) {
+    rack.add(box(0.12, 1.9, 0.12, M.steel, x, 0.95, -0.6));
+    rack.add(box(0.12, 1.9, 0.12, M.steel, x, 0.95, 0.6));
+  });
+  [0.6, 1.6].forEach(function (y) {
+    rack.add(box(3.2, 0.1, 0.1, M.steel, 0, y, -0.6));
+    rack.add(box(3.2, 0.1, 0.1, M.steel, 0, y, 0.6));
+  });
+  rack.add(cylX(0.34, 2.6, 20, M.mandrel, 0, 0.78, -0.45));
+  rack.add(cylX(0.34, 2.6, 20, M.mandrel, 0, 0.78, 0.45));
+  rack.add(cylX(0.34, 2.6, 20, M.mandrel, 0, 1.78, -0.45));
 
-    // 侧面散热格栅
-    for (var i = 0; i < 4; i++) {
-      g.add(box(0.04, 0.1, 1.5, M.dark, -1.46, 0.8 + i * 0.28, 0));
-    }
-    return g;
+  var prodRack = new THREE.Group();
+  prodRack.position.set(7.2, 0, -3.6);
+  root.add(prodRack);
+  [-1.7, 1.7].forEach(function (x) {
+    prodRack.add(box(0.14, 2.2, 0.14, M.steel, x, 1.1, -0.7));
+    prodRack.add(box(0.14, 2.2, 0.14, M.steel, x, 1.1, 0.7));
+  });
+  [0.55, 1.45, 2.15].forEach(function (y) {
+    prodRack.add(box(3.6, 0.09, 0.1, M.steel, 0, y, -0.7));
+    prodRack.add(box(3.6, 0.09, 0.1, M.steel, 0, y, 0.7));
+  });
+  [0.72, 1.62].forEach(function (y) {
+    prodRack.add(cylX(0.4, 3.0, 22, M.product, 0, y + 0.16, -0.55));
+    prodRack.add(cylX(0.4, 3.0, 22, M.product, 0.2, y + 0.16, 0.55));
+  });
+
+  /* ============================================================
+     控制柜 / 操作台
+     ============================================================ */
+  var cab = new THREE.Group();
+  cab.position.set(4.9, 0, 3.0);
+  root.add(cab);
+  cab.add(box(1.15, 2.0, 0.75, M.body, 0, 1.0, 0));
+  cab.add(box(1.2, 0.08, 0.8, M.bodyDark, 0, 2.02, 0));
+  cab.add(box(0.85, 0.55, 0.05, M.glass, 0, 1.55, 0.39));
+  cab.add(box(0.9, 0.06, 0.04, M.green, 0, 1.15, 0.4));
+  for (var k = 0; k < 3; k++) {
+    cab.add(box(0.08, 0.08, 0.04, k === 0 ? M.green : (k === 1 ? M.amber : M.cyan), -0.3 + k * 0.3, 0.95, 0.4));
   }
 
-  var machines = [];
-  var rowZ = [-6.4, 6.4];
-  var colX = [-15.5, -6.2, 3.1, 12.4];
-  for (var r = 0; r < 2; r++) {
-    for (var c = 0; c < 4; c++) {
-      var m = makeMachine();
-      m.position.set(colX[c], 0, rowZ[r]);
-      m.rotation.y = r === 0 ? 0 : Math.PI;   // 两排机门朝向中间过道
-      root.add(m);
-      machines.push(m);
-    }
+  var desk = new THREE.Group();
+  desk.position.set(1.2, 0, 2.9);
+  root.add(desk);
+  desk.add(box(1.9, 0.1, 0.75, M.body, 0, 0.95, 0));
+  desk.add(box(0.12, 0.95, 0.66, M.dark, -0.85, 0.47, 0));
+  desk.add(box(0.12, 0.95, 0.66, M.dark, 0.85, 0.47, 0));
+  desk.add(box(0.62, 0.4, 0.05, mat(0x0d3a5c, { emissive: 0x1a7fc4, ei: 0.85 }), 0, 1.25, -0.2));
+
+  /* ============================================================
+     安全围栏
+     ============================================================ */
+  (function () {
+    var postMat = mat(0xffd257, { emissive: 0xffb02e, ei: 0.25 });
+    var rail = mat(0xb9c6d6, { metalness: 0.7, roughness: 0.4, transparent: true, opacity: 0.55 });
+    [-8.6, -4.6, 4.6, 8.6].forEach(function (x) {
+      root.add(cyl(0.07, 0.07, 1.05, 10, postMat, x, 0.52, 7.6));
+      root.add(cyl(0.07, 0.07, 1.05, 10, postMat, x, 0.52, -7.6));
+    });
+    [[-8.6, -4.6], [4.6, 8.6]].forEach(function (seg) {
+      var cx = (seg[0] + seg[1]) / 2, len = seg[1] - seg[0];
+      root.add(box(len, 0.05, 0.05, rail, cx, 0.95, 7.6));
+      root.add(box(len, 0.05, 0.05, rail, cx, 0.52, 7.6));
+      root.add(box(len, 0.05, 0.05, rail, cx, 0.95, -7.6));
+      root.add(box(len, 0.05, 0.05, rail, cx, 0.52, -7.6));
+    });
+  })();
+
+  /* ============================================================
+     走丝线束：胶槽 → 导丝头 → 芯模表面
+     （用细圆柱表现，WebGL 的线宽恒为 1px 看不见）
+     ============================================================ */
+  var yarnMat = mat(0xf6eed6, { metalness: 0.02, roughness: 0.92, emissive: 0x6b5a30, ei: 0.22 });
+  var yarnA = cyl(0.022, 0.022, 1, 6, yarnMat, 0, 0, 0);
+  var yarnB = cyl(0.022, 0.022, 1, 6, yarnMat, 0, 0, 0);
+  root.add(yarnA); root.add(yarnB);
+
+  var _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+  function spanYarn(mesh, ax, ay, az, bx, by, bz) {
+    _v1.set(ax, ay, az); _v2.set(bx, by, bz);
+    var d = _v1.distanceTo(_v2);
+    mesh.position.set((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
+    mesh.scale.set(1, d, 1);
+    _v2.sub(_v1).normalize();
+    mesh.quaternion.setFromUnitVectors(_up, _v2);
   }
 
-
-  /* ---------------- 车间名牌 ---------------- */
-  function makeLabel(text) {
-    var cw = 320, ch = 84;
+  /* ============================================================
+     车间名牌
+     ============================================================ */
+  function makeLabel(text, sub) {
+    var cw = 460, ch = 130;
     var cv = document.createElement('canvas');
     cv.width = cw; cv.height = ch;
     var ctx = cv.getContext('2d');
-    // 胶囊底
-    var r = 26, x = 6, y = 8, w = cw - 12, h = ch - 18;
+    var r = 26, x = 6, y = 6, w = cw - 12, h = ch - 12;
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -788,156 +965,45 @@ background:
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
     var g = ctx.createLinearGradient(0, 0, 0, ch);
-    g.addColorStop(0, 'rgba(6,36,78,.92)');
-    g.addColorStop(1, 'rgba(4,18,44,.92)');
+    g.addColorStop(0, 'rgba(7,40,84,.94)');
+    g.addColorStop(1, 'rgba(4,18,44,.94)');
     ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = 'rgba(47,216,255,.85)'; ctx.lineWidth = 2.5; ctx.stroke();
-    // 左侧小圆点
-    ctx.beginPath(); ctx.arc(30, ch / 2 - 1, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#4ce9c0'; ctx.fill();
-    // 文字
+    ctx.strokeStyle = 'rgba(47,216,255,.9)'; ctx.lineWidth = 2.5; ctx.stroke();
+
+    ctx.fillStyle = '#4ce9c0';
+    ctx.beginPath(); ctx.arc(34, 46, 7, 0, Math.PI * 2); ctx.fill();
+
     ctx.fillStyle = '#eaf6ff';
-    ctx.font = 'bold 40px "Microsoft YaHei", sans-serif';
+    ctx.font = 'bold 46px "Microsoft YaHei", sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, 52, ch / 2 - 2);
+    ctx.fillText(text, 58, 46);
+
+    if (sub) {
+      ctx.fillStyle = 'rgba(150,205,240,.92)';
+      ctx.font = '25px "Microsoft YaHei", sans-serif';
+      ctx.fillText(sub, 34, 98);
+    }
 
     var tex = new THREE.CanvasTexture(cv);
     tex.minFilter = THREE.LinearFilter;
     var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-    sp.scale.set(3.15, 0.83, 1);
+    sp.scale.set(4.0, 1.13, 1);
     return sp;
   }
+  var label = makeLabel('1# 缠绕车间', '纤维缠绕 · 浸胶成型');
+  label.position.set(0.2, 5.7, -2.6);
+  root.add(label);
 
-  var ZONE_NAMES = ['1# 缠绕车间', '2# 模压车间', '3# RTM车间', '4# 胶带车间', '5# 原材料库', '6# 成品库'];
-  ZONE_NAMES.forEach(function (nm, i) {
-    var m = machines[i];
-    if (!m) return;
-    var sp = makeLabel(nm);
-    sp.position.set(m.position.x, 3.85, m.position.z);
-    root.add(sp);
-  });
-
-  /* ---------------- 输送线 ---------------- */
-  function makeConveyor(len) {
-    var g = new THREE.Group();
-    // 架体
-    g.add(box(len, 0.16, 1.5, M.belt, 0, 0.78, 0));
-    g.add(box(len, 0.55, 0.12, M.steel, 0, 0.5, -0.72));
-    g.add(box(len, 0.55, 0.12, M.steel, 0, 0.5, 0.72));
-    // 支腿
-    var n = Math.floor(len / 3);
-    for (var i = 0; i <= n; i++) {
-      var x = -len / 2 + i * (len / n);
-      g.add(box(0.1, 0.78, 0.1, M.steel, x, 0.39, -0.72));
-      g.add(box(0.1, 0.78, 0.1, M.steel, x, 0.39, 0.72));
-    }
-    // 辊筒
-    var rollers = [];
-    var cnt = Math.floor(len / 0.9);
-    for (var j = 0; j < cnt; j++) {
-      var rl = cyl(0.11, 0.11, 1.42, 10, M.steel, -len / 2 + 0.5 + j * 0.9, 0.9, 0);
-      rl.rotation.x = Math.PI / 2;
-      g.add(rl);
-      rollers.push(rl);
-    }
-    g.userData.rollers = rollers;
-    return g;
-  }
-  var conv = makeConveyor(14);
-  conv.position.set(-1, 0, 0);
-  root.add(conv);
-
-  // 输送线上的料箱
-  var crates = [];
-  for (var k = 0; k < 4; k++) {
-    var cr = box(0.9, 0.7, 0.9, M.bodyDark, -7 + k * 3.4, 1.4, 0);
-    cr.userData.baseX = -7 + k * 3.4;
-    root.add(cr);
-    crates.push(cr);
-  }
-
-  /* ---------------- 机械臂 ---------------- */
-  function makeRobot() {
-    var g = new THREE.Group();
-    g.add(cyl(0.62, 0.72, 0.28, 24, M.dark, 0, 0.14, 0));      // 底座
-    g.add(cyl(0.42, 0.5, 0.85, 20, M.body, 0, 0.7, 0));        // 立柱
-
-    var shoulder = new THREE.Group();
-    shoulder.position.set(0, 1.15, 0);
-    g.add(shoulder);
-
-    var upper = box(0.34, 1.5, 0.42, M.body, 0, 0.68, 0);
-    shoulder.add(upper);
-
-    var elbow = new THREE.Group();
-    elbow.position.set(0, 1.4, 0);
-    shoulder.add(elbow);
-    elbow.add(box(0.28, 1.25, 0.34, M.body, 0, 0.58, 0));
-
-    var wrist = new THREE.Group();
-    wrist.position.set(0, 1.2, 0);
-    elbow.add(wrist);
-    wrist.add(cyl(0.15, 0.15, 0.3, 12, M.steel, 0, 0.16, 0));
-    wrist.add(box(0.5, 0.1, 0.1, M.cyan, 0, 0.32, 0));
-
-    g.userData = { shoulder: shoulder, elbow: elbow, wrist: wrist };
-    return g;
-  }
-  var robots = [];
-  [[-9.5, 3.0, 0.6], [6.5, -3.0, -2.2]].forEach(function (p) {
-    var rb = makeRobot();
-    rb.position.set(p[0], 0, p[1]);
-    rb.rotation.y = p[2];
-    root.add(rb);
-    robots.push(rb);
-  });
-
-  /* ---------------- AGV 小车 ---------------- */
-  function makeAGV() {
-    var g = new THREE.Group();
-    g.add(box(1.9, 0.28, 1.25, M.body, 0, 0.28, 0));
-    g.add(box(1.95, 0.1, 1.3, M.dark, 0, 0.12, 0));
-    // 顶面发光环
-    var ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.46, 24), M.cyan);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.43;
-    g.add(ring);
-    // 四角灯
-    [[0.75, 0.5], [-0.75, 0.5], [0.75, -0.5], [-0.75, -0.5]].forEach(function (p) {
-      var l = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), M.amber);
-      l.position.set(p[0], 0.45, p[1]);
-      g.add(l);
-    });
-    return g;
-  }
-  var agvs = [];
-  [[0, 2.9, 0], [Math.PI, -2.9, 0]].forEach(function (p, i) {
-    var a = makeAGV();
-    a.position.set(i === 0 ? -8 : 8, 0, p[1]);
-    root.add(a);
-    a.userData = { dir: i === 0 ? 1 : -1, z: p[1] };
-    agvs.push(a);
-  });
-
-  /* ---------------- 托盘垛 / 立柱 ---------------- */
-  [[-19.5, 0, -11], [-19.5, 0, -8.5], [19.6, 0, 11], [19.6, 0, 13.2]].forEach(function (p) {
-    var s = 0.5 + Math.random() * 1.1;
-    root.add(box(1.3, s, 1.3, M.bodyDark, p[0], s / 2, p[2]));
-  });
-  [[-21.5, -13.5], [21.5, -13.5], [-21.5, 13.5], [21.5, 13.5]].forEach(function (p) {
-    root.add(cyl(0.16, 0.16, 7.5, 8, M.steel, p[0], 3.75, p[1]));
-  });
-
-  /* ---------------- 选中高亮环 ---------------- */
-  var hl = new THREE.Mesh(new THREE.RingGeometry(1.9, 2.25, 40), M.cyan.clone());
+  /* ---------------- 高亮环 ---------------- */
+  var hl = new THREE.Mesh(new THREE.RingGeometry(4.16, 4.32, 56), M.cyan.clone());
   hl.material.transparent = true;
-  hl.material.opacity = 0.9;
+  hl.material.opacity = 0.5;
   hl.rotation.x = -Math.PI / 2;
-  hl.position.y = 0.04;
+  hl.position.set(WX, 0.04, WZ - 0.4);
   root.add(hl);
 
   /* ---------------- 相机 / 轨道控制 ---------------- */
-  var cam = { theta: -0.62, phi: 1.00, radius: 31, target: new THREE.Vector3(0, 1.6, 0.6) };
+  var cam = { theta: -0.70, phi: 1.09, radius: 18.8, target: new THREE.Vector3(-0.5, 1.85, -0.7) };
   var cur = { theta: cam.theta, phi: cam.phi, radius: cam.radius };
   var drag = null, autoSpin = true, idleTimer = 0;
 
@@ -959,29 +1025,24 @@ background:
     });
     canvas.addEventListener('pointermove', function (e) {
       if (!drag) return;
-      var dx = (e.clientX - drag.x) / 320, dy = (e.clientY - drag.y) / 380;
+      var dx = (e.clientX - drag.x) / 300, dy = (e.clientY - drag.y) / 360;
       cam.theta = drag.theta - dx;
-      cam.phi = Math.max(0.32, Math.min(1.42, drag.phi - dy));
+      cam.phi = Math.max(0.3, Math.min(1.4, drag.phi - dy));
     });
-    function endDrag() {
-      if (!drag) return;
-      drag = null;
-      idleTimer = 0;
-    }
+    function endDrag() { if (!drag) return; drag = null; idleTimer = 0; }
     canvas.addEventListener('pointerup', endDrag);
     canvas.addEventListener('pointercancel', endDrag);
     canvas.addEventListener('pointerleave', endDrag);
     canvas.addEventListener('wheel', function (e) {
       e.preventDefault();
-      cam.radius = Math.max(20, Math.min(70, cam.radius + (e.deltaY > 0 ? 2.4 : -2.4)));
+      cam.radius = Math.max(12, Math.min(46, cam.radius + (e.deltaY > 0 ? 1.6 : -1.6)));
     }, { passive: false });
     canvas.addEventListener('dblclick', function () {
-      cam.theta = -0.62; cam.phi = 1.00; cam.radius = 31;
-      cam.target.set(0, 1.6, 0.6);
+      cam.theta = -0.70; cam.phi = 1.09; cam.radius = 18.8;
+      cam.target.set(-0.5, 1.85, -0.7);
     });
   }
 
-  /* ---------------- 尺寸 ---------------- */
   function resize() {
     var w = canvas.clientWidth || canvas.parentNode.clientWidth;
     var h = canvas.clientHeight || canvas.parentNode.clientHeight;
@@ -992,98 +1053,73 @@ background:
   }
   window.addEventListener('resize', resize);
   if (window.ResizeObserver) {
-    var ro = new ResizeObserver(function () { resize(); });
-    ro.observe(canvas.parentNode);
+    new ResizeObserver(function () { resize(); }).observe(canvas.parentNode);
   }
   resize();
 
-  /* ---------------- 循环 ---------------- */
+  /* ---------------- 动画 ---------------- */
   var clock = new THREE.Clock();
-  var frame = 0;
+  var carrX = 0.6, carrDir = 1;
 
   function tick() {
     requestAnimationFrame(tick);
     var dt = Math.min(clock.getDelta(), 0.05);
     var t = clock.elapsedTime;
-    frame++;
 
-    // 平滑跟随
     cur.theta += (cam.theta - cur.theta) * 0.12;
     cur.phi += (cam.phi - cur.phi) * 0.12;
     cur.radius += (cam.radius - cur.radius) * 0.12;
     if (autoSpin && !drag) {
       idleTimer += dt;
-      if (idleTimer > 1.2) cam.theta += dt * 0.055;
+      if (idleTimer > 1.4) cam.theta += dt * 0.05;
     }
     var save = { theta: cam.theta, phi: cam.phi, radius: cam.radius };
     cam.theta = cur.theta; cam.phi = cur.phi; cam.radius = cur.radius;
     applyCamera();
     cam.theta = save.theta; cam.phi = save.phi; cam.radius = save.radius;
 
-    // AGV 往返
-    agvs.forEach(function (a, i) {
-      var span = 17.5;
-      a.position.x += a.userData.dir * dt * 2.2;
-      if (a.position.x > span) { a.position.x = span; a.userData.dir = -1; }
-      if (a.position.x < -span) { a.position.x = -span; a.userData.dir = 1; }
-      a.rotation.y = a.userData.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-    });
+    // 芯模旋转 = 缠绕动作
+    mandrel.rotation.x += dt * 1.9;
+    wound.rotation.x += dt * 1.9;
 
-    // 机械臂动作
-    robots.forEach(function (rb, i) {
-      var ph = t * 0.9 + i * 1.7;
-      rb.userData.shoulder.rotation.x = Math.sin(ph) * 0.22 - 0.12;
-      rb.userData.elbow.rotation.x = Math.sin(ph + 1.1) * 0.3 + 0.15;
-      rb.userData.wrist.rotation.y = t * 0.8 + i;
-    });
+    // 导丝小车沿芯模轴向往复
+    carrX += carrDir * dt * 0.85;
+    if (carrX > 2.35) { carrX = 2.35; carrDir = -1; }
+    if (carrX < -1.15) { carrX = -1.15; carrDir = 1; }
+    carriage.position.x = carrX;
+    eyeRing.rotation.z += dt * 2;
 
-    // 输送辊筒 + 料箱
-    if (conv.userData.rollers) {
-      conv.userData.rollers.forEach(function (rl) { rl.rotation.y += dt * 3.2; });
+    // 纱团缓慢转动
+    for (var i = 0; i < spools.length; i += 3) {
+      spools[i].rotation.z += dt * 0.55;
     }
-    crates.forEach(function (c) {
-      c.position.x += dt * 0.55;
-      if (c.position.x > 5.6) c.position.x = -7.4;
-    });
 
-    // 状态灯呼吸
-    machines.forEach(function (m, i) {
-      var l = m.userData.lamp;
-      if (l) {
-        var on = 0.55 + 0.45 * Math.sin(t * 2 + i);
-        l.material.emissiveIntensity = 0.6 + on;
-      }
-    });
+    // 走丝线束：胶槽辊 → 导丝头 → 芯模表面
+    var ex = carrX, ey = 2.38, ez = WZ - 1.35 + 1.36;
+    spanYarn(yarnA, -4.9, 0.74, -2.6, ex, ey, ez);
+    spanYarn(yarnB, ex, ey, ez, carrX, mandrelY + mandrelR + 0.07, WZ);
 
     // 高亮环呼吸
-    hl.material.opacity = 0.55 + 0.35 * Math.sin(t * 2.2);
-    hl.rotation.z += dt * 0.5;
+    hl.material.opacity = 0.3 + 0.16 * Math.sin(t * 2.2);
 
     renderer.render(scene, camera);
   }
 
   /* ---------------- 对外接口 ---------------- */
   window.WS3D = {
-    focus: function (i) {
-      var idx = Math.max(0, Math.min(machines.length - 1, (i | 0) - 1));
-      var m = machines[idx];
-      if (!m) return;
-      hl.position.set(m.position.x, 0.05, m.position.z);
-      cam.target.set(m.position.x * 0.45, 1.7, m.position.z * 0.35);
+    focus: function (id) {
+      if ((id | 0) !== 1) return;   // 仅 1# 缠绕车间场景
+      cam.target.set(-0.5, 1.85, -0.7);
+      cam.radius = 18.8;
     },
     reset: function () {
-      cam.theta = -0.62; cam.phi = 1.00; cam.radius = 31;
-      cam.target.set(0, 1.6, 0.6);
-      hl.position.set(0, 0.05, 0);
+      cam.theta = -0.70; cam.phi = 1.09; cam.radius = 18.8;
+      cam.target.set(-0.5, 1.85, -0.7);
     }
   };
 
   bindControls();
-  hl.visible = false;
-  hl.position.set(machines[0].position.x, 0.05, machines[0].position.z);
   applyCamera();
-  // 首帧渲染后再显示高亮，避免闪
-  setTimeout(function () { hl.visible = true; }, 400);
   tick();
 })();
 
