@@ -368,8 +368,8 @@ background:
 }
 .nv-grp-h .idx svg{width:13px;height:13px;display:block}
 .nv-grp-h:hover .idx{background:rgba(47,216,255,.18);border-color:rgba(47,216,255,.5)}
-.nv-grp-h .cnt{margin-left:auto;font-size:11px;color:#4f7ea6}
-.nv-grp-h .arw{transition:.2s;opacity:.6}
+.nv-grp-h .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nv-grp-h .arw{margin-left:auto;flex:0 0 auto;transition:.2s;opacity:.55}
 .nv-grp.close .arw{transform:rotate(-90deg)}
 .nv-grp-items{overflow:hidden}
 .nv-grp.close .nv-grp-items{display:none}
@@ -409,10 +409,14 @@ background:
   border:1px solid rgba(47,216,255,.2);overflow:hidden;
 }
 .pg-kpi .k:before{content:"";position:absolute;left:0;top:0;width:3px;height:100%;background:linear-gradient(180deg,#5ceaff,#1f8bff);opacity:.85}
-.pg-kpi .k .lb{font-size:12px;color:#7ba6c8;letter-spacing:.5px}
-.pg-kpi .k .vl{margin-top:6px;font-size:26px;font-weight:700;color:#eaf8ff;font-family:"DIN Alternate","Impact",sans-serif;letter-spacing:1px}
-.pg-kpi .k .vl em{font-style:normal;font-size:12px;color:#63d0f0;margin-left:4px;font-weight:400}
-.pg-kpi .k .sb{margin-top:3px;font-size:11.5px;color:#5f8cae}
+.pg-kpi .k .lb{font-size:12px;color:#9cc3dd;letter-spacing:.5px}
+.pg-kpi .k .vl{
+  margin-top:6px;font-size:27px;font-weight:600;color:#f2fbff;line-height:1.15;
+  font-family:"Bahnschrift","Segoe UI","Microsoft YaHei",sans-serif;
+  font-variant-numeric:tabular-nums;letter-spacing:.6px;
+}
+.pg-kpi .k .vl em{font-style:normal;font-size:12.5px;color:#63d0f0;margin-left:5px;font-weight:400;letter-spacing:0}
+.pg-kpi .k .sb{margin-top:4px;font-size:11.5px;color:#7ba6c8}
 .pg-kpi .k .sb b{color:#3ff0b0;font-weight:600}
 .pg-kpi .k .sb b.dn{color:#ff8a8a}
 
@@ -450,8 +454,8 @@ table.tbl td{
 }
 table.tbl tbody tr:nth-child(even){background:rgba(47,216,255,.028)}
 table.tbl tbody tr:hover{background:rgba(47,216,255,.10)}
-table.tbl td.mono{font-family:"DIN Alternate",Consolas,monospace;letter-spacing:.5px;color:#d6ecff}
-table.tbl td.num{font-family:"DIN Alternate",Consolas,monospace;color:#eaf8ff}
+table.tbl td.mono{font-family:Consolas,"Bahnschrift",monospace;letter-spacing:.5px;color:#d6ecff}
+table.tbl td.num{font-family:Consolas,"Bahnschrift",monospace;color:#eaf8ff}
 
 .pill{
   display:inline-block;min-width:52px;text-align:center;padding:2px 8px;border-radius:10px;
@@ -466,7 +470,7 @@ table.tbl td.num{font-family:"DIN Alternate",Consolas,monospace;color:#eaf8ff}
 .pbar{display:flex;align-items:center;gap:8px;min-width:120px}
 .pbar i{flex:1;height:5px;border-radius:3px;background:rgba(47,216,255,.14);overflow:hidden;position:relative}
 .pbar i b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#1f8bff,#5ceaff)}
-.pbar span{font-size:11.5px;color:#8ec9ea;font-family:"DIN Alternate",Consolas,monospace}
+.pbar span{font-size:11.5px;color:#8ec9ea;font-family:Consolas,"Bahnschrift",monospace}
 
 /* ---------- 图表区 ---------- */
 .chartrow{display:flex;gap:12px;flex:1;min-height:0}
@@ -548,10 +552,6 @@ table.tbl td.num{font-family:"DIN Alternate",Consolas,monospace;color:#eaf8ff}
 }
 .nv-all:hover{background:linear-gradient(90deg,rgba(31,139,255,.3),rgba(31,139,255,.06))}
 .nv-all.on{background:linear-gradient(90deg,rgba(31,139,255,.36),rgba(31,139,255,.06));border-color:rgba(47,216,255,.55)}
-.nv-all em{
-  margin-left:auto;font-style:normal;font-size:11px;color:#04101f;font-weight:700;
-  background:linear-gradient(135deg,#5ceaff,#1f8bff);border-radius:8px;padding:1px 7px;
-}
 .ov-grid{
   flex:1;min-height:0;display:grid;gap:12px;
 }
@@ -2600,11 +2600,11 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
          '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#5ceaff" stroke-width="1.5">' +
          '<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/>' +
          '<rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>' +
-         '<span>功能总览</span><em>' + DATA.length + '</em></div>';
+         '<span>功能总览</span></div>';
     gs.forEach(function (grp, gi) {
-      h += '<div class="nv-grp" data-grp="' + gi + '">';
-      h += '<div class="nv-grp-h"><span class="idx">' + iconOf(grp.g) + '</span>' + grp.g +
-           '<span class="cnt">' + grp.items.length + ' 项</span>' +
+      h += '<div class="nv-grp' + (gi ? ' close' : '') + '" data-grp="' + gi + '">';
+      h += '<div class="nv-grp-h"><span class="idx">' + iconOf(grp.g) + '</span>' +
+           '<span class="nm">' + grp.g + '</span>' +
            '<svg class="arw" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#7fb4d8" stroke-width="1.4"><path d="M2 3.5 5 6.5 8 3.5"/></svg></div>';
       h += '<div class="nv-grp-items">';
       grp.items.forEach(function (f) {
@@ -2824,6 +2824,11 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
     if (!f) return;
     CUR = f;
 
+    // 手风琴：自动展开当前功能所在的模块，其余收起
+    Array.prototype.forEach.call(host.querySelectorAll('.nv-grp'), function (g) {
+      g.classList.toggle('close', !g.querySelector('.nv-item[data-id="' + id + '"]'));
+    });
+
     var body;
     if (f.kind === 'query') body = pageQuery(f);
     else if (f.kind === 'report') body = pageReport(f);
@@ -2909,7 +2914,13 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
     var it = e.target.closest('.nv-item');
     if (it) { go(it.getAttribute('data-id')); return; }
     var gh = e.target.closest('.nv-grp-h');
-    if (gh) { gh.parentNode.classList.toggle('close'); }
+    if (gh) {
+      var grp = gh.parentNode;
+      var willOpen = grp.classList.contains('close');   // 当前是收起态 → 本次要点开
+      Array.prototype.forEach.call(host.querySelectorAll('.nv-grp'), function (g) {
+        g.classList.toggle('close', g !== grp || !willOpen);
+      });
+    }
   });
 
   document.getElementById('admNavSearch').addEventListener('input', function () {
