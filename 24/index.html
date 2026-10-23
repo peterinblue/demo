@@ -286,7 +286,7 @@ background:
    管理端（后台）样式
    ============================================================ */
 #admin{
-  position:absolute;inset:0;z-index:60;
+  position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:60;
   display:flex;flex-direction:column;
   background:
     radial-gradient(1100px 620px at 50% -6%,rgba(0,110,235,.30),transparent 68%),
@@ -296,7 +296,7 @@ background:
   transition:opacity .22s ease;
   font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#cfe6f8;
 }
-#stage.adm #admin{opacity:1;pointer-events:auto;visibility:visible}
+body.adm-on #admin{opacity:1;pointer-events:auto;visibility:visible}
 #admin *{box-sizing:border-box}
 
 /* ---------- 顶栏 ---------- */
@@ -896,10 +896,10 @@ table.tbl td.num{font-family:Consolas,"Bahnschrift",monospace;color:#eaf8ff}
 
     </div>
   </main>
-  <!-- ===== 管理端（后台）：按《功能清单》动态渲染 ===== -->
-  <div id="admin"></div>
-
 </div>
+
+<!-- ===== 管理端（后台）：按《功能清单》动态渲染（独立于舞台，铺满整个视口） ===== -->
+<div id="admin"></div>
 
 <script>
 /**
@@ -2632,7 +2632,7 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
          '<rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>' +
          '<span>功能总览</span></div>';
     gs.forEach(function (grp, gi) {
-      h += '<div class="nv-grp' + (gi ? ' close' : '') + '" data-grp="' + gi + '">';
+      h += '<div class="nv-grp close" data-grp="' + gi + '">';
       h += '<div class="nv-grp-h"><span class="idx">' + iconOf(grp.g) + '</span>' +
            '<span class="nm">' + grp.g + '</span>' +
            '<svg class="arw" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#7fb4d8" stroke-width="1.4"><path d="M2 3.5 5 6.5 8 3.5"/></svg></div>';
@@ -3154,11 +3154,13 @@ var Vr={},Br={};var Fr=function(){function t(t,e,n){var i=this;this._sleepAfterS
   var api = {
     open: function () {
       stage.classList.add('adm');
+      document.body.classList.add('adm-on');
       if (window.WS3D && window.WS3D.setPaused) window.WS3D.setPaused(true);
       go(CUR ? CUR.id : 'overview');
     },
     close: function () {
       stage.classList.remove('adm');
+      document.body.classList.remove('adm-on');
       if (window.WS3D && window.WS3D.setPaused) window.WS3D.setPaused(false);
     },
     go: go,
