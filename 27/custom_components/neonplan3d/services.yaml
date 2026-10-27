@@ -1,0 +1,17 @@
+ask:
+  fields:
+    text:
+      required: true
+      example: "Zeig das Wohnzimmer"
+      selector:
+        text:
+    screen:
+      required: false
+      example: "Küche"
+      selector:
+        text:
+    speak:
+      required: false
+      default: false
+      selector:
+        boolean:

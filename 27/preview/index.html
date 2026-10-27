@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeonPlan 3D – Vorschau</title>
+    <style>
+      /* Like HA: the panel's parent has no explicit height, the panel sizes itself. */
+      body {
+        margin: 0;
+        background: #070b14;
+      }
+    </style>
+  </head>
+  <body>
+    <neonplan3d-panel></neonplan3d-panel>
+    <script type="module">
+      // Mock of the Home Assistant frontend object with invented demo data.
+      import { DEMO_AREAS, DEMO_BUILDING, DEMO_FLOORS, DEMO_PACK, DEMO_ENTITIES, DEMO_STATES, DEMO_PICTURES } from "./demo-data.js";
+      import { demoHistory } from "./demo-history.js";
+
+      const params = new URLSearchParams(location.search);
+      // the power flow lines are on with ?flows (and off without, whatever an earlier page stored)
+      try {
+        localStorage.setItem("neonplan3d.flows", params.has("flows") ? "1" : "0");
+      } catch {}
+      // the shop connection of the demo: connected when ?shop is given, with one pack to install and one update
+      let license = {
+        instance: "3f9c2a7b1e4d8c05",
+        active: params.has("shop"),
+        key_hint: params.has("shop") ? "…7K2M" : null,
+        licensee: params.has("shop") ? "Demo Kunde" : null,
+        checked_at: params.has("shop") ? Date.now() / 1000 - 3600 : null,
+        error: null,
+        shop_url: "https://mastershort.de/neonplan3d/",
+        packs: [
+          { id: "mastershort.living", name: "Wohnzimmer", release: 2, url: "https://mastershort.de/neonplan3d/", installed: 1 },
+          { id: "mastershort.kitchen", name: "Küche", release: 1, url: "https://mastershort.de/neonplan3d/", installed: 1 },
+          { id: "mastershort.vehicles", name: "Fahrzeuge", release: 1, url: "https://mastershort.de/neonplan3d/", installed: null },
+        ],
+        // invented offers of the demo shop and a loyalty code
+        offers: params.has("shop")
+          ? [
+              { id: "kino", name: "Heimkino & Hi-Fi", teaser: "Leinwand, Beamer, Lautsprecher, Subwoofer – verknüpfbar", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pack", price: "5,90 €", new: true },
+              { id: "tiere", name: "Haustiere", teaser: "Kratzbaum, Hundekorb, Aquarium mit Licht", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pack", price: "3,90 €", new: true },
+              { id: "pro_weather", name: "Wetter draußen", teaser: "Regen, Schnee und Gewitter live am Haus", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pro", price: "3,90 €", new: false },
+            ]
+          : [],
+        loyalty: params.has("shop") ? { code: "NP-TREUE-DEMO42", percent: 10 } : null,
+        supporter: params.has("shop") ? { code: "NPS-DEMO-7KQ4", until: "2027-12-31" } : null,
+        newsletter: params.has("shop") ? { url: "https://mastershort.de/neonplan3d/newsletter/" } : null,
+        updates: params.has("shop") ? [{ id: "mastershort.kitchen", name: "Küche", release: 2, added: 10, at: Date.now() / 1000 - 600 }] : [],
+      };
+      let building = params.has("empty") ? { version: 1, floors: [], settings: { wall_exterior: 0.24, wall_interior: 0.12, grid: 0.05 } } : DEMO_BUILDING;
+      let revision = 1;
+      // off like on a fresh installation; the screenshots switch it on through the editor
+      const diag = { enabled: false };
+      const images = { ...DEMO_PICTURES };
+      const listeners = new Set();
+      // invented restore points
+      const history = [{ id: "s0", revision: 0, saved_at: Date.now() / 1000 - 3600, building: structuredClone(building) }];
+
+      // furniture packs: the invented demo pack, plus local pack sources from private/ (not in git)
+      let importedPacks = null;
+      async function previewPacks() {
+        if (importedPacks === null) {
+          importedPacks = [DEMO_PACK];
+          // the demo has NeonPlan Pro unless ?nopro asks for the locked look
+          // add-ons not out yet (Pool Pro) only on a local preview or with ?pool, not on the public demo
+          const unreleasedDemo = params.has("pool") || ["localhost", "127.0.0.1"].includes(location.hostname);
+          if (!params.has("nopro")) importedPacks.push({ format: "fp3dpack", version: 1, id: "demo.pro", name: "NeonPlan Pro (Demo)", publisher: "Mastershort", licensee: null, features: ["camera_cockpit", "weather", "screens", "energy_pro", "sound", "auto_pro", "time_travel", "household", "fun_pets", "fun_halloween", ...(unreleasedDemo ? ["pool"] : [])], items: [] });
+          try {
+            const res = await fetch("../private/packs/starter.json");
+            if (res.ok) importedPacks.push({ licensee: null, ...(await res.json()) });
+            const index = await fetch("../private/packs/src/index.json");
+            for (const name of index.ok ? await index.json() : []) {
+              const pack = await fetch(`../private/packs/src/${name}`);
+              if (pack.ok) importedPacks.push({ licensee: null, ...(await pack.json()) });
+            }
+          } catch {
+            // no local packs
+          }
+        }
+        // ?nopro also drops local feature packs, so the locked look can be seen
+        return params.has("nopro") ? importedPacks.filter((p) => !p.features?.length) : importedPacks;
+      }
+
+      const hass = {
+        language: params.get("lang") || "de",
+        user: { is_admin: !params.has("user"), name: "Demo" },
+        areas: DEMO_AREAS,
+        floors: DEMO_FLOORS,
+        entities: DEMO_ENTITIES,
+        devices: {},
+        // an invented spot in Germany: the time travel computes the sun from it
+        config: { latitude: 52.52, longitude: 13.405 },
+        states: structuredClone(DEMO_STATES),
+        connection: {
+          async subscribeMessage(cb) {
+            listeners.add(cb);
+            return async () => listeners.delete(cb);
+          },
+        },
+        // the REST calls the view makes: only the invented waste calendar (residual waste today, paper tomorrow, bio in 3 days)
+        async callApi(method, path) {
+          if (!path.startsWith("calendars/calendar.abfallkalender")) throw new Error("not in the demo");
+          const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+          return [
+            { summary: "Restmüll", start: { date: day(0) }, end: { date: day(1) } },
+            { summary: "Papiertonne", start: { date: day(1) }, end: { date: day(2) } },
+            { summary: "Biotonne", start: { date: day(3) }, end: { date: day(4) } },
+          ];
+        },
+        async callService(domain, service, data) {
+          // enough behaviour to see the effect of the room panel and of taps in 3D
+          const states = { ...current.states };
+          for (const id of [].concat(data?.entity_id ?? [])) {
+            const st = states[id];
+            if (!st) continue;
+            const next = { ...st, attributes: { ...st.attributes } };
+            const a = next.attributes;
+            const setOn = (on) => {
+              next.state = on ? "on" : "off";
+              if (domain === "light" && on && a.brightness === undefined) a.brightness = 200;
+              if (domain === "light" && !on) delete a.brightness;
+            };
+            if (service === "toggle") setOn(st.state !== "on");
+            else if (service === "turn_off") setOn(false);
+            else if (service === "turn_on" && domain === "light") {
+              setOn(true);
+              if (data.brightness_pct !== undefined) a.brightness = Math.round((data.brightness_pct / 100) * 255);
+              if (data.color_temp_kelvin !== undefined) Object.assign(a, { color_temp_kelvin: data.color_temp_kelvin, color_mode: "color_temp" });
+              if (data.rgb_color) Object.assign(a, { rgb_color: data.rgb_color, color_mode: "hs" });
+            } else if (service === "open_cover") {
+              next.state = "open";
+              a.current_position = 100;
+            } else if (service === "close_cover") {
+              next.state = "closed";
+              a.current_position = 0;
+            } else if (service === "set_cover_position") {
+              a.current_position = data.position;
+              next.state = data.position > 0 ? "open" : "closed";
+            } else if (service === "set_temperature") a.temperature = data.temperature;
+            else if (service === "set_hvac_mode") next.state = data.hvac_mode;
+            else if (service === "media_play_pause") next.state = st.state === "playing" ? "paused" : "playing";
+            else if (service === "volume_set") a.volume_level = data.volume_level;
+            states[id] = next;
+          }
+          current = { ...current, states };
+          if (window.fp3dCard) window.fp3dCard.hass = current;
+          else if (window.fp3dPanel) window.fp3dPanel.hass = current;
+        },
+        async callWS(msg) {
+          switch (msg.type) {
+            case "neonplan3d/building/get": {
+              // the online demo has no private packs: their items would stand as grey boxes, so leave them out
+              const packs = await previewPacks();
+              const known = new Set(packs.flatMap((p) => p.items.map((it) => `pack:${p.id}:${it.id}`)));
+              const shown = structuredClone(building);
+              for (const f of shown.floors) f.furniture = f.furniture.filter((m) => !m.type.startsWith("pack:") || known.has(m.type));
+              return { building: shown, revision };
+            }
+            case "neonplan3d/building/save":
+              // ?savefail simulates a backend that still runs an older version
+              if (params.has("savefail")) throw { code: "invalid_format", message: "extra keys not allowed @ data['building']['floors'][0]['furniture'][0]['entity']" };
+              building = structuredClone(msg.building);
+              revision += 1;
+              for (const cb of listeners) cb({ revision });
+              return { revision };
+            // the opt-in reports (only shown with the lab switch): a made-up status and preview
+            case "neonplan3d/diagnostics/client":
+              return { enabled: diag.enabled };
+            case "neonplan3d/diagnostics/get":
+            case "neonplan3d/diagnostics/set":
+            case "neonplan3d/diagnostics/delete": {
+              if (msg.type === "neonplan3d/diagnostics/set") diag.enabled = msg.enabled;
+              if (msg.type === "neonplan3d/diagnostics/delete") diag.enabled = false;
+              return {
+                enabled: diag.enabled,
+                last_daily: null,
+                can_delete: diag.enabled,
+                endpoint: "https://api.mastershort.de/telemetry/v1/report",
+                preview: {
+                  v: 1, id: diag.enabled ? "3f0c9a52-7d1e-4b8a-9c61-2e5f8d4a7b10" : null, kind: "daily", neonplan: "1.17.0", ha: "2026.10.1", python: "3.13", lang: "de",
+                  packs: ["mastershort.pro_energy"], pro: ["energy_pro"],
+                  plan: { floors: building.floors.length, rooms: building.floors.reduce((n, f) => n + f.rooms.length, 0), furniture: building.floors.reduce((n, f) => n + f.furniture.length, 0), devices_linked: building.floors.reduce((n, f) => n + f.placements.length, 0), outdoor: 0, cameras: 1 },
+                  clients: diag.enabled ? [{ device: "tablet", browser: "Silk 120", os: "Android 9", low_end: true, render_scale: 0.75, fps: 24, gpu_tier: "low", views: { "3d": 12, editor: 3 } }] : [],
+                  errors: [],
+                },
+              };
+            }
+            case "neonplan3d/history/list":
+              return { snapshots: history.map(({ building: b, ...rest }) => ({ ...rest, floors: b.floors.length, rooms: b.floors.reduce((n, f) => n + f.rooms.length, 0), furniture: b.floors.reduce((n, f) => n + f.furniture.length, 0) })).reverse() };
+            case "neonplan3d/history/snapshot":
+              history.push({ id: `s${history.length + 1}`, revision, saved_at: Date.now() / 1000, building: structuredClone(building) });
+              return null;
+            case "neonplan3d/history/restore": {
+              const snap = history.find((h) => h.id === msg.snapshot_id);
+              building = structuredClone(snap.building);
+              revision += 1;
+              for (const cb of listeners) cb({ revision });
+              return { revision };
+            }
+            case "neonplan3d/image/get":
+              if (!images[msg.image_id]) throw { code: "not_found", message: "Image not found" };
+              return { data: images[msg.image_id] };
+            case "neonplan3d/image/set":
+              images[msg.image_id] = msg.data;
+              return null;
+            case "neonplan3d/packs/list":
+              return { packs: await previewPacks() };
+            case "neonplan3d/packs/import": {
+              // the preview cannot check signatures: a file with a payload counts as valid
+              const data = JSON.parse(msg.pack);
+              if (!data.payload || !data.signature) throw { code: "unsigned", message: "unsigned" };
+              importedPacks = [...importedPacks.filter((p) => p.id !== data.payload.id), data.payload];
+              return { id: data.payload.id, name: data.payload.name, publisher: data.payload.publisher, licensee: data.payload.licensee ?? null, items: data.payload.items.length };
+            }
+            case "neonplan3d/packs/remove":
+              importedPacks = importedPacks.filter((p) => p.id !== msg.pack_id);
+              return null;
+            case "neonplan3d/license/get":
+              return license;
+            case "neonplan3d/license/activate":
+              if (!/^NP(-[A-Z0-9]{4}){4}$/i.test(msg.key)) throw { code: "invalid_key", message: "unknown" };
+              license = { ...license, active: true, key_hint: "…" + msg.key.slice(-4), licensee: "Demo Kunde", checked_at: Date.now() / 1000 };
+              return license;
+            case "neonplan3d/license/remove":
+              license = { ...license, active: false, key_hint: null, licensee: null, checked_at: null };
+              return license;
+            case "neonplan3d/license/refresh":
+              license = { ...license, checked_at: Date.now() / 1000 };
+              return license;
+            case "neonplan3d/packs/install":
+              license.packs = license.packs.map((p) => (p.id === msg.pack_id ? { ...p, installed: p.release } : p));
+              return { id: msg.pack_id, name: msg.pack_id, publisher: "Mastershort", licensee: "Demo Kunde", release: 1, items: 0 };
+            case "recorder/statistics_during_period": {
+              // the meters' hourly change since midnight (gas and water on the house card)
+              if ((msg.types ?? []).includes("change")) {
+                const hours = new Date().getHours() + 1;
+                const per = { "sensor.gaszaehler": 0.11, "sensor.wasserzaehler": 0.012 };
+                return Object.fromEntries((msg.statistic_ids ?? []).map((id) => [id, Array.from({ length: hours }, (_, i) => ({ start: i, change: (per[id] ?? 0) * (0.6 + 0.8 * Math.abs(Math.sin(i))) }))]));
+              }
+              // today's solar curve: a sunny day, five-minute means from midnight up to now
+              const midnight = new Date();
+              midnight.setHours(0, 0, 0, 0);
+              const slots = Math.floor((Date.now() - midnight.getTime()) / 300000) + 1;
+              const peak = Number(hass.states["sensor.pv_leistung"]?.state) > 2000 ? 7100 : 3400;
+              const curve = Array.from({ length: slots }, (_, i) => {
+                const h = (i * 5) / 60;
+                const sun = Math.max(0, Math.sin((Math.PI * (h - 6.2)) / 13.2));
+                return { start: midnight.getTime() + i * 300000, end: midnight.getTime() + (i + 1) * 300000, mean: Math.round(peak * Math.pow(sun, 1.6) * (0.9 + 0.1 * Math.sin(i * 0.7))) };
+              });
+              return Object.fromEntries((msg.statistic_ids ?? []).map((id) => [id, curve]));
+            }
+            case "neonplan3d/timetravel/history":
+              // the time travel: an invented week of the demo household (?tt=07:42 or ?tt=-3h opens it there)
+              if (params.has("nopro")) throw { code: "not_unlocked", message: "Time travel is a Pro add-on" };
+              return demoHistory(msg, hass.states);
+            case "history/history_during_period": {
+              // invented motion of the last half hour: hall, kitchen, then the living-room camera
+              const now = Date.now() / 1000;
+              const on = (entity, ...minutesAgo) => [entity, minutesAgo.flatMap((m) => [{ s: "on", lu: now - m * 60 }, { s: "off", lu: now - m * 60 + 40 }])];
+              return Object.fromEntries([
+                on("binary_sensor.flur_bewegung", 26, 12),
+                on("binary_sensor.kueche_praesenz", 22, 9),
+                on("binary_sensor.wohnzimmer_kamera_bewegung", 17, 3),
+                on("binary_sensor.garage_auto", 28),
+              ]);
+            }
+            default:
+              throw { code: "unknown_command", message: msg.type };
+          }
+        },
+      };
+
+      if (params.has("pv")) {
+        // ?pv=5400 sets the solar power (W) of the demo plant, e.g. a sunny noon
+        hass.states["sensor.pv_leistung"] = { ...hass.states["sensor.pv_leistung"], state: params.get("pv") };
+      }
+      if (params.has("weather")) {
+        // ?weather=pouring|snowy|fog|lightning-rainy|cloudy… sets the demo weather
+        hass.states["weather.zuhause"].state = params.get("weather");
+        hass.states["weather.zuhause"].attributes = { ...hass.states["weather.zuhause"].attributes, cloud_coverage: 85, wind_speed: 25, wind_speed_unit: "km/h" };
+      }
+      if (params.has("alerts")) {
+        // ?alerts: smoke in the kitchen while it rains on open windows
+        hass.states["binary_sensor.kueche_rauch"].state = "on";
+        hass.states["weather.zuhause"].state = "rainy";
+      }
+      let current = hass;
+      await import("../custom_components/neonplan3d/frontend/neonplan3d.js");
+      if (params.has("site")) {
+        // ?site: the public online demo says what it is and where to get NeonPlan 3D
+        const de = hass.language === "de";
+        // phones: short and at the top of the 3D area, clear of the toolbars at the bottom
+        const narrow = innerWidth < 700;
+        const bar = document.createElement("div");
+        bar.style.cssText =
+          (narrow ? "position:fixed;left:50%;top:244px;" : "position:fixed;left:50%;bottom:64px;") +
+          "transform:translateX(-50%);z-index:10;display:flex;gap:10px;align-items:center;flex-wrap:nowrap;white-space:nowrap;justify-content:center;max-width:calc(100vw - 32px);padding:8px 14px;border-radius:999px;background:rgba(7,11,20,.88);border:1px solid rgba(0,229,255,.45);color:#cfe9ff;font:13px/1.3 Figtree,Roboto,sans-serif;box-shadow:0 0 18px rgba(0,229,255,.25)";
+        const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener" style="color:#00e5ff;font-weight:600;text-decoration:none">${text}</a>`;
+        // the install button stands out; GitHub, the manual and the language as plain links
+        const install = (text) =>
+          `<a href="https://github.com/Mastershort/neonplan3d#installation" target="_blank" rel="noopener" style="background:#00e5ff;color:#06101c;font-weight:700;text-decoration:none;padding:5px 12px;border-radius:999px">${text}</a>`;
+        const github = link("https://github.com/Mastershort/neonplan3d", "★ GitHub");
+        bar.innerHTML = de
+          ? `<span>${narrow ? "Demo" : "Demo mit erfundenen Daten – probier alles aus"}</span>${install(narrow ? "Installieren" : "Jetzt installieren")}${github}${narrow ? "" : link("https://mastershort.de/neonplan3d/anleitung/?lang=de", "Anleitung")}${link("?site&lang=en", narrow ? "EN" : "English")}`
+          : `<span>${narrow ? "Demo" : "Demo with invented data – try everything"}</span>${install(narrow ? "Install" : "Install now")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "Manual")}${link("?site&lang=de", narrow ? "DE" : "Deutsch")}`;
+        const close = document.createElement("button");
+        close.textContent = "×";
+        close.setAttribute("aria-label", de ? "Schließen" : "Close");
+        close.style.cssText = "background:none;border:0;color:#cfe9ff;font-size:16px;cursor:pointer;padding:0 2px";
+        close.onclick = () => bar.remove();
+        bar.append(close);
+        document.body.append(bar);
+        // phones: many visitors open the demo there and wonder about all the buttons – say once what it is
+        // made for and offer the clean view (only the house) or the way to a PC
+        let seen = false;
+        try {
+          seen = sessionStorage.getItem("neonplan3d.demoPhoneHint") === "1";
+        } catch {
+          /* no storage: show it */
+        }
+        if (narrow && !seen) {
+          const veil = document.createElement("div");
+          veil.style.cssText =
+            "position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(3,6,12,.72);font:15px/1.45 Figtree,Roboto,sans-serif;color:#cfe9ff";
+          const box = document.createElement("div");
+          box.style.cssText =
+            "max-width:360px;padding:20px 18px;border-radius:18px;background:#0b1424;border:1px solid rgba(0,229,255,.45);box-shadow:0 0 24px rgba(0,229,255,.25)";
+          const btn = (text, primary) =>
+            `<button style="width:100%;margin-top:10px;padding:11px 14px;border-radius:12px;font:600 15px Figtree,Roboto,sans-serif;cursor:pointer;${primary ? "background:#00e5ff;color:#06101c;border:0" : "background:none;color:#cfe9ff;border:1px solid rgba(0,229,255,.45)"}">${text}</button>`;
+          box.innerHTML = de
+            ? `<b style="font-size:18px;color:#fff">Willkommen in der Demo 👋</b>
+               <p style="margin:10px 0 0">NeonPlan 3D ist für <b>Wandtablets, Tablets und den PC</b> gemacht – den Grundriss zeichnet man am PC. Am Handy siehst du nur einen kleinen Ausschnitt, deshalb wirken die vielen Knöpfe hier etwas eng.</p>
+               <p style="margin:8px 0 0">Tipp: Handy <b>quer</b> halten oder die Demo am PC öffnen: <span style="color:#00e5ff">neonplan3d.mastershort.de</span></p>
+               ${btn("Nur das Haus zeigen", true)}${btn("Alles ansehen", false)}<p style="margin:10px 0 0;font-size:13px;opacity:.75">Das Auge 👁 unten links holt die Knöpfe zurück.</p>`
+            : `<b style="font-size:18px;color:#fff">Welcome to the demo 👋</b>
+               <p style="margin:10px 0 0">NeonPlan 3D is made for <b>wall tablets, tablets and the PC</b> – you draw the floor plan on a PC. A phone shows only a small part, so all the buttons feel a bit cramped here.</p>
+               <p style="margin:8px 0 0">Tip: turn your phone <b>sideways</b> or open the demo on a PC: <span style="color:#00e5ff">neonplan3d.mastershort.de</span></p>
+               ${btn("Show just the house", true)}${btn("See everything", false)}<p style="margin:10px 0 0;font-size:13px;opacity:.75">The eye 👁 at the bottom left brings the buttons back.</p>`;
+          const [clean, all] = box.querySelectorAll("button");
+          const done = () => {
+            veil.remove();
+            try {
+              sessionStorage.setItem("neonplan3d.demoPhoneHint", "1");
+            } catch {
+              /* no storage: it may show again on reload */
+            }
+          };
+          clean.onclick = () => {
+            done();
+            // the eye of the 3D view: hides every bar so only the house remains (tap the eye again for the buttons)
+            const v = document.querySelector("neonplan3d-panel")?.shadowRoot?.querySelector("fp3d-view3d");
+            v?.dispatchEvent(new CustomEvent("clean-toggle", { bubbles: true, composed: true }));
+          };
+          all.onclick = done;
+          veil.append(box);
+          document.body.append(veil);
+        }
+      }
+      if (params.has("card")) {
+        // ?card: the dashboard card next to its visual editor (like Home Assistant's card dialog)
+        document.querySelector("neonplan3d-panel").remove();
+        const CardClass = customElements.get("neonplan3d-card");
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:grid;grid-template-columns:420px 1fr;gap:24px;padding:24px;font-family:Figtree,Roboto,sans-serif;--primary-text-color:#e1e1e1;--secondary-text-color:#9b9b9b;--card-background-color:#1c1c1c;--primary-color:#03a9f4;--divider-color:rgba(225,225,225,.2)";
+        const editorBox = document.createElement("div");
+        editorBox.style.cssText = "background:#1c1c1c;border-radius:12px;padding:20px";
+        const editor = await CardClass.getConfigElement();
+        const card = document.createElement("neonplan3d-card");
+        let config = {
+          type: "custom:neonplan3d-card",
+          quality: "low",
+          floor: params.get("floor") || "eg",
+          flows: false,
+          controls: ["walls", "temperature"],
+          fullscreen_button: true,
+          floor_thumbs: true,
+          ...(params.get("stack") ? { floor_stack: params.get("stack") } : {}),
+          ...(params.has("nopanel") ? { room_panel: false } : {}),
+          ...(params.has("night") ? { night: "00:00-23:59" } : {}),
+          ...(params.has("kiosk") ? { idle_return: 1, idle_orbit: true } : {}),
+          ...(params.has("tt") ? { time_travel: true } : {}),
+          ...(params.has("fill") ? { fill: true } : {}),
+        };
+        card.setConfig(config);
+        editor.setConfig(config);
+        editor.addEventListener("config-changed", (e) => {
+          config = e.detail.config;
+          card.setConfig(config);
+          editor.setConfig(config);
+        });
+        editor.hass = hass;
+        card.hass = hass;
+        editorBox.append(editor);
+        wrap.append(editorBox, card);
+        document.body.append(wrap);
+        window.fp3dCard = card;
+      } else {
+        const panel = document.querySelector("neonplan3d-panel");
+        panel.hass = hass;
+        window.addEventListener("hass-more-info", (e) => console.log("more-info", e.detail.entityId));
+        panel.narrow = window.innerWidth < 870;
+        window.fp3dPanel = panel;
+      }
+    </script>
+  </body>
+</html>
