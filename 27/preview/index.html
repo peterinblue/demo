@@ -309,9 +309,7 @@
         const github = link("https://github.com/Mastershort/neonplan3d", "★ GitHub");
         bar.innerHTML = isZh
           ? `<span>${narrow ? "演示" : "演示数据均为虚构，所有功能都可以试"}</span>${install(narrow ? "安装" : "立即安装")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "使用说明")}${link("?site&lang=en", narrow ? "EN" : "English")}`
-          : de
-          ? `<span>${narrow ? "演示" : "演示数据均为虚构，所有功能都可以试"}</span>${install(narrow ? "安装" : "立即安装")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "使用说明")}${link("?site&lang=en", narrow ? "EN" : "English")}`
-          : `<span>${narrow ? "Demo" : "Demo with invented data – try everything"}</span>${install(narrow ? "Install" : "Install now")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "Manual")}${link("?site&lang=de", narrow ? "DE" : "Deutsch")}`;
+          : `<span>${narrow ? "Demo" : "Demo with invented data – try everything"}</span>${install(narrow ? "Install" : "Install now")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "Manual")}${link("?site&lang=zh", narrow ? "中文" : "中文")}`;
         const close = document.createElement("button");
         close.textContent = "×";
         close.setAttribute("aria-label", isZh ? "关闭" : de ? "关闭" : "Close");
