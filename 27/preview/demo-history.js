@@ -63,8 +63,8 @@ function buildEvents() {
   add("climate.wohnzimmer", start, "heat", { hvac_action: "idle", current_temperature: 19.6, temperature: 18 });
   add("climate.schlafzimmer", start, "heat", { hvac_action: "idle", current_temperature: 17.8, temperature: 17 });
 
-  const RADIO = ["Morgenmagazin", "Nachrichten", "Frühstücksradio", "Wetter und Verkehr"];
-  const SHOWS = ["Serie", "Tatort", "Dokumentation", "Fußball", "Quiz am Abend"];
+  const RADIO = ["晨间杂志", "新闻", "早餐电台", "天气与路况"];
+  const SHOWS = ["剧集", "犯罪现场", "纪录片", "足球", "晚间问答"];
   for (let back = DAYS; back >= 0; back--) {
     const day = midnight(back);
     const r = rng(1000 + back);
@@ -82,11 +82,11 @@ function buildEvents() {
     light("light.flur", at(day, 6.67, 2, r), hurry ? at(day, 17.5, 2, r) : at(day, 7.75, 2, r), { brightness: 120, color_mode: "color_temp", color_temp_kelvin: 3000 });
     span("switch.kaffeemaschine", at(day, 6.85, 2, r), at(day, 7.15, 2, r));
     const radio = RADIO[back % RADIO.length];
-    add("media_player.kueche_lautsprecher", at(day, 7.0, 3, r), "playing", { media_title: radio, app_name: "Radio", volume_level: 0.35 });
-    add("media_player.kueche_lautsprecher", at(day, 7.35, 3, r), "playing", { media_title: "Blue Train", media_artist: "John Coltrane", app_name: "Radio", volume_level: 0.5 });
+    add("media_player.kueche_lautsprecher", at(day, 7.0, 3, r), "playing", { media_title: radio, app_name: "电台", volume_level: 0.35 });
+    add("media_player.kueche_lautsprecher", at(day, 7.35, 3, r), "playing", { media_title: "Blue Train", media_artist: "John Coltrane", app_name: "电台", volume_level: 0.5 });
     const radioOff = at(day, 7.67, 3, r);
     add("media_player.kueche_lautsprecher", radioOff, "idle", { volume_level: 0.35 });
-    add("media_player.bad_lautsprecher", at(day, 6.6, 2, r), "playing", { media_title: radio, app_name: "Radio", volume_level: 0.3 });
+    add("media_player.bad_lautsprecher", at(day, 6.6, 2, r), "playing", { media_title: radio, app_name: "电台", volume_level: 0.3 });
     add("media_player.bad_lautsprecher", at(day, 7.08, 2, r), "idle", { volume_level: 0.3 });
     span("binary_sensor.kueche_praesenz", at(day, 6.52, 2, r), at(day, 7.7, 2, r));
     for (const h of [6.55, 7.05, 12.4, 18.6, 19.2]) span("binary_sensor.kuehlschrank_tuer", at(day, h, 3, r), at(day, h, 3, r) + 25000);
@@ -139,7 +139,7 @@ function buildEvents() {
     // the robot at ten, the washing machine from eleven to twenty to one, home office upstairs
     // the robot reports the room it cleans (the trail through the rooms follows it)
     const v0 = at(day, 10.0, 1, r);
-    ["Wohnzimmer", "Küche", "Flur", "Bad"].forEach((room, i) => add("vacuum.saugi", v0 + i * 690000, "cleaning", { current_room: room }));
+    ["客厅", "厨房", "走廊", "浴室"].forEach((room, i) => add("vacuum.saugi", v0 + i * 690000, "cleaning", { current_room: room }));
     add("vacuum.saugi", at(day, 10.8, 2, r), "returning");
     add("vacuum.saugi", at(day, 10.87, 2, r), "docked");
     span("binary_sensor.wohnzimmer_kamera_bewegung", at(day, 10.1, 1, r), at(day, 10.7, 1, r));

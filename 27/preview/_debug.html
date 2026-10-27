@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<body>
+<pre id="log">start</pre>
+<script type="module">
+  const log = (m) => { document.getElementById("log").textContent += "\n" + m; };
+  window.addEventListener("error", (e) => log("ERROR: " + e.message + " @" + (e.filename || "") + ":" + e.lineno));
+  window.addEventListener("unhandledrejection", (e) => log("REJECT: " + ((e.reason && e.reason.message) || e.reason)));
+  try {
+    const d = await import("./demo-data.js");
+    log("demo-data ok floors=" + Object.keys(d.DEMO_FLOORS).length + " areas=" + Object.keys(d.DEMO_AREAS).length + " ents=" + Object.keys(d.DEMO_ENTITIES).length);
+    const floors = d.DEMO_BUILDING.floors.map((f) => f.name + "(" + f.rooms.length + ")").join(",");
+    log("building floors: " + floors);
+    const h = await import("./demo-history.js");
+    log("demo-history ok keys=" + Object.keys(h).length);
+    await import("../custom_components/neonplan3d/frontend/neonplan3d.js");
+    log("frontend module ok");
+    log("panel defined: " + !!customElements.get("neonplan3d-panel"));
+  } catch (e) {
+    log("IMPORT FAIL: " + e.message);
+  }
+</script>
+</body>
+</html>

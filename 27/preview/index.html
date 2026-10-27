@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NeonPlan 3D – Vorschau</title>
+    <title>NeonPlan 3D – 在线演示</title>
     <style>
       /* Like HA: the panel's parent has no explicit height, the panel sizes itself. */
       body {
@@ -29,27 +29,27 @@
         instance: "3f9c2a7b1e4d8c05",
         active: params.has("shop"),
         key_hint: params.has("shop") ? "…7K2M" : null,
-        licensee: params.has("shop") ? "Demo Kunde" : null,
+        licensee: params.has("shop") ? "演示客户" : null,
         checked_at: params.has("shop") ? Date.now() / 1000 - 3600 : null,
         error: null,
         shop_url: "https://mastershort.de/neonplan3d/",
         packs: [
-          { id: "mastershort.living", name: "Wohnzimmer", release: 2, url: "https://mastershort.de/neonplan3d/", installed: 1 },
-          { id: "mastershort.kitchen", name: "Küche", release: 1, url: "https://mastershort.de/neonplan3d/", installed: 1 },
-          { id: "mastershort.vehicles", name: "Fahrzeuge", release: 1, url: "https://mastershort.de/neonplan3d/", installed: null },
+          { id: "mastershort.living", name: "客厅", release: 2, url: "https://mastershort.de/neonplan3d/", installed: 1 },
+          { id: "mastershort.kitchen", name: "厨房", release: 1, url: "https://mastershort.de/neonplan3d/", installed: 1 },
+          { id: "mastershort.vehicles", name: "车辆", release: 1, url: "https://mastershort.de/neonplan3d/", installed: null },
         ],
         // invented offers of the demo shop and a loyalty code
         offers: params.has("shop")
           ? [
-              { id: "kino", name: "Heimkino & Hi-Fi", teaser: "Leinwand, Beamer, Lautsprecher, Subwoofer – verknüpfbar", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pack", price: "5,90 €", new: true },
-              { id: "tiere", name: "Haustiere", teaser: "Kratzbaum, Hundekorb, Aquarium mit Licht", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pack", price: "3,90 €", new: true },
-              { id: "pro_weather", name: "Wetter draußen", teaser: "Regen, Schnee und Gewitter live am Haus", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pro", price: "3,90 €", new: false },
+              { id: "kino", name: "家庭影院 & 高保真", teaser: "幕布、投影、音箱、低音炮——均可联动", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pack", price: "5,90 €", new: true },
+              { id: "tiere", name: "宠物", teaser: "猫爬架、狗窝、带灯的鱼缸", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pack", price: "3,90 €", new: true },
+              { id: "pro_weather", name: "室外天气", teaser: "房屋周围实时雨、雪与雷暴", image: null, url: "https://mastershort.de/neonplan3d/", kind: "pro", price: "3,90 €", new: false },
             ]
           : [],
         loyalty: params.has("shop") ? { code: "NP-TREUE-DEMO42", percent: 10 } : null,
         supporter: params.has("shop") ? { code: "NPS-DEMO-7KQ4", until: "2027-12-31" } : null,
         newsletter: params.has("shop") ? { url: "https://mastershort.de/neonplan3d/newsletter/" } : null,
-        updates: params.has("shop") ? [{ id: "mastershort.kitchen", name: "Küche", release: 2, added: 10, at: Date.now() / 1000 - 600 }] : [],
+        updates: params.has("shop") ? [{ id: "mastershort.kitchen", name: "厨房", release: 2, added: 10, at: Date.now() / 1000 - 600 }] : [],
       };
       let building = params.has("empty") ? { version: 1, floors: [], settings: { wall_exterior: 0.24, wall_interior: 0.12, grid: 0.05 } } : DEMO_BUILDING;
       let revision = 1;
@@ -86,8 +86,10 @@
       }
 
       const hass = {
-        language: params.get("lang") || "de",
-        user: { is_admin: !params.has("user"), name: "Demo" },
+        // 演示版只提供中文与英文：任何其它语言代码一律回落到中文
+        language: params.get("lang") === "en" ? "en" : "zh",
+        locale: { language: params.get("lang") === "en" ? "en" : "zh", number_format: "language", time_format: "24", date_format: "language" },
+        user: { is_admin: !params.has("user"), name: "演示" },
         areas: DEMO_AREAS,
         floors: DEMO_FLOORS,
         entities: DEMO_ENTITIES,
@@ -106,9 +108,9 @@
           if (!path.startsWith("calendars/calendar.abfallkalender")) throw new Error("not in the demo");
           const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
           return [
-            { summary: "Restmüll", start: { date: day(0) }, end: { date: day(1) } },
-            { summary: "Papiertonne", start: { date: day(1) }, end: { date: day(2) } },
-            { summary: "Biotonne", start: { date: day(3) }, end: { date: day(4) } },
+            { summary: "其他垃圾", start: { date: day(0) }, end: { date: day(1) } },
+            { summary: "纸质回收", start: { date: day(1) }, end: { date: day(2) } },
+            { summary: "厨余垃圾", start: { date: day(3) }, end: { date: day(4) } },
           ];
         },
         async callService(domain, service, data) {
@@ -181,7 +183,7 @@
                 can_delete: diag.enabled,
                 endpoint: "https://api.mastershort.de/telemetry/v1/report",
                 preview: {
-                  v: 1, id: diag.enabled ? "3f0c9a52-7d1e-4b8a-9c61-2e5f8d4a7b10" : null, kind: "daily", neonplan: "1.17.0", ha: "2026.10.1", python: "3.13", lang: "de",
+                  v: 1, id: diag.enabled ? "3f0c9a52-7d1e-4b8a-9c61-2e5f8d4a7b10" : null, kind: "daily", neonplan: "1.17.0", ha: "2026.10.1", python: "3.13", lang: "zh",
                   packs: ["mastershort.pro_energy"], pro: ["energy_pro"],
                   plan: { floors: building.floors.length, rooms: building.floors.reduce((n, f) => n + f.rooms.length, 0), furniture: building.floors.reduce((n, f) => n + f.furniture.length, 0), devices_linked: building.floors.reduce((n, f) => n + f.placements.length, 0), outdoor: 0, cameras: 1 },
                   clients: diag.enabled ? [{ device: "tablet", browser: "Silk 120", os: "Android 9", low_end: true, render_scale: 0.75, fps: 24, gpu_tier: "low", views: { "3d": 12, editor: 3 } }] : [],
@@ -292,7 +294,8 @@
       await import("../custom_components/neonplan3d/frontend/neonplan3d.js");
       if (params.has("site")) {
         // ?site: the public online demo says what it is and where to get NeonPlan 3D
-        const de = hass.language === "de";
+        const isZh = (hass.language || "").startsWith("zh");
+        const de = !isZh && hass.language === "de";
         // phones: short and at the top of the 3D area, clear of the toolbars at the bottom
         const narrow = innerWidth < 700;
         const bar = document.createElement("div");
@@ -304,12 +307,14 @@
         const install = (text) =>
           `<a href="https://github.com/Mastershort/neonplan3d#installation" target="_blank" rel="noopener" style="background:#00e5ff;color:#06101c;font-weight:700;text-decoration:none;padding:5px 12px;border-radius:999px">${text}</a>`;
         const github = link("https://github.com/Mastershort/neonplan3d", "★ GitHub");
-        bar.innerHTML = de
-          ? `<span>${narrow ? "Demo" : "Demo mit erfundenen Daten – probier alles aus"}</span>${install(narrow ? "Installieren" : "Jetzt installieren")}${github}${narrow ? "" : link("https://mastershort.de/neonplan3d/anleitung/?lang=de", "Anleitung")}${link("?site&lang=en", narrow ? "EN" : "English")}`
+        bar.innerHTML = isZh
+          ? `<span>${narrow ? "演示" : "演示数据均为虚构，所有功能都可以试"}</span>${install(narrow ? "安装" : "立即安装")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "使用说明")}${link("?site&lang=en", narrow ? "EN" : "English")}`
+          : de
+          ? `<span>${narrow ? "演示" : "演示数据均为虚构，所有功能都可以试"}</span>${install(narrow ? "安装" : "立即安装")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "使用说明")}${link("?site&lang=en", narrow ? "EN" : "English")}`
           : `<span>${narrow ? "Demo" : "Demo with invented data – try everything"}</span>${install(narrow ? "Install" : "Install now")}${github}${narrow ? "" : link("https://mastershort.de/en/neonplan3d/manual/?lang=en", "Manual")}${link("?site&lang=de", narrow ? "DE" : "Deutsch")}`;
         const close = document.createElement("button");
         close.textContent = "×";
-        close.setAttribute("aria-label", de ? "Schließen" : "Close");
+        close.setAttribute("aria-label", isZh ? "关闭" : de ? "关闭" : "Close");
         close.style.cssText = "background:none;border:0;color:#cfe9ff;font-size:16px;cursor:pointer;padding:0 2px";
         close.onclick = () => bar.remove();
         bar.append(close);
@@ -331,11 +336,16 @@
             "max-width:360px;padding:20px 18px;border-radius:18px;background:#0b1424;border:1px solid rgba(0,229,255,.45);box-shadow:0 0 24px rgba(0,229,255,.25)";
           const btn = (text, primary) =>
             `<button style="width:100%;margin-top:10px;padding:11px 14px;border-radius:12px;font:600 15px Figtree,Roboto,sans-serif;cursor:pointer;${primary ? "background:#00e5ff;color:#06101c;border:0" : "background:none;color:#cfe9ff;border:1px solid rgba(0,229,255,.45)"}">${text}</button>`;
-          box.innerHTML = de
-            ? `<b style="font-size:18px;color:#fff">Willkommen in der Demo 👋</b>
-               <p style="margin:10px 0 0">NeonPlan 3D ist für <b>Wandtablets, Tablets und den PC</b> gemacht – den Grundriss zeichnet man am PC. Am Handy siehst du nur einen kleinen Ausschnitt, deshalb wirken die vielen Knöpfe hier etwas eng.</p>
-               <p style="margin:8px 0 0">Tipp: Handy <b>quer</b> halten oder die Demo am PC öffnen: <span style="color:#00e5ff">neonplan3d.mastershort.de</span></p>
-               ${btn("Nur das Haus zeigen", true)}${btn("Alles ansehen", false)}<p style="margin:10px 0 0;font-size:13px;opacity:.75">Das Auge 👁 unten links holt die Knöpfe zurück.</p>`
+          box.innerHTML = isZh
+            ? `<b style="font-size:18px;color:#fff">欢迎来到演示 👋</b>
+               <p style="margin:10px 0 0">NeonPlan 3D 专为<b>墙面平板、平板电脑和 PC</b> 设计，平面图在 PC 上绘制。手机上只能看到一小块区域，所以这里的按钮会显得有点挤。</p>
+               <p style="margin:8px 0 0">提示：把手机<b>横过来</b>，或在 PC 上打开演示：<span style="color:#00e5ff">neonplan3d.mastershort.de</span></p>
+               ${btn("只看房子", true)}${btn("查看全部", false)}<p style="margin:10px 0 0;font-size:13px;opacity:.75">左下角的眼睛 👁 可以把按钮找回来。</p>`
+            : de
+            ? `<b style="font-size:18px;color:#fff">欢迎来到演示 👋</b>
+               <p style="margin:10px 0 0">NeonPlan 3D 专为<b>墙面平板、平板电脑和 PC</b> 设计，平面图在 PC 上绘制。手机上只能看到一小块区域，所以这里的按钮会显得有点挤。</p>
+               <p style="margin:8px 0 0">提示：把手机<b>横过来</b>，或在 PC 上打开演示：<span style="color:#00e5ff">neonplan3d.mastershort.de</span></p>
+               ${btn("只看房子", true)}${btn("查看全部", false)}<p style="margin:10px 0 0;font-size:13px;opacity:.75">左下角的眼睛 👁 可以把按钮找回来。</p>`
             : `<b style="font-size:18px;color:#fff">Welcome to the demo 👋</b>
                <p style="margin:10px 0 0">NeonPlan 3D is made for <b>wall tablets, tablets and the PC</b> – you draw the floor plan on a PC. A phone shows only a small part, so all the buttons feel a bit cramped here.</p>
                <p style="margin:8px 0 0">Tip: turn your phone <b>sideways</b> or open the demo on a PC: <span style="color:#00e5ff">neonplan3d.mastershort.de</span></p>

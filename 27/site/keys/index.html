@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NeonPlan Key Helper</title>
-    <meta name="description" content="Read the Bluetooth key (IRK) of an iPhone or Apple Watch with an ESP32 – for NeonPlan 3D's locating. Flashed right from the browser, no Mac needed." />
+    <title>NeonPlan 密钥助手</title>
+    <meta name="description" content="用一块 ESP32 读取 iPhone 或 Apple Watch 的蓝牙密钥（IRK），供 NeonPlan 3D 室内定位使用。直接在浏览器里刷写固件，不需要 Mac。" />
     <script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
     <style>
       :root { color-scheme: dark; --ink: #e6f7ff; --muted: #9fb8c8; --neon: #37e0ff; --card: #0f1a2e; --warn: #ffb86b; }
@@ -32,120 +32,120 @@
       summary { cursor: pointer; font-weight: 600; }
       footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
       [data-lang] { display: none; }
-      body.de [data-lang="de"], body.en [data-lang="en"] { display: block; }
-      body.de span[data-lang="de"], body.en span[data-lang="en"] { display: inline; }
+      body.zh [data-lang="zh"], body.en [data-lang="en"] { display: block; }
+      body.zh span[data-lang="zh"], body.en span[data-lang="en"] { display: inline; }
     </style>
   </head>
-  <body class="en">
+  <body class="zh">
     <main>
-      <div class="lang"><button data-set="de">Deutsch</button> <button data-set="en">English</button></div>
-      <h1>🔑 NeonPlan <span><span data-lang="en">Key Helper</span><span data-lang="de">Schlüssel-Helfer</span></span></h1>
+      <div class="lang"><button data-set="zh">中文</button> <button data-set="en">English</button></div>
+      <h1>🔑 NeonPlan <span><span data-lang="zh">密钥助手</span><span data-lang="en">Key Helper</span></span></h1>
 
-      <!-- ============================== DEUTSCH ============================== -->
-      <div data-lang="de">
-        <p class="sub">NeonPlan 3D erkennt, in welchem Raum du gerade bist – über die Bluetooth-Empfänger, die Home Assistant schon hat. Ein iPhone und eine Apple Watch wechseln aber ständig ihre Bluetooth-Adresse. Damit NeonPlan sie trotzdem wiedererkennt, braucht es einmal ihren <b>Schlüssel</b> (IRK). Diese Seite macht aus einem ESP32 für ca. 5 € den <b>NeonPlan Schlüssel-Helfer</b>, der den Schlüssel beim Koppeln ausliest – ganz ohne Mac.</p>
+      <!-- ============================== 中文 ============================== -->
+      <div data-lang="zh">
+        <p class="sub">NeonPlan 3D 能判断你当前在哪个房间——靠的是 Home Assistant 已有的蓝牙接收器。但 iPhone 和 Apple Watch 会不断更换蓝牙地址。为了仍能识别它们，NeonPlan 需要一次它们的<b>密钥</b>（IRK）。这一页把一块约 5 欧元的 ESP32 变成 <b>NeonPlan 密钥助手</b>，在配对时读取密钥——完全不需要 Mac。</p>
 
         <div class="card">
-          <b>Brauche ich das?</b>
+          <b>我需要这个吗？</b>
           <ul>
-            <li><b>iPhone, Apple Watch:</b> ja – außer du hast den Schlüssel schon; dann trägst du ihn in NeonPlan unter „Eigenen Schlüssel einfügen“ ein.</li>
-            <li><b>Android-Handy oder -Tablet:</b> nein – und Koppeln hilft hier auch nicht, Android sendet den Schlüssel im Hintergrund nicht. Schalte in der Home-Assistant-App <b>Einstellungen → Companion-App → Sensoren verwalten → BLE-Sender</b> ein, mit Sendeleistung <b>Hoch</b> und Sendemodus <b>Niedrige Latenz</b>. NeonPlan findet das Handy dann von selbst.</li>
-            <li><b>Schlüsselanhänger</b> (Nut, Tile, iBeacon): nein. AirTags gehen leider gar nicht.</li>
+            <li><b>iPhone、Apple Watch：</b>需要——除非你已经有密钥；那就直接在 NeonPlan 里「粘贴已有密钥」填入。</li>
+            <li><b>安卓手机或平板：</b>不需要——配对在这里也没用，安卓不会在后台发送密钥。请在 Home Assistant App 里打开<b>设置 → 伴侣应用 → 管理传感器 → BLE 发射器</b>，发射功率选<b>高</b>，广播模式选<b>低延迟</b>。这样 NeonPlan 就能自己找到手机。</li>
+            <li><b>蓝牙防丢器</b>（Nut、Tile、iBeacon）：不需要。AirTag 完全不支持，很遗憾。</li>
           </ul>
         </div>
 
         <div class="card">
-          <b>Du brauchst:</b>
+          <b>你需要准备：</b>
           <ul>
-            <li>ein <b>ESP32-Board</b> – normaler ESP32 („ESP32 DevKit“, „ESP-WROOM-32“), ESP32-C3 oder ESP32-S3, ca. 5 €</li>
-            <li>ein <b>USB-Kabel, das Daten überträgt</b> (manche Ladekabel können nur Strom)</li>
-            <li>einen <b>Computer mit Chrome oder Edge</b> (Firefox und Safari können keine Geräte flashen; Handy und Tablet gehen nicht)</li>
-            <li>NeonPlan 3D ab Version <b>2.0</b> und das WLAN-Passwort</li>
+            <li>一块 <b>ESP32 开发板</b>——普通 ESP32（「ESP32 DevKit」「ESP-WROOM-32」）、ESP32-C3 或 ESP32-S3，约 5 欧元</li>
+            <li>一根<b>能传输数据的 USB 线</b>（有些充电线只供电、不传数据）</li>
+            <li>一台<b>装有 Chrome 或 Edge 的电脑</b>（Firefox 和 Safari 无法刷写设备；手机和平板也不行）</li>
+            <li>NeonPlan 3D <b>2.0</b> 及以上版本，以及你的 Wi-Fi 密码</li>
           </ul>
         </div>
 
-        <h2>So geht's – Schritt für Schritt</h2>
+        <h2>操作步骤</h2>
 
         <div class="step"><div class="num">1</div><div>
-          <b>ESP32 anstecken und installieren.</b> Steck den ESP32 per USB an den Computer und klicke unten auf <b>Installieren</b>. Wähle im Fenster den USB-Anschluss (meist „USB Serial“, „CP210x“ oder „CH340“), bestätige <b>Installieren</b>. Das dauert etwa eine Minute.
-          <p class="sub">Kein Anschluss in der Liste? Siehe „Wenn etwas nicht klappt“ unten.</p>
+          <b>插上 ESP32 并安装固件。</b>用 USB 把 ESP32 接到电脑，点击下方的<b>安装</b>。在弹窗里选择 USB 端口（通常是「USB Serial」「CP210x」或「CH340」），确认<b>安装</b>。大约需要一分钟。
+          <p class="sub">列表里没有端口？请看下方「遇到问题怎么办」。</p>
         </div></div>
 
         <div class="step"><div class="num">2</div><div>
-          <b>WLAN eintragen.</b> Direkt danach fragt die Seite nach deinem WLAN. Name und Passwort eintragen – der ESP32 verbindet sich und ist fertig. Du kannst ihn jetzt auch an ein normales USB-Netzteil irgendwo in der Wohnung stecken.
+          <b>填写 Wi-Fi。</b>紧接着页面会询问你的 Wi-Fi。填入名称和密码——ESP32 会连上网络，配置完成。现在你也可以把它插到家里任意一个 USB 电源上。
         </div></div>
 
         <div class="step"><div class="num">3</div><div>
-          <b>In Home Assistant hinzufügen.</b> Nach kurzer Zeit meldet Home Assistant ein neues Gerät: <b>Einstellungen → Geräte &amp; Dienste</b> → oben unter „Entdeckt“ <b>NeonPlan Key</b> → <b>Hinzufügen</b> → <b>Absenden</b>. (Kommt keine Meldung: „Integration hinzufügen“ → ESPHome → die IP-Adresse des ESP32 eintragen.)
+          <b>在 Home Assistant 中添加。</b>稍等片刻，Home Assistant 会发现新设备：<b>设置 → 设备与服务</b> → 上方「已发现」里的 <b>NeonPlan Key</b> → <b>添加</b> → <b>提交</b>。（如果没有提示：「添加集成」→ ESPHome → 填入 ESP32 的 IP 地址。）
         </div></div>
 
         <div class="step"><div class="num">4</div><div>
-          <b>In NeonPlan öffnen.</b> Editor → <b>⚙ Einstellungen → 📡 Ortung</b> → <b>2 · Geräte</b>. Unter <b>🔑 Schlüssel-Helfer</b> steht jetzt „Schlüssel-Helfer gefunden: NeonPlan Key …“.
+          <b>在 NeonPlan 中打开。</b>编辑器 → <b>⚙ 设置 → 📡 定位</b> → <b>2 · 设备</b>。在 <b>🔑 密钥助手</b>下方现在会显示「已找到密钥助手：NeonPlan Key …」。
           <ul>
-            <li>Wähle <b>⌚ Für Apple Watch</b> oder <b>📱 Für iPhone</b> (der Helfer startet dabei kurz neu).</li>
-            <li>Trag einen <b>Namen</b> ein (z. B. „Torstens Watch“) und wähle die <b>Person</b>.</li>
+            <li>选择 <b>⌚ 用于 Apple Watch</b> 或 <b>📱 用于 iPhone</b>（助手会短暂重启）。</li>
+            <li>填入一个<b>名称</b>（例如「小张的手表」）并选择<b>成员</b>。</li>
           </ul>
         </div></div>
 
         <div class="step"><div class="num">5</div><div>
-          <b>Koppeln.</b>
+          <b>配对。</b>
           <ul>
-            <li><b>Apple Watch:</b> auf der Uhr <b>Einstellungen → Bluetooth</b>, etwas warten – unter <b>„Gesundheitsgeräte“</b> erscheint <b>NeonPlan Key</b>. Antippen.</li>
-            <li><b>iPhone:</b> <b>Einstellungen → Bluetooth</b> – unter „Andere Geräte“ <b>NeonPlan Key</b> antippen (er meldet sich als Tastatur; ein angezeigter Code muss nicht eingetippt werden).</li>
+            <li><b>Apple Watch：</b>在手表上打开<b>设置 → 蓝牙</b>，稍等一会儿——<b>「健康设备」</b>下会出现 <b>NeonPlan Key</b>，点它。</li>
+            <li><b>iPhone：</b><b>设置 → 蓝牙</b>——在「其他设备」下点击 <b>NeonPlan Key</b>（它会以键盘身份出现；显示的配对码不需要输入）。</li>
           </ul>
-          <p class="sub">Danach steht auf dem Gerät oft „Nicht verbunden“ – das ist richtig: Der Helfer trennt die Verbindung, sobald er den Schlüssel hat.</p>
+          <p class="sub">之后设备上常会显示「未连接」——这是正常的：助手拿到密钥后会主动断开连接。</p>
         </div></div>
 
         <div class="step"><div class="num">6</div><div>
-          <b>Übernehmen.</b> In NeonPlan erscheint „Gelesener Schlüssel (IRK) des Geräts, das sich gerade gekoppelt hat“. Tippe <b>Als „…“ hinzufügen</b> – das Gerät steht jetzt mit Name und Person in der Liste. Kennt NeonPlan den Schlüssel schon, steht dort „Gehört zu: …“.
+          <b>采纳密钥。</b>NeonPlan 中会出现「刚刚配对的设备所读取的密钥（IRK）」。点击<b>添加为「…」</b>——该设备就带着名称和成员出现在列表里。如果 NeonPlan 已认识这个密钥，那里会显示「属于：…」。
         </div></div>
 
         <div class="step"><div class="num">7</div><div>
-          <b>Aufräumen.</b> Auf der Uhr bzw. dem iPhone den Eintrag <b>NeonPlan Key</b> antippen → ⓘ → <b>„Dieses Gerät ignorieren“</b>.
+          <b>清理。</b>在手表或 iPhone 上点击 <b>NeonPlan Key</b> → ⓘ → <b>「忽略此设备」</b>。
         </div></div>
 
         <div class="step"><div class="num">8</div><div>
-          <b>Nächstes Gerät?</b> Erst in NeonPlan <b>🔄 Nächstes Gerät</b> tippen (der Helfer bekommt eine neue Bluetooth-Kennung, damit sich das vorige Gerät nicht wieder dazwischen verbindet), dann ab Schritt 4.
+          <b>要配下一台设备？</b>先在 NeonPlan 里点击 <b>🔄 下一台设备</b>（助手会换一个新的蓝牙标识，避免上一台设备又插进来），然后从第 4 步重新开始。
         </div></div>
 
-        <h2>Installieren</h2>
+        <h2>安装</h2>
         <div class="card">
           <esp-web-install-button manifest="manifest.json">
-            <button slot="activate">Installieren</button>
-            <span slot="unsupported" class="warn">Dieser Browser kann keine Geräte flashen – bitte Chrome oder Edge am Computer nehmen.</span>
-            <span slot="not-allowed" class="warn">Bitte diese Seite über https öffnen.</span>
+            <button slot="activate">安装</button>
+            <span slot="unsupported" class="warn">此浏览器无法刷写设备——请在电脑上使用 Chrome 或 Edge。</span>
+            <span slot="not-allowed" class="warn">请通过 https 打开本页面。</span>
           </esp-web-install-button>
         </div>
 
-        <h2>Wenn etwas nicht klappt</h2>
-        <details><summary>Im Fenster erscheint kein USB-Anschluss</summary>
+        <h2>遇到问题怎么办</h2>
+        <details><summary>弹窗里没有出现 USB 端口</summary>
           <ul>
-            <li>Anderes USB-Kabel nehmen – viele Kabel laden nur und übertragen keine Daten.</li>
-            <li>Treiber fehlt (Windows): für Boards mit <b>CP210x</b> den Silicon-Labs-Treiber, für <b>CH340</b> den WCH-Treiber installieren, dann neu stecken.</li>
-            <li>Manche Boards brauchen beim Start den <b>BOOT</b>-Knopf: gedrückt halten, während du auf „Installieren“ klickst.</li>
+            <li>换一根 USB 线——很多线只供电、不传数据。</li>
+            <li>缺少驱动（Windows）：<b>CP210x</b> 芯片的板子装 Silicon Labs 驱动，<b>CH340</b> 的装 WCH 驱动，然后重新插拔。</li>
+            <li>有些板子启动时需要按住 <b>BOOT</b> 键：按住它，同时点击「安装」。</li>
           </ul>
         </details>
-        <details><summary>Home Assistant findet „NeonPlan Key“ nicht</summary>
+        <details><summary>Home Assistant 找不到「NeonPlan Key」</summary>
           <ul>
-            <li>Ist der ESP32 im selben Netz wie Home Assistant (nicht im Gäste-WLAN)?</li>
-            <li>Von Hand: Einstellungen → Geräte &amp; Dienste → Integration hinzufügen → <b>ESPHome</b> → IP-Adresse des ESP32 (steht in deinem Router).</li>
+            <li>ESP32 和 Home Assistant 在同一个网络里吗（不是访客 Wi-Fi）？</li>
+            <li>手动添加：设置 → 设备与服务 → 添加集成 → <b>ESPHome</b> → 填入 ESP32 的 IP 地址（在你路由器的设备列表里能看到）。</li>
           </ul>
         </details>
-        <details><summary>Die Uhr zeigt „NeonPlan Key“ nicht an</summary>
+        <details><summary>手表上没有显示「NeonPlan Key」</summary>
           <ul>
-            <li>In NeonPlan muss <b>⌚ Für Apple Watch</b> gewählt sein (Profil „Pulsgurt“). Nach dem Umschalten 20 Sekunden warten.</li>
-            <li>Auf der Uhr unter Bluetooth etwas warten und nach unten scrollen bis „Gesundheitsgeräte“.</li>
-            <li>Hatte sich vorher ein anderes Gerät gekoppelt: in NeonPlan <b>🔄 Nächstes Gerät</b>.</li>
+            <li>NeonPlan 里必须选择 <b>⌚ 用于 Apple Watch</b>（配置文件「心率带」）。切换后等 20 秒。</li>
+            <li>在手表蓝牙页面稍等一会儿，向下滚动到「健康设备」。</li>
+            <li>如果之前有别的设备配对过：在 NeonPlan 里点 <b>🔄 下一台设备</b>。</li>
           </ul>
         </details>
-        <details><summary>„Nicht verbunden“ und der Schlüssel ändert sich nicht</summary>
+        <details><summary>显示「未连接」，密钥一直不变</summary>
           <ul>
-            <li>Meist verbindet sich ein vorher gekoppeltes Gerät (z. B. das iPhone) immer wieder von selbst. Dort „NeonPlan Key“ → ⓘ → <b>Dieses Gerät ignorieren</b>, dann in NeonPlan <b>🔄 Nächstes Gerät</b> und neu koppeln.</li>
-            <li>Steht „Gehört zu: …“, ist der Schlüssel schon in NeonPlan – das gekoppelte Gerät war ein bekanntes.</li>
+            <li>通常是之前配对过的设备（比如 iPhone）反复自动连回来。在那台设备上把「NeonPlan Key」→ ⓘ → <b>忽略此设备</b>，然后在 NeonPlan 里点 <b>🔄 下一台设备</b>，重新配对。</li>
+            <li>如果显示「属于：…」，说明这个密钥已经在 NeonPlan 里了——刚才配对的是已知设备。</li>
           </ul>
         </details>
-        <details><summary>Und danach?</summary>
-          <p>Den ESP32 kannst du behalten (für weitere Geräte) oder als <b>ESPHome-Bluetooth-Proxy</b> neu flashen – dann hilft er der Ortung sogar: ESP32-Proxys melden etwa jede Sekunde, Shellys nur alle drei bis vier Sekunden.</p>
+        <details><summary>之后还能做什么？</summary>
+          <p>这块 ESP32 你可以留着（配更多设备），也可以把它重新刷成 <b>ESPHome 蓝牙代理</b>——那样它甚至能辅助定位：ESP32 代理大约每秒上报一次，Shelly 只能每三到四秒上报一次。</p>
         </details>
       </div>
 
@@ -258,24 +258,24 @@
       </div>
 
       <footer>
+        <span data-lang="zh">一切都在本地完成：密钥只会从 ESP32 传到你的 Home Assistant。固件基于</span>
         <span data-lang="en">Everything stays at home: the key goes from the ESP32 to your Home Assistant only. The firmware is built on</span>
-        <span data-lang="de">Alles bleibt zu Hause: Der Schlüssel geht vom ESP32 nur in dein Home Assistant. Die Firmware baut auf</span>
         <a href="https://github.com/DerekSeaman/irk-capture">irk-capture</a>
+        <span data-lang="zh">由 Derek Seaman 开发（MIT 许可），源自 KyleTeal/irk-capture 和 ESPresense——感谢！本项目属于</span>
         <span data-lang="en">by Derek Seaman (MIT licence), based on KyleTeal/irk-capture and ESPresense – thank you! Part of</span>
-        <span data-lang="de">von Derek Seaman auf (MIT-Lizenz), das auf KyleTeal/irk-capture und ESPresense beruht – danke! Teil von</span>
         <a href="https://github.com/Mastershort/neonplan3d">NeonPlan 3D</a> ·
-        <a href="https://mastershort.de/neonplan3d/anleitung/3d-ansicht/#511-ortung-neu"><span data-lang="de">Anleitung</span><span data-lang="en">Manual</span></a>
+        <a href="https://mastershort.de/neonplan3d/anleitung/3d-ansicht/#511-ortung-neu"><span data-lang="zh">使用说明</span><span data-lang="en">Manual</span></a>
       </footer>
     </main>
     <script>
       const set = (lang) => {
         document.body.className = lang;
-        document.documentElement.lang = lang;
+        document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
         document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.set === lang)));
       };
       document.querySelectorAll("[data-set]").forEach((b) => b.addEventListener("click", () => set(b.dataset.set)));
       const wanted = new URLSearchParams(location.search).get("lang");
-      set(wanted === "de" || wanted === "en" ? wanted : (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en");
+      set(wanted === "zh" || wanted === "en" ? wanted : (navigator.language || "zh").toLowerCase().startsWith("en") ? "en" : "zh");
     </script>
   </body>
 </html>

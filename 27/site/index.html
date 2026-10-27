@@ -1,24 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NeonPlan 3D – Online demo</title>
-    <meta name="description" content="Try NeonPlan 3D in your browser: a 3D floor plan for Home Assistant with a built-in editor, live lights, covers and cameras. Demo with invented data." />
-    <meta property="og:title" content="NeonPlan 3D – Online demo" />
-    <meta property="og:description" content="A 3D floor plan for Home Assistant: draw your home in the built-in editor and control it in a neon 3D view. Try it in your browser." />
+    <title>NeonPlan 3D – 在线演示</title>
+    <meta name="description" content="在浏览器中试用 NeonPlan 3D：面向 Home Assistant 的 3D 平面图，内置编辑器，实时灯光、窗帘与摄像头。演示数据均为虚构。" />
+    <meta property="og:title" content="NeonPlan 3D – 在线演示" />
+    <meta property="og:description" content="面向 Home Assistant 的 3D 平面图：在内置编辑器中绘制你的家，在霓虹 3D 视图里实时控制。直接在浏览器中试用。" />
     <meta property="og:image" content="https://raw.githubusercontent.com/Mastershort/neonplan3d/main/docs/images/view-house.jpg" />
     <style>
       body { margin: 0; background: #070b14; color: #cfe9ff; font: 16px Roboto, sans-serif; display: grid; place-items: center; height: 100vh; }
       a { color: #00e5ff; }
     </style>
     <script>
-      // German browsers get the German demo, everyone else the English one
-      const lang = (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
-      location.replace("preview/index.html?site&lang=" + lang);
+      // 中文优先：直接进入中文演示（?lang=en 可切英文）
+      const lang = new URLSearchParams(location.search).get("lang") || "zh";
+      location.replace("../preview/index.html?site&lang=" + lang);
     </script>
   </head>
   <body>
-    <p>Loading the demo … <a href="preview/index.html?site&amp;lang=en">open it here</a></p>
+    <p>正在载入演示 … <a href="../preview/index.html?site&amp;lang=zh">点此打开</a></p>
   </body>
 </html>
